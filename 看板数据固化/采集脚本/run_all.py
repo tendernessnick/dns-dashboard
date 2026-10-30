@@ -13,6 +13,9 @@ sys.path.insert(0, HERE)
 
 import common
 
+# 东财push2行情族（来源归一期P-C4）：单IP渐进式限流，组内采集器间保持≥8s间隔
+EM_HEAVY = {'22', '23', '27', '31', '32', '39', '40'}
+
 def main():
     only = {str(int(a.upper().lstrip('P'))) for a in sys.argv[1:]} if len(sys.argv) > 1 else None
     run_id = common.begin_run()
@@ -37,7 +40,7 @@ def main():
             status, detail = '失败', f'异常: {e}'
         results.append((f'P{pid}', mod_name, status, detail, round(time.time() - t0, 1)))
         print(f'[{status}] {mod_name}  {detail[:80]}  ({results[-1][4]}s)')
-        time.sleep(1)
+        time.sleep(8 if pid in EM_HEAVY else 1)
     ok = sum(1 for r in results if r[2] == '成功')
     skip = sum(1 for r in results if r[2] == '跳过')
     fail = len(results) - ok - skip

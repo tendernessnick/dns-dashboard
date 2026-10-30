@@ -20,7 +20,7 @@ def run():
     try:
         info = parse_ppi_detail(common.hw_check_get(URL))
         common.save_row(CSV, info['date'],
-                        {'铜基准价(元/吨)': info['price'], '数据来源': '生意社',
+                        {'铜基准价(元/吨)': info['price'], '单位': info['unit'], '数据来源': '生意社',
                          '备注': '无氧铜杆代理口径(生意社铜基准价)'}, COLUMNS)
         detail = (f"{info['date']} 铜(生意社)基准价={info['price']}{info['unit']}, "
                   f"较昨日{info['change'] or 'NA'}")

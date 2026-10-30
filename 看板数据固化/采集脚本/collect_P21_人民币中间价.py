@@ -48,7 +48,7 @@ def run():
     try:
         rows = fetch_parity(60)
         for date, rate in rows:
-            common.save_row(CSV, date, {'中间价': rate, '数据来源': '中国货币网',
+            common.save_row(CSV, date, {'中间价': rate, '单位': '元', '数据来源': '中国货币网',
                                         '备注': '人民币兑美元中间价(USD/CNY)'}, COLUMNS)
         detail = f'回填{len(rows)}天, 最新{rows[-1][0]} 中间价{rows[-1][1]}'
         return '成功', detail

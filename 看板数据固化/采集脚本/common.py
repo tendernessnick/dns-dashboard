@@ -12,6 +12,7 @@
 import csv
 import io
 import os
+import random
 import re
 import sys
 import time
@@ -28,6 +29,10 @@ UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
 TODAY = datetime.date.today().isoformat()
 _lock = threading.Lock()
 
+# 直连会话（来源归一期P-C2）：requests默认信任系统代理，桌面代理开关会造成偶发失败，显式关闭
+_SESSION = requests.Session()
+_SESSION.trust_env = False
+
 os.makedirs(CSV_DIR, exist_ok=True)
 
 
@@ -41,7 +46,7 @@ def http_get(url, referer=None, encoding=None, retries=2, timeout=25, extra_head
     last = None
     for i in range(retries + 1):
         try:
-            r = requests.get(url, headers=headers, timeout=timeout)
+            r = _SESSION.get(url, headers=headers, timeout=timeout)
             if encoding:
                 r.encoding = encoding
             if r.status_code != 200:
@@ -61,7 +66,7 @@ def http_post(url, data=None, referer=None, encoding=None, retries=2, timeout=25
     last = None
     for i in range(retries + 1):
         try:
-            r = requests.post(url, headers=headers, data=data, timeout=timeout)
+            r = _SESSION.post(url, headers=headers, data=data, timeout=timeout)
             if encoding:
                 r.encoding = encoding
             if r.status_code != 200:
@@ -237,6 +242,7 @@ def log_result(p_id, title, status, detail='', elapsed=None, backfill=None):
 
 # ---------------- 生意社（HW_CHECK两步法） ----------------
 _HW_SESSION = requests.Session()
+_HW_SESSION.trust_env = False
 _HW_SESSION.headers.update({'User-Agent': UA})
 
 
@@ -263,30 +269,47 @@ def hw_check_get(url):
 
 
 # ---------------- 东方财富 ----------------
+def _backoff(fn, waits=(5, 15, 30)):
+    """指数退避重试（来源归一期P-C1）：push2系对单IP渐进式限流，短间隔重试会自我供给限流池，
+    故首试后按5/15/30s+抖动退避，共4次机会。"""
+    last = None
+    for w in (0,) + waits:
+        if w:
+            time.sleep(w + random.uniform(0, 2))
+        try:
+            return fn()
+        except Exception as e:  # noqa: BLE001
+            last = e
+    raise last
+
+
 def em_get(secid, fields='f43,f57,f58,f60,f86,f169,f170', fltt=2):
-    """东财行情快照。f43通常为最新价（fltt=2时已缩放）。"""
-    txt = http_get(f'https://push2.eastmoney.com/api/qt/stock/get?secid={secid}'
-                   f'&fields={fields}&fltt={fltt}&invt=2')
+    """东财行情快照。f43通常为最新价（fltt=2时已缩放）。push2限流敏感，走指数退避。"""
     import json
-    d = json.loads(txt)
-    if not d.get('data'):
-        raise RuntimeError(f'东财无数据 {secid}')
-    return d['data']
+
+    def _one():
+        d = json.loads(http_get(f'https://push2.eastmoney.com/api/qt/stock/get?secid={secid}'
+                                f'&fields={fields}&fltt={fltt}&invt=2', retries=0))
+        if not d.get('data'):
+            raise RuntimeError(f'东财无数据 {secid}')
+        return d['data']
+    return _backoff(_one)
 
 
 def em_kline(secid, klt=101, fqt=1, lmt=120):
-    """东财日K历史。klt:101=日线,102=周线; 返回[(date, close)]"""
+    """东财日K历史。klt:101=日线,102=周线; 返回[(date, close)]。push2his限流敏感，走指数退避。"""
     import json
-    txt = http_get(f'https://push2his.eastmoney.com/api/qt/stock/kline/get?secid={secid}'
-                   f'&klt={klt}&fqt={fqt}&lmt={lmt}&end=20500101'
-                   f'&fields1=f1,f2,f3&fields2=f51,f53')
-    d = json.loads(txt)
-    kl = (d.get('data') or {}).get('klines') or []
-    out = []
-    for line in kl:
-        parts = line.split(',')
-        out.append((parts[0], float(parts[1])))
-    return out
+
+    def _one():
+        txt = http_get(f'https://push2his.eastmoney.com/api/qt/stock/kline/get?secid={secid}'
+                       f'&klt={klt}&fqt={fqt}&lmt={lmt}&end=20500101'
+                       f'&fields1=f1,f2,f3&fields2=f51,f53', retries=0)
+        d = json.loads(txt)
+        kl = (d.get('data') or {}).get('klines') or []
+        if not kl:
+            raise RuntimeError(f'东财日K为空 {secid}')
+        return [(line.split(',')[0], float(line.split(',')[1])) for line in kl]
+    return _backoff(_one)
 
 
 def bulk_backfill(csv_path, klines, column, unit='元/吨', source='东方财富', note=''):

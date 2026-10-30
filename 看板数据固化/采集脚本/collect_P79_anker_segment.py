@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-"""P79 竞对同业-安克分业务营收拆分：pymupdf解析安克创新2025年年报PDF，提取充电储能类收入/占比/毛利率（年度低频）"""
+"""P79 竞对同业-安克分业务营收和毛利率拆分：东财F10经营分析zygcfx年报期"充电储能类"行
+（来源归一期M2迁移：原本地年报PDF正则解析→东财emweb API，与P221-224四家同源；
+2025年报期三项数值抽样一致[154.02亿/50.47%/41.25%]。仅取年报期(12-31)行以保持原序列节奏，
+中报数据zygcfx亦覆盖，如需半年度节奏可再扩展。）"""
+import json
 import os
 import re
 import sys
@@ -12,44 +16,39 @@ TITLE = '安克分业务营收拆分'
 BACKFILL = 'latest'
 CSV = os.path.join(common.CSV_DIR, '竞对同业-P79-安克分业务营收拆分.csv')
 COLS = ['数据日期', '充电储能收入(亿元)', '营收占比%', '毛利率%', '单位', '数据来源', '备注']
-PDF = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                   '看板数据固化', '源文件', '安克创新2025年报.pdf')
-DATE = '2025-12-31'
-
-
-def _text():
-    import pymupdf
-    doc = pymupdf.open(PDF)
-    return '\n'.join(page.get_text() for page in doc)
+URL = 'https://emweb.securities.eastmoney.com/PC_HSF10/BusinessAnalysis/PageAjax?code=SZ300866'
+SOURCE = '东方财富F10 BusinessAnalysis(zygcfx) 分产品口径(300866)'
 
 
 def run():
     try:
-        if not os.path.exists(PDF):
-            raise RuntimeError(f'年报PDF不存在: {PDF}')
-        text = _text()
-        if '2025' not in text[:2000] or '年度报告' not in text[:2000]:
-            raise RuntimeError('文件不是2025年年度报告，需更新脚本')
-        # 营业收入构成-分产品行: 充电储能类 [收入] [占比%] [上年收入] [上年占比%] [同比%]
-        m = re.search(r'充电储能类\s*([\d,]+\.\d{2})\s*([\d.]+)%\s*[\d,]+\.\d{2}\s*[\d.]+%\s*(-?[\d.]+)%', text)
-        # 占10%以上产品表行: 充电储能类 [收入] [成本] [毛利率%] ...
-        m2 = re.search(r'充电储能类\s*[\d,]+\.\d{2}\s*[\d,]+\.\d{2}\s*([\d.]+)%', text)
-        if not m or not m2:
-            raise RuntimeError('年报中未找到充电储能类收入/毛利率行，疑似版式变更')
-        income_yuan = float(m.group(1).replace(',', ''))
-        share = float(m.group(2))
-        gross = float(m2.group(1))
-        income_yi = round(income_yuan / 1e8, 2)
-        if not (100 < income_yi < 500 and 30 < share < 70 and 20 < gross < 60):
-            raise RuntimeError(f'数值超出合理量级: 收入{income_yi}亿, 占比{share}%, 毛利率{gross}%')
-        common.save_row(CSV, DATE, {
-            '充电储能收入(亿元)': income_yi,
-            '营收占比%': share,
-            '毛利率%': gross,
-            '数据来源': '安克创新2025年年度报告PDF(第三节 管理层讨论与分析)',
-            '备注': f'充电储能类年报口径, 收入同比{m.group(3)}%',
-        }, COLS)
-        detail = f'充电储能收入{income_yi}亿元, 占比{share}%, 毛利率{gross}%'
+        d = json.loads(common.http_get(URL, referer='https://emweb.securities.eastmoney.com/'))
+        items = [x for x in (d.get('zygcfx') or [])
+                 if str(x.get('MAINOP_TYPE')) == '2'
+                 and str(x.get('REPORT_DATE', ''))[:10].endswith('12-31')]  # 年报期，保持原序列节奏
+        # 科目名历史变体：'充电储能类'/'充电储能类产品'，统一按前缀匹配，原始名记入备注
+        rows = [x for x in items
+                if re.sub(r'\s+', '', str(x.get('ITEM_NAME', ''))).startswith('充电储能')]
+        if not rows:
+            raise RuntimeError('zygcfx年报期未找到"充电储能*"行，疑似分类名变更')
+        for x in rows:
+            inc, share, gross = (x.get('MAIN_BUSINESS_INCOME'), x.get('MBI_RATIO'),
+                                 x.get('GROSS_RPOFIT_RATIO'))
+            if inc is None or share is None or gross is None:
+                raise RuntimeError(f'{x["REPORT_DATE"][:10]} 字段缺失')
+            inc_yi, share, gross = round(inc / 1e8, 2), round(share * 100, 2), round(gross * 100, 2)
+            if not (10 < inc_yi < 500 and 20 < share < 80 and 10 < gross < 70):
+                raise RuntimeError(f'数值超出合理量级: {inc_yi}亿/{share}%/{gross}%')
+            common.save_row(CSV, str(x['REPORT_DATE'])[:10], {
+                '充电储能收入(亿元)': inc_yi, '营收占比%': share, '毛利率%': gross,
+                '单位': '%', '数据来源': SOURCE,
+                '备注': f'年报口径(东财F10分产品)，科目名[{re.sub(chr(92)+"s+", "", str(x.get("ITEM_NAME", "")))}]',
+            }, COLS)
+        latest = max(rows, key=lambda x: str(x['REPORT_DATE']))
+        detail = (f'{len(rows)}期年报; 最新{latest["REPORT_DATE"][:10]} '
+                  f'充电储能收入{latest["MAIN_BUSINESS_INCOME"] / 1e8:.2f}亿, '
+                  f'占比{latest["MBI_RATIO"] * 100:.2f}%, '
+                  f'毛利率{latest["GROSS_RPOFIT_RATIO"] * 100:.2f}%')
         return '成功', detail
     except Exception as e:  # noqa: BLE001
         return '失败', str(e)
