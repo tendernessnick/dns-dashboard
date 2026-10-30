@@ -1,0 +1,109 @@
+﻿P号,词条,板块,采集通道,更新频率,回填策略,可靠度(现)+建议,自动化程度,采集器文件,台账来源网站
+P1,PMI,宏观数据,东财数据API,每月,追最新,B,全自动(脚本),collect_P01_美国制造业PMI.py,东方财富数据中心（全球宏观RPT_ECONOMICVALUE_USANEW，22
+P2,CPI,宏观数据,requests+页面解析,每月,追最新,B,全自动(脚本),collect_P02_美国CPI.py,OECD统计门户（SDMX API，转载美国劳工统计局BLS月度CPI）
+P3,PCE物价,宏观数据,requests+页面解析,每月,追最新,B,全自动(脚本),collect_P03_美国PCE同比.py,美国经济分析局 BEA
+P4,10年期美债收益率,宏观数据,requests+页面解析,每日,追最新,B,全自动(脚本),collect_P04_10年期美债收益率.py,FRED（圣路易斯联储）
+P5,CPI,宏观数据,东财数据API,每月,追最新,B,全自动(脚本),collect_P05_中国CPI同比.py,国家统计局（东方财富数据中心RPT_ECONOMY_CPI通道）
+P6,PPI,宏观数据,东财数据API,每月,追最新,B,全自动(脚本),collect_P06_中国PPI.py,国家统计局（东方财富数据中心RPT_ECONOMY_PPI通道）
+P7,计算机通信电子制造业工业增加值,宏观数据,浏览器RPA,每月,RPA落地CSV,B,RPA半自动(浏览器),RPA手册条目,工业和信息化部
+P8,HICP物价指数,宏观数据,Eurostat官方API,每月,全量重刷历史,B；B(建议升A),全自动(脚本),collect_P08_欧盟HICP同比.py,Eurostat（欧盟统计局）
+P9,欧元区制造业PMI,宏观数据,TE页面解析,每月,追最新,B,全自动(脚本),collect_P09_欧元区制造业PMI.py,S&P Global PMI
+P10,欧元区零售销售,宏观数据,Eurostat官方API,每月,全量重刷历史,B；B(建议升A),全自动(脚本),collect_P10_欧元区零售销售.py,Eurostat（欧盟统计局）
+P11,德国IFO商业景气指数,宏观数据,TE页面解析,每月,追最新,"C；C(TE镜像,建议降C)",全自动(脚本),collect_P11_德国IFO景气指数.py,ifo经济研究所
+P12,10年期德国国债收益率,宏观数据,Eurostat官方API,每日,全量重刷历史,B；B(建议升A:官方API),全自动(脚本),collect_P12_德国10年期国债收益率.py,欧洲央行 ECB
+P13,欧盟委员会消费者信心指数,宏观数据,Eurostat官方API,每月,全量重刷历史,B；B(建议升A),全自动(脚本),collect_P13_欧盟消费者信心.py,欧盟委员会 DG ECFIN
+P14,财经新闻,宏观数据,RSS,每日,追最新,B,全自动(脚本),collect_P14_财经新闻.py,CNBC Markets RSS
+P15,地缘政治动态,宏观数据,RSS,每日,追最新,B,全自动(脚本),collect_P15_地缘政治.py,CNBC World RSS
+P16,美联储议息日历,宏观数据,人工(页面静态),事件驱动,不适用,B,静态手工维护,,美联储官网
+P17,美国关税清单（301）动态,宏观数据,人工(页面静态),事件驱动,不适用,B,静态手工维护,,美国贸易代表办公室 USTR
+P18,能效法规,宏观数据,人工(页面静态),事件驱动,不适用,B,静态手工维护,,美国能源部 DOE
+P20,欧洲央行议息日历,宏观数据,人工(页面静态),事件驱动,不适用,B,静态手工维护,,欧洲央行 ECB
+P21,美元汇率（USD/CNY）,大宗商品数据,requests+页面解析,每日,追最新,A,全自动(脚本),collect_P21_人民币中间价.py,中国货币网（中国外汇交易中心）
+P22,美元指数DXY,大宗商品数据,东财行情API,每日,追最新,A,全自动(脚本),collect_P22_美元指数DXY.py,东方财富网（公开行情接口）
+P23,人民币在岸/离岸汇率,大宗商品数据,东财行情API,每日,追最新,A,全自动(脚本),collect_P23_离岸USDCNH.py,东方财富网
+P24,欧元汇率（EUR/CNY）,大宗商品数据,新浪行情API,每日,追最新,A,全自动(脚本),collect_P24_EURCNY.py,新浪财经（公开行情接口）
+P25,英镑汇率,大宗商品数据,新浪行情API,每日,追最新,A,全自动(脚本),collect_P25_GBPCNY.py,新浪财经（公开行情接口）
+P26,LME铜价,大宗商品数据,新浪行情API,每日,追最新,A,全自动(脚本),collect_P26_LME铜.py,新浪财经（公开行情接口）
+P27,沪铜期货价格,大宗商品数据,东财行情API,每日,追最新,A,全自动(脚本),collect_P27_沪铜主连.py,东方财富网
+P28,无氧铜杆价格,大宗商品数据,浏览器RPA,每日,RPA落地CSV,C；C(代理口径),RPA半自动(浏览器),collect_P28_无氧铜杆.py,富宝资讯铜产业链频道（f139.com）/长江有色铜材频道（备查）
+P29,废铜价格,大宗商品数据,浏览器RPA,每日,RPA落地CSV,B,RPA半自动(浏览器),collect_P29_废铜光亮铜.py,富宝资讯（f139.com）铜产业链频道
+P31,PVC价格,大宗商品数据,东财行情API,每日,全量重刷历史,B,全自动(脚本),collect_P31_PVC.py,生意社现货 + 东财期货主连（114.VM）
+P32,PP价格,大宗商品数据,东财行情API,每日,全量重刷历史,B,全自动(脚本),collect_P32_PP.py,生意社现货 + 东财期货主连（114.ppM）
+P33,PA/PC工程塑料价格,大宗商品数据,生意社两步法,每周,增量文章考证,B；B(文章考证),全自动(脚本),collect_P33_PAPC.py,生意社工程塑料频道
+P34,快充协议芯片价格,大宗商品数据,立创接口,每季,追最新,B,全自动(脚本)(看板不展示),collect_P34_LDR6028.py,立创商城（多型号：LDR6028/CH224K/IP2726/LDR6328）
+P35,eMarker芯片价格,大宗商品数据,立创接口,每季,追最新,B,全自动(脚本)(看板不展示),collect_P35_HUSB332A.py,立创商城（多型号：HUSB332A/HUSB332B）
+P36,布伦特原油价格,大宗商品数据,新浪行情API,每日,追最新,A,全自动(脚本),collect_P36_Brent.py,新浪财经（公开行情接口）
+P37,集装箱运价指数SCFI/FBX,大宗商品数据,requests+页面解析,每周,追最新,B；B(历史C考证),全自动(脚本),collect_P37_SCFI.py,上海航运交易所（当期采集器）+ 媒体转引12周手工考证
+P38,空运运价,大宗商品数据,RSS,每周,追最新,B,全自动(脚本),collect_P38_CTK.py,IATA月度货运稿（iata.org官方）
+P39,锡价,大宗商品数据,东财行情API,每日,全量重刷历史,B,全自动(脚本),collect_P39_锡锭.py,生意社现货 + 东财期货主连（113.snM）
+P40,铝价,大宗商品数据,东财行情API,每日,全量重刷历史,B,全自动(脚本),collect_P40_铝A00.py,生意社现货 + 东财期货主连（113.alM）
+P41,APPLE相关新闻,行业数据,RSS,事件驱动,追最新,B,全自动(脚本),collect_P41_Apple新闻.py,IT之家RSS（苹果生态关键词过滤），备选MacRumors
+P42,手机厂家新品发布新闻,行业数据,RSS,事件驱动,追最新,B,全自动(脚本),collect_P42_手机新品.py,IT之家RSS（手机/快充关键词过滤）
+P43,手机换机周期/平均售价ASP走势,行业数据,requests+页面解析,每季,追最新,B；B(历史C考证),全自动(脚本),collect_P43_huanji_zhouqi.py,Counterpoint官方报告页
+P44,手机全球出货量,行业数据,IDC官网检索,每季,追最新,B；B(历史C考证),全自动(脚本),collect_P44_shouji_chuhuo.py,IDC全球手机季度追踪（新闻稿考证）
+P45,TWS耳机出货量,行业数据,requests+页面解析,每季,追最新,B；B(历史C考证),全自动(脚本),collect_P45_tws.py,Counterpoint/Canalys/IDC年度稿（考证）
+P46,其他穿戴设备（手环/戒指）出货量,行业数据,IDC官网检索,每季,追最新+人工考证行,"C；C(含推算行,建议降C)",全自动+缺季靠人工考证,collect_P46_chuandai.py,IDC腕上穿戴（新闻稿考证）
+P47,PC出货量,行业数据,IDC官网检索,每季,追最新,B；B(历史C考证),全自动(脚本),collect_P47_pc_chuhuo.py,IDC全球PC季度追踪（新闻稿考证）
+P48,平板出货量,行业数据,IDC官网检索,每季,追最新+人工考证行,"C；C(含推算行,建议降C)",全自动+缺季靠人工考证,collect_P48_pingban.py,IDC全球平板季度追踪（新闻稿考证）
+P49,手机品牌份额变化,行业数据,requests+页面解析,每季,追最新,B,全自动(脚本),collect_P49_pinpai_fene.py,Counterpoint官方季度份额对照表
+P50,CES展会信息,行业数据,人工(页面静态),事件驱动,不适用,B,静态手工维护,,CES官网（CTA主办）
+P51,MWC展会信息,行业数据,人工(页面静态),事件驱动,不适用,B,静态手工维护,,MWC Barcelona官网（GSMA主办）
+P53,广交会信息,行业数据,浏览器RPA,事件驱动,RPA落地CSV,B,RPA半自动(浏览器),RPA手册条目,中国进出口商品交易会官网
+P56,Qi2磁吸无线充（WPC认证产品库监测）,行业数据,requests+页面解析,半年度,追最新,A,全自动(脚本),collect_P56_qi2.py,WPC认证产品库（jpsapi/ajax/products/qi）
+P58,存储芯片价格（DRAM/NAND）,行业数据,RSS,每周,追最新,B,全自动(脚本),collect_P58_dram_nand.py,TrendForce现货价官方页（5品类：DDR4 8Gb/16Gb、DDR5 
+P59,充电头网早报,产品品类,curl_cffi伪装,每日,追最新,B,全自动(脚本),collect_P59_充电头网早报.py,充电头网·新闻分类页（curl_cffi过JS验证）
+P60,快充瓦数趋势,产品品类,requests+页面解析,事件驱动,追最新,B,全自动(脚本),collect_P60_快充拆解.py,充电头网·拆解分类页（teardowns）
+P61,苹果AVS相关新品/产品资讯,产品品类,requests+页面解析,事件驱动,追最新,B,全自动(脚本),collect_P61_苹果AVS资讯.py,充电头网·新闻页（AVS/苹果关键词过滤）
+P66,各品牌出货量（品牌排名）,产品品类,Amazon榜单解析,每季,追最新,B,全自动(脚本),collect_P66_amazon_xiancai.py;collect_P72_price_band.py,Amazon Best Sellers（线材类目TOP30实价）
+P67,品类季度出货量,产品品类,—,每季,不适用,B,入口链接/受限(无采集),,洛图科技 RUNTO
+P68,亚马逊销量榜（Best Sellers充电类）,产品品类,Amazon榜单解析,每周,追最新,B,全自动(脚本),collect_P68_amazon_zgbs.py;collect_P72_price_band.py,Amazon Best Sellers（充电类目TOP30实价）
+P69,线下零售渠道数据,产品品类,requests+页面解析,每月,追最新,A,全自动(脚本),collect_P69_meiguo_lingshou.py,FRED（圣路易斯联储）镜像美国普查局MARTS序列：Electronics a
+P70,专利诉讼动态,产品品类,浏览器RPA,事件驱动,RPA落地CSV,B,RPA半自动(浏览器),RPA手册条目,企查查
+P71,品类增速（同比）,产品品类,requests+页面解析,每月,追最新,B,全自动(脚本),collect_P71_pinlei_zengsu.py,国家统计局月度稿（原文解析）
+P72,价格带结构（价位段占比、均价）,产品品类,Amazon榜单解析,每月,追最新,B,全自动(脚本),collect_P72_price_band.py,Amazon线材榜/充电榜TOP30实价自动分箱
+P73,USB-IF认证查询,产品品类,浏览器RPA,每月,RPA落地CSV,B,RPA半自动(浏览器),RPA手册条目,USB-IF
+P74,MFi认证查询,产品品类,—,每月,不适用,B,入口链接/受限(无采集),,Apple MFi Program
+P75,Qi/Qi2认证查询,产品品类,—,每月,不适用,B,入口链接/受限(无采集),,WPC无线充电联盟
+P76,差评关键词分析,产品品类,浏览器RPA,每月,RPA落地CSV,B,RPA半自动(浏览器),RPA手册条目,Helium 10
+P77,评论增速监测,产品品类,浏览器RPA,每月,RPA落地CSV,B,RPA半自动(浏览器),RPA手册条目,Keepa
+P78,季度报（财报下载）,竞对同业数据,巨潮API,每季,追最新,B,全自动(脚本),collect_P231_公司公告.py,巨潮资讯网 hisAnnouncement/query（类型过滤：定期报告）
+P79,分业务营收和毛利率拆分,竞对同业数据,requests+页面解析,每季,追最新,A,全自动(脚本),collect_P79_anker_segment.py,巨潮资讯网
+P80,大客户集中度（前五大客户占比）,竞对同业数据,requests+页面解析,半年度,追最新,A,全自动(脚本),collect_P80_anker_top5cust.py,巨潮资讯网
+P81,产能利用率、扩产与募投公告,竞对同业数据,巨潮API,事件驱动,追最新,A,全自动(脚本),collect_P231_公司公告.py,巨潮资讯网（类型过滤：募集/募投/产能/扩产/可转债）
+P82,存货周转/应收账款数据,竞对同业数据,requests+页面解析,每季,追最新,A,全自动(脚本),collect_P82_anker_turnover.py,新浪财经
+P83,招聘职位量监测,竞对同业数据,浏览器RPA,每月,RPA落地CSV,B,RPA半自动(浏览器),RPA手册条目,安克创新官方招聘站（示例）
+P84,专利/公告/投资者关系综合监控,竞对同业数据,巨潮API,每周,追最新,B,全自动(脚本),collect_P84_anker_irm.py;collect_P84b_四家互动易问答.py,深交所互动易 newircs/search/searchResult
+P85,奥海科技（002993）公告入口,竞对同业数据,—,每周,不适用,B,入口链接/受限(无采集),,新浪财经
+P86,佳禾智能（300793）公告入口,竞对同业数据,—,每周,不适用,B,入口链接/受限(无采集),,新浪财经
+P87,海能实业（300787）公告入口,竞对同业数据,—,每周,不适用,B,入口链接/受限(无采集),,新浪财经
+P88,安克创新（300866）公告入口,竞对同业数据,—,每周,不适用,B,入口链接/受限(无采集),,安克创新官网投资者专栏
+P89,绿联科技（301606）公告入口,竞对同业数据,—,每周,不适用,B,入口链接/受限(无采集),,新浪财经
+P90,非上市同业新闻监测,竞对同业数据,requests+页面解析,每周,追最新,B,全自动(脚本),collect_P90_非上市同业新闻.py,充电头网·新闻页（非上市品牌关键词过滤）
+P92,电商销售额监测（月销量）,竞对同业数据,Amazon榜单解析,每月,追最新,B,全自动(脚本),collect_P92_amazon_monthly.py,Amazon榜单
+P93,Kickstarter众筹表现,竞对同业数据,curl_cffi伪装,每周,追最新,B,全自动(脚本),collect_P93_kickstarter.py,Kickstarter discover JSON接口（curl_cffi过Cl
+P94,摩点众筹表现,竞对同业数据,摩点JSONP,每周,追最新,B,全自动(脚本),collect_P94_modian.py,摩点 realtime/get_simple_product JSONP接口
+P95,融资和IPO辅导动态,竞对同业数据,curl_cffi伪装,事件驱动,追最新,A,全自动(脚本),collect_P95_csrc_fudao.py,深圳证监局
+P97,社媒声量监测（小红书/抖音）,竞对同业数据,—,每月,不适用,B,入口链接/受限(无采集),,新榜榜单频道
+P98,同规格SKU调价频率监测,竞对同业数据,浏览器RPA,每周,RPA落地CSV,B,RPA半自动(浏览器),RPA手册条目,慢慢买
+P99,倍思 Baseus,竞对同业数据,浏览器RPA,每月,RPA落地CSV,B,RPA半自动(浏览器),RPA手册条目,倍思官网
+P100,酷态科 ZTEC,竞对同业数据,由P90采集器关键词覆盖,每月,追最新(JSON),B,全自动(脚本),,CUKTECH酷态科官网
+P101,iWALK,竞对同业数据,由P90采集器关键词覆盖,每月,追最新(JSON),B,全自动(脚本),,iWALK官网
+P102,Zendure征拓 / SHARGE闪极,竞对同业数据,由P90采集器关键词覆盖,每月,追最新(JSON),B,全自动(脚本),,Zendure官网
+P103,威迅 Vention,竞对同业数据,由P90采集器关键词覆盖,每月,追最新(JSON),B,全自动(脚本),,Vention官网
+P201,奥海科技·季度业绩（营收/净利/同比）,竞对同业,东财数据API,,追最新,B,全自动(脚本),collect_P201_季度业绩.py,东方财富数据中心
+P202,佳禾智能·季度业绩,竞对同业,东财数据API,,追最新,B,全自动(脚本),collect_P201_季度业绩.py,东方财富数据中心
+P203,海能实业·季度业绩,竞对同业,东财数据API,,追最新,B,全自动(脚本),collect_P201_季度业绩.py,东方财富数据中心
+P204,绿联科技·季度业绩,竞对同业,东财数据API,,追最新,B,全自动(脚本),collect_P201_季度业绩.py,东方财富数据中心
+P205,安克创新·季度业绩（面板趋势用）,竞对同业,东财数据API,,追最新,B,全自动(脚本),collect_P201_季度业绩.py,东方财富数据中心
+P211,奥海科技·存货/应收周转,竞对同业,东财数据API,,追最新,B,全自动(脚本),collect_P211_存货应收周转.py,东方财富数据中心
+P212,佳禾智能·存货/应收周转,竞对同业,东财数据API,,追最新,B,全自动(脚本),collect_P211_存货应收周转.py,东方财富数据中心
+P213,海能实业·存货/应收周转,竞对同业,东财数据API,,追最新,B,全自动(脚本),collect_P211_存货应收周转.py,东方财富数据中心
+P214,绿联科技·存货/应收周转,竞对同业,东财数据API,,追最新,B,全自动(脚本),collect_P211_存货应收周转.py,东方财富数据中心
+P221,奥海科技·主营构成（分产品占比）,竞对同业,requests+页面解析,,追最新,B,全自动(脚本),collect_P221_主营构成.py,https://emweb.securities.eastmoney.com/P
+P222,佳禾智能·主营构成,竞对同业,requests+页面解析,,追最新,B,全自动(脚本),collect_P221_主营构成.py,https://emweb.securities.eastmoney.com/P
+P223,海能实业·主营构成,竞对同业,requests+页面解析,,追最新,B,全自动(脚本),collect_P221_主营构成.py,https://emweb.securities.eastmoney.com/P
+P224,绿联科技·主营构成,竞对同业,requests+页面解析,,追最新,B,全自动(脚本),collect_P221_主营构成.py,https://emweb.securities.eastmoney.com/P
+P231,奥海科技·最新公告（近10条快照）,竞对同业,巨潮API,,追最新,B,全自动(脚本),collect_P231_公司公告.py,巨潮资讯网
+P232,佳禾智能·最新公告,竞对同业,巨潮API,,追最新,B,全自动(脚本),collect_P231_公司公告.py,巨潮资讯网
+P233,海能实业·最新公告,竞对同业,巨潮API,,追最新,B,全自动(脚本),collect_P231_公司公告.py,巨潮资讯网
+P234,绿联科技·最新公告,竞对同业,巨潮API,,追最新,B,全自动(脚本),collect_P231_公司公告.py,巨潮资讯网

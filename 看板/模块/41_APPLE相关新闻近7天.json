@@ -1,0 +1,30 @@
+{
+ "卡名": "APPLE 相关新闻（近7天）",
+ "类型": "list",
+ "跨列": 6,
+ "类修饰": [
+  "list"
+ ],
+ "主数据": "P41",
+ "关联数据": [],
+ "标题提示": "Apple Newsroom官方新闻稿，仅保留最近7天",
+ "状态点": "g",
+ "状态说明": "已接入：Apple Newsroom RSS",
+ "卡片样式": "",
+ "脚注": [
+  {
+   "标签": "a",
+   "文本": "Apple Newsroom ↗",
+   "href": "https://www.apple.com/newsroom/",
+   "target": "_blank",
+   "rel": "noopener"
+  },
+  {
+   "标签": "span",
+   "文本": "每日更新 · 近7天"
+  }
+ ],
+ "面板": "",
+ "资讯键": "P41",
+ "ID": "41_APPLE相关新闻近7天"
+}

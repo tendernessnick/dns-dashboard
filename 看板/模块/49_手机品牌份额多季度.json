@@ -1,0 +1,28 @@
+{
+ "卡名": "手机品牌份额（多季度）",
+ "类型": "share",
+ "跨列": 5,
+ "类修饰": [],
+ "主数据": "P49",
+ "关联数据": [],
+ "标题提示": "Counterpoint全球智能手机季度出货份额，分组柱状图按季度对比",
+ "状态点": "g",
+ "状态说明": "已接入：Counterpoint新闻稿考证",
+ "卡片样式": "",
+ "脚注": [
+  {
+   "标签": "a",
+   "文本": "Counterpoint ↗",
+   "href": "https://counterpointresearch.com/en/insights/global-smartphone-share",
+   "target": "_blank",
+   "rel": "noopener"
+  },
+  {
+   "标签": "span",
+   "文本": "每季"
+  }
+ ],
+ "面板": "",
+ "份额图": "P49",
+ "ID": "49_手机品牌份额多季度"
+}

@@ -1,0 +1,30 @@
+{
+ "卡名": "Kickstarter 科技众筹（热门）",
+ "类型": "list",
+ "跨列": 6,
+ "类修饰": [
+  "list"
+ ],
+ "主数据": "P93",
+ "关联数据": [],
+ "标题提示": "Kickstarter科技类目当前热门众筹项目（金额/达成率实抓）",
+ "状态点": "g",
+ "状态说明": "已接入：Kickstarter科技类目",
+ "卡片样式": "",
+ "脚注": [
+  {
+   "标签": "a",
+   "文本": "Kickstarter ↗",
+   "href": "https://www.kickstarter.com/discover/categories/technology",
+   "target": "_blank",
+   "rel": "noopener"
+  },
+  {
+   "标签": "span",
+   "文本": "每周"
+  }
+ ],
+ "面板": "",
+ "资讯键": "P93",
+ "ID": "93_Kickstarter科技众筹热门"
+}

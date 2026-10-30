@@ -1,0 +1,35 @@
+{
+ "卡名": "亚马逊销量榜（充电类）",
+ "类型": "list",
+ "跨列": 5,
+ "类修饰": [
+  "list"
+ ],
+ "主数据": "P68",
+ "关联数据": [],
+ "标题提示": "",
+ "状态点": "g",
+ "状态说明": "已接入：Amazon Best Sellers",
+ "卡片样式": "",
+ "脚注": [
+  {
+   "标签": "a",
+   "文本": "实时榜单 ↗",
+   "href": "https://www.amazon.com/Best-Sellers-Cell-Phones-Accessories/zgbs/wireless",
+   "target": "_blank",
+   "rel": "noopener"
+  },
+  {
+   "标签": "span",
+   "文本": "每日"
+  }
+ ],
+ "面板": "",
+ "榜单": "P68",
+ "榜单统计": {
+  "P": "P68",
+  "占位": "榜单快照自动统计",
+  "样式": "font-size:11.5px;color:var(--n500)"
+ },
+ "ID": "68_亚马逊销量榜充电类"
+}

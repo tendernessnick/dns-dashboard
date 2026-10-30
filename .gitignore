@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+
+# 采集运行临时产物
+*.log
+
+# 系统文件
+Thumbs.db
+.DS_Store

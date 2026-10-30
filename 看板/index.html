@@ -1,0 +1,1227 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DNS 数据看板 · 市场与竞对监测</title>
+</head>
+<body>
+<style>
+#dns-dash{
+  --brand:#0065B0;--brand-700:#005A9E;--brand-ink:#063D66;--brand-300:#7FB3D8;--brand-100:#E5F0F8;
+  --n0:#FFFFFF;--n25:#F7F9FA;--n50:#F1F4F6;--n100:#E6EBEF;--n200:#D7DEE4;--n300:#BFC9D1;
+  --n500:#61707C;--n700:#333F49;--n900:#0F1820;
+  --up:#B42318;--upbg:#FBEFED;--down:#0E7A54;--downbg:#EAF5F0;--warn:#B54708;--warnbg:#FFF6E8;
+  --ok:#0B5FA5;
+  --sh0:0 1px 2px rgba(15,24,32,.04);
+  --sh1:0 2px 4px rgba(15,24,32,.05),0 8px 16px -4px rgba(15,24,32,.08);
+  --sh2:0 4px 8px -2px rgba(15,24,32,.08),0 16px 32px -8px rgba(15,24,32,.12);
+  --fn:"Microsoft YaHei","PingFang SC",Arial,sans-serif;
+  --fnnum:"Segoe UI",Arial,"Microsoft YaHei",sans-serif;
+  font-family:var(--fn);color:var(--n700);background:var(--n50);font-size:14px;line-height:1.55;
+}
+:where(#dns-dash) *{box-sizing:border-box;margin:0;padding:0}
+.num{font-family:var(--fnnum);font-variant-numeric:tabular-nums}
+/* ===== 报头 ===== */
+.rule3{height:4px;background:linear-gradient(90deg,#0065B0 0%,#B45309 25%,#0F766E 50%,#6D28D9 75%,#BE123C 100%)}
+.mast{background:var(--n0)}
+.mast-in{max-width:1440px;margin:0 auto;padding:24px 32px 20px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.m-brand{display:flex;align-items:center;gap:14px}
+.mark{width:48px;height:48px;border-radius:11px;background:var(--brand-ink);color:#fff;font:700 14px/1 var(--fnnum);display:flex;align-items:center;justify-content:center;letter-spacing:1px}
+.m-eyebrow{font:600 11px/16px var(--fn);color:var(--n500);letter-spacing:.18em;margin-bottom:4px}
+.mast h1{font:700 26px/32px var(--fn);color:var(--n900);letter-spacing:.02em}
+.m-sub{font:400 12.5px/18px var(--fn);color:var(--n500);margin-top:4px}
+.m-right{display:flex;gap:32px;text-align:right}
+.m-meta .m-k{display:block;font:600 10.5px/16px var(--fn);color:var(--n500);letter-spacing:.1em}
+.m-meta b{font:600 13.5px/20px var(--fnnum);color:var(--n700);font-variant-numeric:tabular-nums}
+.mline{border-top:1px solid var(--n200);border-bottom:3px solid var(--brand-ink)}
+/* ===== 工具条 ===== */
+.toolbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--n200)}
+.toolbar-in{max-width:1440px;margin:0 auto;padding:0 32px;display:flex;align-items:center;height:48px}
+.tlink{position:relative;padding:0 18px;height:48px;display:flex;align-items:center;font:600 13px/1 var(--fn);color:var(--n500);text-decoration:none;letter-spacing:.06em;white-space:nowrap;transition:color .12s}
+.tlink:hover{color:var(--brand)}
+.tlink.on{color:var(--brand)}
+.tlink.on::after{content:"";position:absolute;left:16px;right:16px;bottom:0;height:2.5px;background:var(--brand)}
+.tspace{flex:1}
+.tbtn{font:600 12.5px/1 var(--fn);color:var(--n500);border:1px solid var(--n200);background:var(--n0);border-radius:7px;padding:8px 14px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-left:8px;cursor:pointer;transition:all .12s}
+.tbtn:hover{color:var(--brand);border-color:var(--brand)}
+/* ===== 今日焦点 ===== */
+.ticker{background:var(--n0);border-bottom:1px solid var(--n100)}
+.ticker-in{max-width:1440px;margin:0 auto;padding:12px 32px;display:flex;flex-wrap:wrap;gap:10px 0;align-items:center}
+.tk-eyebrow{font:600 11.5px/16px var(--fn);color:var(--brand);letter-spacing:.14em;padding-right:20px;border-right:1px solid var(--n200);margin-right:4px;align-self:center;white-space:nowrap}
+.tk{flex:1 1 190px;min-width:180px;padding:3px 18px;border-left:1px solid var(--n100)}
+.tk .k{display:block;font:500 11.5px/17px var(--fn);color:var(--n500);white-space:nowrap}
+.tk .v{font:700 19px/26px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tk .v small{font:400 11.5px/1 var(--fn);color:var(--n500);margin-left:2px;font-weight:400}
+.tk .s{display:block;font:400 11px/16px var(--fn);color:var(--n500);white-space:nowrap}
+/* ===== 版块 ===== */
+.d-main{max-width:1440px;margin:0 auto;padding:0 32px 8px}
+.mod{margin-top:44px;scroll-margin-top:76px}
+#m1,#m2,#m3,#m4,#m5{--acc:#0065B0}
+#m2{--acc:#B45309}
+#m3{--acc:#0F766E}
+#m4{--acc:#6D28D9}
+#m5{--acc:#BE123C}
+.sec-head{display:flex;align-items:baseline;gap:16px;padding:0 2px 14px;border-bottom:2px solid var(--acc);margin-bottom:20px}
+.sec-no{font:800 46px/1 var(--fnnum);color:var(--acc);opacity:.22;letter-spacing:2px}
+.sec-head h2{font:800 21px/28px var(--fn);color:var(--n900);letter-spacing:.04em}
+.sec-head p{font:400 12.5px/19px var(--fn);color:var(--n500);margin-top:4px}
+.sec-meta{margin-left:auto;flex:none;font:500 12.5px/19px var(--fn);color:var(--n500)}
+.sec-meta .ok{color:var(--ok)}
+.grp{display:flex;align-items:center;gap:8px;font:700 13px/19px var(--fn);color:var(--n700);margin:26px 2px 12px;letter-spacing:.1em}
+.grp::before{content:"";width:4px;height:14px;background:var(--acc);border-radius:2px}
+/* ===== Bento ===== */
+.row{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-bottom:14px;align-items:stretch}
+.c2{grid-column:span 2}.c3{grid-column:span 3}.c4{grid-column:span 4}.c5{grid-column:span 5}
+.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}.c9{grid-column:span 9}.c12{grid-column:span 12}
+@media (max-width:1100px){
+  #dns-dash .c3,#dns-dash .c4,#dns-dash .c5{grid-column:span 6!important;grid-row:auto!important}
+  #dns-dash .c6,#dns-dash .c7,#dns-dash .c8,#dns-dash .c9{grid-column:span 12!important;grid-row:auto!important}
+  #dns-dash .crow{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+}
+@media (max-width:660px){
+  #dns-dash .row{grid-template-columns:1fr}
+  #dns-dash .row>*{grid-column:auto!important;grid-row:auto!important}
+  #dns-dash .strip{flex-direction:column;align-items:stretch}
+  #dns-dash .sc{border-left:none;border-top:1px solid var(--n100)}
+  #dns-dash .sc:first-child{border-top:none}
+  #dns-dash .mast-in,#dns-dash .ticker-in,#dns-dash .toolbar-in,#dns-dash .d-main,#dns-dash .d-foot{padding-left:18px;padding-right:18px}
+}
+/* ===== 卡片（v14：去顶部色条改全边框，圆角加大，入场浮起） ===== */
+.card{background:var(--n0);border:1px solid var(--n200);border-radius:14px;padding:16px 18px 12px;display:flex;flex-direction:column;min-height:112px;box-shadow:var(--sh0);transition:box-shadow .12s ease-out,transform .12s ease-out,border-color .12s ease-out;animation:v8rise .4s ease-out both}
+.card:hover{border-color:var(--n300);box-shadow:var(--sh1);transform:translateY(-1px)}
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.card-top .t{font:600 14.5px/21px var(--fn);color:var(--n900);letter-spacing:.01em}
+.card-top .t small{font:400 11.5px/1 var(--fnnum);color:var(--n500)}
+.chip{display:inline-flex;align-items:center;gap:5px;height:21px;padding:0 8px;border-radius:5px;font:600 11.5px/1 var(--fn);margin-left:auto;flex:none;white-space:nowrap}
+.chip .cdot{width:6px;height:6px;border-radius:50%}
+.chip.c-ok{color:var(--ok);background:#E9F2F9;border:1px solid #BBD6EA}
+.chip.c-ok .cdot{background:var(--ok)}
+.chip.c-warn{color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4}
+.chip.c-warn .cdot{background:var(--warn)}
+/* 深色焦点卡 */
+.card.tint{background:var(--brand-100);border-color:#C9DFF2}
+/* KPI */
+.kpi .val{font:800 30px/36px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.kpi.lg .val{font-size:34px}
+.kpi .val .vnum{font-variant-numeric:tabular-nums}
+.kpi .val .unit{font-size:.48em;font-weight:400;color:var(--n500);margin-left:4px;font-family:var(--fn)}
+.kpi .sub{font:400 12.5px/19px var(--fn);color:var(--n500);margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.kpi .sub b{font-weight:500}
+/* 涨跌徽章 */
+.dpill{display:inline-flex;align-items:center;gap:2px;padding:2.5px 8px;border-radius:6px;font:700 12px/1 var(--fnnum);font-variant-numeric:tabular-nums}
+.dpill.up{color:var(--up);background:var(--upbg);border:1px solid #EFC4BD}
+.dpill.down{color:var(--down);background:var(--downbg);border:1px solid #BFE0D2}
+.up{color:var(--up)}.down{color:var(--down)}
+.statline{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--n100);font-size:12.5px;color:var(--n500)}
+.statline:last-of-type{border-bottom:none}
+.statline b{font:700 17px/23px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums}
+/* 图表（v14：行情风——趋势涨跌着色/渐变面积/期初基准/最新价chip/描画动画） */
+.chart{position:relative;height:118px;margin-top:10px}
+.chart svg{display:block;width:100%;height:100%}
+.chart text{font-family:var(--fnnum);font-size:11px;fill:var(--n500);font-variant-numeric:tabular-nums}
+.chart .grid{stroke:var(--n100);stroke-width:1}
+.chart .baseline{stroke:var(--n300);stroke-width:1;stroke-dasharray:4,4}
+.chart .baselabel{font-size:10px;fill:var(--n500)}
+.chart .minmax{fill:#fff;stroke-width:1.6}
+.chart .mmlabel{font-size:10.5px;font-weight:700;fill:var(--n700)}
+.chart .chiprect{stroke:none}
+.chart .chiptext{font-weight:700;fill:#fff;font-variant-numeric:tabular-nums}
+.chart .guide{stroke:var(--n300);stroke-width:1;stroke-dasharray:3,3}
+.chart .hdot{fill:#fff;stroke-width:2}
+.chart .hit{fill:transparent}
+.chart .nodata{height:100%;display:flex;align-items:center;justify-content:center;font:400 12px/18px var(--fn);color:var(--n500);background:repeating-linear-gradient(45deg,transparent,transparent 8px,var(--n25) 8px,var(--n25) 16px);border-radius:8px}
+.line-a{stroke-dasharray:1;stroke-dashoffset:1;animation:v8dash .9s ease-out .15s forwards}
+@keyframes v8dash{to{stroke-dashoffset:0}}
+.area-a{opacity:0;animation:v8fade .55s ease-out .7s forwards}
+@keyframes v8fade{to{opacity:1}}
+.chip-a{opacity:0;animation:v8fade .3s ease-out .95s forwards}
+.redraw .line-a{animation:none;stroke-dasharray:none;stroke-dashoffset:0}
+.redraw .area-a,.redraw .chip-a{animation:none;opacity:1}
+@keyframes v8rise{from{opacity:0;transform:translateY(8px)}}
+.ctool{position:absolute;pointer-events:none;background:var(--n900);color:#F2F5F8;border-radius:7px;padding:6px 10px;font:400 12px/18px var(--fn);white-space:nowrap;display:none;z-index:5;box-shadow:var(--sh2)}
+.ctool b{color:#fff;font:700 13.5px/18px var(--fnnum);font-variant-numeric:tabular-nums}
+.ctool .d.up{color:#FFB4A8;font-weight:700}
+.ctool .d.down{color:#7BD9B4;font-weight:700}
+/* 资讯流 */
+.card.list{height:268px}
+.feed{list-style:none;margin:2px 0 8px;flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--n300) transparent;padding-right:2px}
+.feed::-webkit-scrollbar{width:5px}
+.feed::-webkit-scrollbar-thumb{background:var(--n300);border-radius:3px}
+.feed::-webkit-scrollbar-thumb:hover{background:var(--n500)}
+.feed li{margin:0;border-bottom:1px solid var(--n100)}
+.feed li:last-child{border-bottom:none}
+.feed .fi{display:flex;gap:9px;align-items:flex-start;padding:8px 9px;text-decoration:none;color:var(--n700);font-size:13px;line-height:1.5;transition:background .12s}
+.feed .fi:hover{background:var(--n25);color:var(--n900)}
+.feed .fi i{font-style:normal;flex:none;font-size:11px;color:var(--n500);font-family:var(--fnnum);font-variant-numeric:tabular-nums;padding-top:2px;min-width:36px}
+.feed .fi span{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.feed .fi::after{content:"↗";flex:none;font-size:11px;color:var(--brand);opacity:0;transition:opacity .12s;align-self:center}
+.feed .fi:hover::after{opacity:1}
+/* 时间线 */
+.tl-list{list-style:none;flex:1;margin:2px 0 8px;border-left:2px solid var(--n200);padding-left:14px}
+.tl-list li{position:relative;padding:4px 0 4px 4px;font-size:13px;color:var(--n700)}
+.tl-list li::before{content:"";position:absolute;left:-19px;top:11px;width:7px;height:7px;border-radius:50%;background:var(--n0);border:2px solid var(--n300)}
+.tl-list li.next::before{border-color:var(--acc);background:#fff}
+.tl-list b{font:700 13px/19px var(--fnnum);color:var(--n900);margin-right:6px;font-variant-numeric:tabular-nums}
+.hlines{display:flex;flex:1;align-items:stretch;margin:4px 0 6px}
+.hln{flex:1;position:relative;padding:8px 18px 4px;border-left:1px solid var(--n200)}
+.hln::before{content:"";position:absolute;left:-4.5px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--n0);border:2px solid var(--n300)}
+.hln.next::before{border-color:var(--acc);background:var(--brand-100)}
+.hln .hd{font:800 18px/26px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums}
+.hln.next .hd{color:var(--acc)}
+.hln .hn{font:500 13px/19px var(--fn);color:var(--n700);margin-top:1px}
+.hln .hs{font:400 11.5px/17px var(--fn);color:var(--n500)}
+.hln .warn-tag{display:inline-block;margin-top:4px;font:500 11px/17px var(--fn);color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4;border-radius:5px;padding:0 7px}
+/* 横向指标条 */
+.card.strip{flex-direction:row;align-items:stretch;padding:15px 12px}
+.sc{flex:1;padding:4px 18px;border-left:1px solid var(--n100);display:flex;flex-direction:column;justify-content:center;min-width:0}
+.sc:first-child{border-left:none}
+.sc .k{font:500 11.5px/17px var(--fn);color:var(--n500);white-space:nowrap}
+.sc .v{font:700 21px/30px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap}
+.sc .v small{font:400 11.5px/1 var(--fn);color:var(--n500);margin-left:2px}
+.sc .s{font:400 11px/16px var(--fn);color:var(--n500);white-space:nowrap}
+.sc.hi .v{color:var(--brand)}
+.sc .v .dot,.sc .k .dot{display:inline-block;margin:0 0 2px 5px;vertical-align:middle}
+/* 环形图（v14：品牌蓝定妆 + 圆弧生长动画） */
+.ringwrap{display:flex;align-items:center;gap:14px;flex:1;margin:2px 0 6px}
+.ring{position:relative;width:78px;height:78px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .rb{fill:none;stroke:var(--n100);stroke-width:8}
+.ring .rf{fill:none;stroke:var(--brand);stroke-width:8;stroke-linecap:round;transition:stroke-dasharray 1s cubic-bezier(.22,.8,.36,1) .25s}
+.ring .rt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 15.5px/1 var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums}
+.ringinfo .rv{font:600 14.5px/21px var(--fn);color:var(--n900)}
+.ringinfo .rs{font:400 12px/18px var(--fn);color:var(--n500);margin-top:2px}
+/* 条形图 */
+.bar{display:flex;align-items:center;gap:9px;margin:8px 0;font-size:12.5px}
+.bar .bl{width:56px;color:var(--n500);flex:none;text-align:right;white-space:nowrap}
+.bar .bt{flex:1;height:11px;background:var(--n100);border-radius:6px;overflow:hidden}
+.bar .bf{height:100%;background:var(--acc,var(--brand));border-radius:6px;opacity:.85}
+.bar .bv{width:44px;font:700 12.5px/1 var(--fnnum);color:var(--n900);flex:none;font-variant-numeric:tabular-nums}
+/* 表格 */
+.mini{width:100%;border-collapse:collapse;font-size:13px;margin:2px 0 6px}
+.mini th{font:600 12px/18px var(--fn);color:var(--n500);text-align:left;padding:5px 6px;border-bottom:1px solid var(--n200);background:var(--n25)}
+.mini td{padding:6px;border-bottom:1px solid var(--n100);color:var(--n700)}
+.mini tr:last-child td{border-bottom:none}
+.mini .r{text-align:right;font-family:var(--fnnum);font-variant-numeric:tabular-nums}
+/* 链接/说明 */
+.desc{font-size:13px;color:var(--n500);margin:2px 0 10px;flex:1}
+.btn-ext{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border:1px solid var(--acc,var(--brand));color:var(--acc,var(--brand));border-radius:7px;text-decoration:none;font:500 12.5px/1 var(--fn);align-self:flex-start;margin-bottom:4px;transition:background .12s}
+.btn-ext:hover{background:var(--acc,var(--brand));color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 8px}
+.chips a{padding:7px 13px;border:1px solid var(--n200);border-radius:7px;font-size:12.5px;color:var(--n700);text-decoration:none}
+.chips a:hover{border-color:var(--acc,var(--brand));color:var(--acc,var(--brand))}
+/* 底注 */
+.foot{margin-top:auto;padding-top:9px;border-top:1px solid var(--n100);display:flex;justify-content:space-between;align-items:center;gap:8px;font:400 11.5px/17px var(--fn);color:var(--n500)}
+.foot a{color:var(--n500);text-decoration:none}
+.foot a:hover{color:var(--brand)}
+.srcline{display:inline-flex;align-items:center;gap:5px;min-width:0}
+.src-name{cursor:default}
+.src-ref{font:500 10.5px/1 var(--fnnum);color:var(--n500);background:var(--n25);border:1px solid var(--n200);border-radius:4px;padding:1.5px 5px;cursor:pointer;font-variant-numeric:tabular-nums}
+.src-ref:hover{color:var(--brand);border-color:var(--brand);background:var(--brand-100)}
+.src-link{font-size:11.5px;text-decoration:none}
+.src-link:hover{color:var(--brand)}
+/* 公司卡墙 */
+.crow{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:14px;margin-bottom:14px}
+.cco{background:var(--n0);border:1px solid var(--n200);border-top:3px solid var(--acc);border-radius:12px;padding:14px 16px 12px;display:flex;flex-direction:column;box-shadow:var(--sh0);transition:box-shadow .12s,transform .12s,border-color .12s}
+.cco:hover{border-color:var(--n300);box-shadow:var(--sh1);transform:translateY(-1px)}
+.cco .chead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.mono{width:36px;height:36px;border-radius:9px;background:var(--brand-100);color:var(--brand);font:700 13px/1 var(--fn);display:flex;align-items:center;justify-content:center;flex:none}
+.cco .cn{font:600 14px/20px var(--fn);color:var(--n900)}
+.cco .cs{font:400 11.5px/16px var(--fnnum);color:var(--n500)}
+.cco .cd{font-size:12px;color:var(--n500);flex:1;margin-bottom:8px}
+/* ===== 溯源附录 ===== */
+.prov-app{max-width:1440px;margin:44px auto 0;padding:0 32px}
+.prov-toggle{width:100%;display:flex;align-items:center;gap:10px;background:var(--n0);border:1px solid var(--n200);border-left:4px solid var(--brand);border-radius:12px;padding:16px 20px;font:600 14.5px/20px var(--fn);color:var(--n900);cursor:pointer;box-shadow:var(--sh0)}
+.prov-toggle:hover{border-color:var(--n300)}
+.prov-toggle .sum{font:400 12.5px/19px var(--fn);color:var(--n500);margin-left:auto}
+.prov-toggle .chev{font-size:11px;color:var(--n500);transition:transform .15s}
+.prov-app[data-open="true"] .chev{transform:rotate(180deg)}
+.prov-body{display:none;border:1px solid var(--n200);border-top:none;border-radius:0 0 12px 12px;background:var(--n0);padding:16px 20px 20px}
+.prov-app[data-open="true"] .prov-body{display:block}
+.prov-app[data-open="true"] .prov-toggle{border-radius:12px 12px 0 0}
+.prov-note{font:400 12px/18px var(--fn);color:var(--n500);margin-bottom:12px}
+.prov-tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.prov-tools select,.prov-tools input{height:32px;border:1px solid var(--n200);border-radius:6px;background:var(--n0);font:400 12.5px/1 var(--fn);color:var(--n700);padding:0 10px;outline:none}
+.prov-tools select:focus,.prov-tools input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,101,176,.14)}
+.prov-tools input{flex:1;min-width:160px}
+.pcount{font:400 12.5px/32px var(--fn);color:var(--n500);margin-left:auto}
+.ptable{width:100%;border-collapse:collapse;font-size:12.5px}
+.ptable th{font:600 12px/18px var(--fn);color:var(--n500);text-align:left;padding:8px 10px;background:var(--n25);border-bottom:1px solid var(--n200);white-space:nowrap}
+.ptable td{padding:8px 10px;border-bottom:1px solid var(--n100);color:var(--n700);vertical-align:top}
+.ptable tbody tr:hover{background:var(--n25)}
+.ptable tbody tr.flash{animation:pflash 1.8s ease-out}
+@keyframes pflash{0%{background:#FDE68A}100%{background:transparent}}
+.ptable .pnum{font-family:var(--fnnum);font-variant-numeric:tabular-nums;color:var(--n500);white-space:nowrap}
+.ptable .ptitle{font-weight:600;color:var(--n900);cursor:pointer}
+.ptable .ptitle:hover{color:var(--brand);text-decoration:underline}
+.ptable td a{color:var(--brand);text-decoration:none;word-break:break-all}
+.ptable td a:hover{text-decoration:underline}
+.pchip{display:inline-flex;align-items:center;gap:5px;height:21px;padding:0 8px;border-radius:5px;font:600 11.5px/1 var(--fn);white-space:nowrap}
+.pchip.c-ok{color:var(--ok);background:#E9F2F9;border:1px solid #BBD6EA}
+.pchip.c-warn{color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4}
+/* ===== 页脚 ===== */
+.d-foot{max-width:1440px;margin:36px auto 0;padding:18px 32px 30px;border-top:1px solid var(--n200);font-size:12px;color:var(--n500);display:flex;flex-wrap:wrap;gap:8px 26px;line-height:1.7}
+.d-foot .lg{display:flex;align-items:center;gap:6px}
+.d-foot b{color:var(--n700)}
+#toTop{position:fixed;right:24px;bottom:28px;width:40px;height:40px;border-radius:9px;border:1px solid var(--n200);background:var(--n0);color:var(--n500);font-size:15px;cursor:pointer;box-shadow:var(--sh2);display:none;z-index:60}
+#toTop:hover{color:var(--brand);border-color:var(--brand)}
+/* 溯源tooltip */
+.prov-tip{position:fixed;z-index:99;max-width:340px;background:var(--n900);color:#EDF1F5;border-radius:8px;padding:12px 14px;font:400 12.5px/19px var(--fn);box-shadow:var(--sh2);display:none;pointer-events:auto}
+.prov-tip .pt-t{font:600 13.5px/20px var(--fn);color:#fff;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.15)}
+.prov-tip .pt-row{display:flex;gap:8px;margin:3px 0}
+.prov-tip .pt-k{flex:none;width:52px;color:rgba(255,255,255,.55)}
+.prov-tip .pt-v{flex:1;min-width:0;word-break:break-all}
+.prov-tip .pt-v a{color:#8FC4EA;text-decoration:none}
+.prov-tip .pt-v a:hover{text-decoration:underline}
+@media (prefers-reduced-motion: reduce){#dns-dash *{transition:none!important;animation:none!important}}
+@media print{
+  #dns-dash .toolbar{position:static}
+  #dns-dash .prov-app .prov-body{display:block!important}
+  #dns-dash .prov-toggle{display:none}
+  #dns-dash .prov-app{page-break-before:always}
+  #dns-dash .card,#dns-dash .cco{box-shadow:none}
+}
+
+/* ===== v8 增补：图表小标题 / 多SKU列表 / 份额分组柱图 ===== */
+.chart-cap{font:600 10.5px/14px var(--fn);color:var(--n500);margin:6px 0 0;letter-spacing:.04em}
+.card ul.multi{list-style:none;margin:6px 0 0;flex:1;overflow:auto}
+.card ul.multi li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0;border-bottom:1px dashed var(--n100);font-size:12.5px;color:var(--n700)}
+.card ul.multi li:last-child{border-bottom:none}
+.card ul.multi li .mu{color:var(--n500);font-size:11px;margin-left:auto}
+.card ul.multi li b{font-family:var(--fnnum);font-variant-numeric:tabular-nums;font-weight:700;color:var(--n900)}
+.sharechart{flex:1;min-height:170px;position:relative}
+.sharechart svg{width:100%;height:100%;display:block}
+.sharechart .leg{font:600 10.5px/14px var(--fn);fill:var(--n700)}
+.sharechart .xt{font:500 10px/12px var(--fnnum);fill:var(--n500)}
+.sharechart .yt{font:500 9.5px/12px var(--fnnum);fill:var(--n500)}
+
+/* ===== v9 增补：公司切换tabs / 面板 ===== */
+.co-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.cotab{font:600 13px/1 var(--fn);color:var(--n700);background:var(--n0);border:1px solid var(--n200);border-radius:8px;padding:9px 16px;cursor:pointer;transition:all .12s}
+.cotab small{font:500 11px/1 var(--fnnum);color:var(--n500);margin-left:4px}
+.cotab:hover{border-color:var(--brand);color:var(--brand)}
+.cotab.on{background:var(--brand-ink);border-color:var(--brand-ink);color:#fff}
+.cotab.on small{color:rgba(255,255,255,.7)}
+.co-panel[hidden]{display:none}
+
+/* ===== v10 增补：全局周期选择器（折线图显示窗口） ===== */
+.pctl{display:inline-flex;align-items:center;gap:3px;margin:0 10px 0 0;padding-right:14px;border-right:1px solid var(--n200)}
+.pctl i{font:600 10.5px/1 var(--fn);color:var(--n500);font-style:normal;letter-spacing:.14em;margin-right:4px}
+.pctl b{font:600 12px/1 var(--fn);color:var(--n500);border:1px solid transparent;border-radius:6px;padding:6px 9px;cursor:pointer;transition:all .12s;white-space:nowrap}
+.pctl b:hover{color:var(--brand)}
+.pctl b.on{color:var(--brand);background:var(--brand-100);border-color:#BBD6EA}
+@media (max-width:1200px){#dns-dash .pctl i{display:none}}
+@media (max-width:960px){#dns-dash .pctl{display:none}}
+
+/* ===== v11 增补：榜单商品缩略图（统一尺寸） ===== */
+.feed .fi .lthumb{width:42px;height:42px;object-fit:contain;border:1px solid var(--n100);border-radius:7px;background:#fff;flex:none;align-self:center}
+
+/* ===== v12治理增补：可靠度角标 / 快报徽标 / 待补录标注 ===== */
+.rlbadge{margin-left:6px;flex:none;font:800 10.5px/1 var(--fnnum);padding:3px 6px;border-radius:5px;letter-spacing:.5px;cursor:help}
+.rlbadge.a{color:#0E7A54;background:var(--downbg);border:1px solid #BFE0D2}
+.rlbadge.b{color:#B54708;background:var(--warnbg);border:1px solid #F3D9A4}
+.rlbadge.c{color:#B42318;background:var(--upbg);border:1px solid #EFC4BD}
+.kbflag{margin-left:6px;flex:none;font:600 10.5px/1 var(--fn);color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4;border-radius:5px;padding:3px 6px;cursor:help}
+.card-top .warn-tag{margin-left:6px}
+.ptable .rlbadge{margin-left:0;margin-right:6px}
+
+/* ===== v14 视觉迭代增补（2026-10-29，视觉方向见 样板v8/） ===== */
+/* 迷你走势（KPI卡无图表组时由 17_spark.js 自动注入） */
+.sparkrow{display:flex;align-items:flex-end;margin-top:auto;padding-top:6px}
+.spark{width:100%;height:38px}
+.spark svg{display:block;width:100%;height:100%}
+/* 行情条：较前值chip（35_bind.js 注入 .sc .v 尾部） */
+.sc .v{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;white-space:normal}
+.sc .chg{display:inline-flex;align-items:center;font:700 11px/1 var(--fnnum);font-variant-numeric:tabular-nums;padding:2.5px 6px;border-radius:5px}
+.sc .chg.up{color:var(--up);background:var(--upbg)}
+.sc .chg.down{color:var(--down);background:var(--downbg)}
+/* 资讯/公告日期chip（05_news.js 输出 i.dchip） */
+.feed .fi{align-items:center;border-radius:8px}
+.feed .fi i{font:600 10.5px/1 var(--fnnum);color:var(--n500);background:var(--n50);border:1px solid var(--n100);border-radius:5px;padding:3px 6px;min-width:0;text-align:center}
+/* 榜单名次徽章 / 价格chip / Anker高亮（60_toplist.js） */
+.feed .fi .rk{flex:none;width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;font:700 11px/1 var(--fnnum);background:var(--n100);color:var(--n500);font-style:normal}
+.feed .fi .rk.r1{background:#FCF0D4;color:#92610A}
+.feed .fi .rk.r2{background:#EDF1F5;color:#5A6B7A}
+.feed .fi .rk.r3{background:#F9E9DB;color:#A05A2C}
+.feed .fi .ptag{flex:none;font:700 11.5px/1 var(--fnnum);color:var(--n900);background:var(--n50);border:1px solid var(--n100);border-radius:6px;padding:3px 7px;font-variant-numeric:tabular-nums;font-style:normal}
+.feed .fi .ankertag{flex:none;font:700 10px/1 var(--fn);color:#fff;background:var(--brand);border-radius:4px;padding:3px 5px;letter-spacing:.03em;font-style:normal}
+/* 洞察条卡型（insight）预留样式：卡型与JSON字段尚未在规范登记，启用前先登记 */
+.card.insight{flex-direction:row;gap:12px;align-items:flex-start;border-left:4px solid var(--brand);padding:14px 18px}
+.card.insight .ic{flex:none;color:var(--brand);font-size:15px;line-height:22px}
+.card.insight p{font-size:13.5px;line-height:1.75;color:var(--n700);flex:1}
+.card.insight p b{color:var(--n900)}
+.card.insight p b.up{color:var(--up)}
+.card.insight p b.down{color:var(--down)}
+/* v14补：滚动feed底部渐隐（62_feedfade.js 控制开关） */
+.feed.faded{-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 24px),rgba(0,0,0,0));mask-image:linear-gradient(180deg,#000 calc(100% - 24px),rgba(0,0,0,0))}
+
+</style>
+<div id="dns-dash">
+<div class="rule3"></div>
+<header class="mast"><div class="mast-in">
+  <div class="m-brand"><span class="mark">DNS</span>
+    <div><div class="m-eyebrow">DNS · 深圳和宏</div><h1>市场与竞对监测数据看板</h1><div class="m-sub">宏观 · 大宗商品 · 行业 · 品类 · 竞对同业（共108项监测源）</div></div>
+  </div>
+  <div class="m-right">
+    <div class="m-meta"><span class="m-k">数据截至</span><b id="asof">2026-10-23</b></div>
+    <div class="m-meta"><span class="m-k">数据说明</span><b>固化CSV自动绑定 · 资讯近7天</b></div>
+  </div>
+</div></header>
+<div class="mline"></div>
+<nav class="toolbar"><div class="toolbar-in">
+  <span id="dnav" style="display:flex;height:100%">
+    <a class="tlink" href="#m1">宏观数据</a><a class="tlink" href="#m2">大宗商品</a><a class="tlink" href="#m3">行业数据</a><a class="tlink" href="#m4">产品品类</a><a class="tlink" href="#m5">竞对同业</a>
+  </span>
+  <span class="tspace"></span>
+  <span class="pctl" title="切换折线图显示周期（仅影响曲线渲染，不改动固化数据）"><i>周期</i><b class="on">默认</b><b data-m="3">3月</b><b data-m="6">6月</b><b data-m="12">1年</b><b data-m="36">3年</b><b data-all="1">全部</b></span>
+  <a class="tbtn" href="#appendix" id="provbtn">数据溯源索引</a>
+</div></nav>
+<div class="ticker"><div class="ticker-in">
+  <span class="tk-eyebrow">今日焦点</span>
+  <div class="tk" data-tk="P21"><span class="k">美元兑人民币中间价</span><span class="v">6.7180</span><span class="s">10-23 · 中国货币网</span></div>
+  <div class="tk" data-tk="P22"><span class="k">美元指数 DXY</span><span class="v">101.65</span><span class="s">10-23 · 东方财富</span></div>
+  <div class="tk" data-tk="P26"><span class="k">LME铜（3月）</span><span class="v">14,164<small>美元/吨</small></span><span class="s">10-23 · 新浪财经</span></div>
+  <div class="tk" data-tk="P36"><span class="k">布伦特原油</span><span class="v">113.87<small>美元/桶</small></span><span class="s">10-23 · 新浪财经</span></div>
+  <div class="tk" data-tk="P37"><span class="k">SCFI集装箱运价</span><span class="v">3,679.58</span><span class="s">10-16期 · 上海航交所</span></div>
+  <div class="tk" data-tk="P71"><span class="k">通讯器材零售同比</span><span class="v" style="color:var(--up)">+31.1%</span><span class="s">9月 · 国家统计局</span></div>
+</div></div>
+
+<main class="d-main">
+<section class="mod" id="m1">
+  <div class="sec-head"><div class="sec-no">01</div><div><h2>宏观数据</h2><p>美国 / 中国 / 欧盟 关键经济指标与全球政策日历</p></div><div class="sec-meta"><span class="ok">18项已接入</span> · 2项历史受限（欧PMI/IFO）</div></div>
+  <h3 class="grp">美国 · 中国</h3>
+  <div class="row">
+    <div class="card kpi lg c4" style="min-height:236px;grid-column:span 4;grid-row:1" data-mid="2_美国CPI同比通胀焦点" data-k="2 3 4"><div class="card-top"><span class="t" title="美国CPI-U消费者价格指数同比（OECD口径），衡量美国通胀水平；下方两行为PCE物价与10年期美债收益率参考">美国CPI 同比（通胀焦点）</span><span class="dot g" title="OECD接口 / BEA / FRED 已接入"></span></div><div class="val">+3.7<span class="unit">% 同比 · 9月</span></div><div class="chart" data-chart="P2"></div><div style="margin-top:8px"><div class="statline" data-vk="P3" data-k="3"><span class="k">PCE物价同比（8月）</span><b>+3.4%</b></div><div class="statline" data-vk="P4" data-k="4"><span class="k">10年期美债（10-21）</span><b>5.13%</b></div></div><div class="foot"><span>OECD·BLS口径 / BEA / FRED</span><span>每月/每日</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="1_美国制造业PMIISM" data-k="1"><div class="card-top"><span class="t" title="美国供应管理协会（ISM）制造业采购经理指数，反映美国制造业景气度，50为荣枯线，高于50代表扩张">美国制造业PMI（ISM）</span><span class="dot g" title="已接入：FRED历史 / Trading Economics"></span></div><div class="val">55.90<span class="unit">点</span></div><div class="sub">美国ISM制造业PMI · 50为荣枯线，高于50代表扩张</div><div class="chart" data-chart="P1"></div><div class="foot"><span>FRED·ISM / Trading Economics</span><span>每月</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="5_中国CPI同比环比" data-k="5"><div class="card-top"><span class="t" title="中国居民消费价格指数（国家统计局），同比=较上年同月，环比=较上月，衡量消费端通胀">中国CPI 同比 / 环比</span><span class="dot g" title="已接入：东方财富数据中心"></span></div><div class="val">+0.9<span class="unit">%</span></div><div class="sub">同比 · 国家统计局口径（东财通道固化）</div><div class="chart-cap">同比%</div><div class="chart" data-chart="P5" data-col="1"></div><div class="chart-cap">环比%</div><div class="chart" data-chart="P5" data-col="2" style="min-height:74px;height:74px"></div><div class="foot"><span>国家统计局（东财数据中心）</span><span>每月</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card kpi c6" style="grid-column:span 6;grid-row:1" data-mid="6_中国PPI同比环比" data-k="6"><div class="card-top"><span class="t" title="中国工业生产者出厂价格指数（国家统计局），同比=较上年同月，环比=较上月，衡量生产端价格">中国PPI 同比 / 环比</span><span class="dot g" title="已接入：东方财富数据中心"></span></div><div class="chart-cap">同比%</div><div class="chart" data-chart="P6" data-col="1"></div><div class="chart-cap">环比%</div><div class="chart" data-chart="P6" data-col="2" style="min-height:74px;height:74px"></div><div class="foot"><span>国家统计局（东财数据中心）</span><span>每月</span></div></div>
+    <div class="card c6" style="grid-column:span 6;grid-row:1" data-mid="7_电子制造业工业增加值" data-k="7"><div class="card-top"><span class="t">电子制造业工业增加值</span><span class="dot y" title="受限：工信部栏目为动态加载"></span></div><p class="desc">工信部电子信息业月度运行报告为动态加载页面，已列入RPA方案（见 看板数据固化/RPA任务提示词.md），可用ZCode定时任务人工辅助抓取。</p><div class="foot"><span>工业和信息化部</span><span>每月</span></div></div>
+  </div>
+  <h3 class="grp">欧盟</h3>
+  <div class="row">
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="8_欧盟HICP物价同比" data-k="8"><div class="card-top"><span class="t" title="欧盟调和消费者价格指数HICP同比，衡量欧盟通胀；当月快报值先行占位，正式值发布后自动替换">欧盟HICP物价同比</span><span class="dot g" title="已接入：Eurostat官方API全历史（1997起）"></span></div><div class="val">+3.8<span class="unit">% 同比</span></div><div class="sub">欧盟统计局 · 全项目口径</div><div class="chart" data-chart="P8"></div><div class="foot"><span>Eurostat PRC_HICP_MANR</span><span>每月</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="10_欧元区零售销售指数" data-k="10"><div class="card-top"><span class="t" title="欧元区零售贸易量定基指数（2021=100），数值升降代表商品零售量增减">欧元区零售销售指数</span><span class="dot g" title="已接入：Eurostat官方API全历史（2000起）"></span></div><div class="val">107.1<span class="unit">指数</span></div><div class="sub">Eurostat · 零售量定基指数</div><div class="chart" data-chart="P10"></div><div class="foot"><span>Eurostat sts_trtu_m</span><span>每月</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="13_消费者信心指数" data-k="13"><div class="card-top"><span class="t" title="欧盟委员会消费者信心指数，零为分界，负值代表消费者整体悲观">消费者信心指数</span><span class="dot g" title="已接入：Eurostat官方API全历史（1985起）"></span></div><div class="val">-17.9<span class="unit">点</span></div><div class="sub">负值=悲观 · 闪估值先行占位</div><div class="chart" data-chart="P13"></div><div class="foot"><span>Eurostat EI_BSSI_M_R2</span><span>每月</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="12_德国10年期国债收益率" data-k="12"><div class="card-top"><span class="t" title="德国10年期国债（EMU趋同标准约10年期）月均收益率，欧元区融资成本基准">德国10年期国债收益率</span><span class="dot g" title="已接入：Eurostat官方API全历史（月均口径）"></span></div><div class="val">3.47<span class="unit">% 年化</span></div><div class="sub">月均口径（ECB日度接口受限）</div><div class="chart" data-chart="P12"></div><div class="foot"><span>Eurostat irt_lt_mcby_m</span><span>每月</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="9_欧元区制造业PMI" data-k="9"><div class="card-top"><span class="t" title="S&amp;P Global欧元区制造业采购经理指数，50为荣枯线，高于50代表扩张">欧元区制造业PMI</span><span class="dot y" title="历史受限：S&amp;P Global专有序列无免费结构化通道，仅最新读数"></span></div><div class="val">52.4<span class="unit">点</span></div><div class="sub">S&P Global · &gt;50扩张</div><div class="foot"><span>TradingEconomics（S&P口径）</span><span>每月</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="11_德国IFO景气指数" data-k="11"><div class="card-top"><span class="t" title="德国ifo商业景气指数，反映德国企业对经营状况与预期的判断">德国IFO景气指数</span><span class="dot y" title="历史受限：ifo官网反爬且专有序列无免费结构化通道，仅最新读数"></span></div><div class="val">89.9<span class="unit">点</span></div><div class="sub">ifo经济研究所 · 企业景气</div><div class="foot"><span>TradingEconomics（ifo口径）</span><span>每月</span></div></div>
+  </div>
+  <h3 class="grp">新闻与政策</h3>
+  <div class="row">
+    <div class="card list c4" style="grid-column:span 4;grid-row:1" data-mid="14_财经新闻近7天" data-k="14" data-news="P14"><div class="card-top"><span class="t" title="CNBC Markets财经要闻，仅保留最近7天">财经新闻（近7天）</span><span class="dot g" title="已接入：CNBC Markets RSS"></span></div><ul class="feed"></ul><div class="foot"><a href="https://www.cnbc.com/markets/" target="_blank" rel="noopener">CNBC Markets ↗</a><span>每日更新 · 近7天</span></div></div>
+    <div class="card list c4" style="grid-column:span 4;grid-row:1" data-mid="15_地缘政治动态近7天" data-k="15" data-news="P15"><div class="card-top"><span class="t" title="全球政经与供应链动态，仅保留最近7天">地缘政治动态（近7天）</span><span class="dot g" title="已接入：CNBC World RSS"></span></div><ul class="feed"></ul><div class="foot"><a href="https://www.cnbc.com/world/" target="_blank" rel="noopener">CNBC World ↗</a><span>每日更新 · 近7天</span></div></div>
+  <div class="c4" style="display:flex;flex-direction:column;gap:12px;grid-column:span 4;grid-row:1">
+    <div class="card" style="flex:1" data-mid="16_美联储议息日历" data-k="16"><div class="card-top"><span class="t">美联储议息日历</span><span class="dot g" title="已接入：美联储官网"></span></div><ul class="tl-list"><li class="next"><b>10-27/28</b>2026最后一次议息（下周）</li><li><b>01-27/28</b>2027年第一次议息</li></ul><div class="foot"><a href="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" target="_blank" rel="noopener">美联储 ↗</a><span>每次议息</span></div></div>
+    <div class="card" style="flex:1" data-mid="20_欧洲央行议息日历" data-k="20"><div class="card-top"><span class="t">欧洲央行议息日历</span><span class="dot g" title="已接入：ECB官网"></span></div><ul class="tl-list"><li class="next"><b>10-28/29</b>2026年10月议息（下周）</li><li><b>12-16/17</b>2026年12月议息</li></ul><div class="foot"><a href="https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html" target="_blank" rel="noopener">ECB ↗</a><span>每次议息</span></div></div>
+  </div>
+  </div>
+  <div class="row">
+    <div class="card c6" style="grid-column:span 6;grid-row:1" data-mid="17_美国301关税动态" data-k="17"><div class="card-top"><span class="t" title="美国301调查与豁免清单跟踪">美国301关税动态</span><span class="dot g" title="已接入：USTR"></span></div><p class="desc">301调查与豁免清单跟踪；电子配件豁免延期至2026年底。</p><a class="btn-ext" href="https://ustr.gov/issue-areas/enforcement/section-301-investigations" target="_blank" rel="noopener">USTR公告 ↗</a><div class="foot"><span>美国贸易代表办公室</span><span>每周</span></div></div>
+    <div class="card c6" style="grid-column:span 6;grid-row:1" data-mid="18_能效法规DOE" data-k="18"><div class="card-top"><span class="t" title="美国能源部电源适配器/充电器能效新规跟踪">能效法规（DOE）</span><span class="dot g" title="已接入：美国能源部"></span></div><p class="desc">电源适配器/充电器能效新规提案与生效节点跟踪。</p><a class="btn-ext" href="https://www.energy.gov/eere/buildings/appliance-and-equipment-standards-program" target="_blank" rel="noopener">DOE标准计划 ↗</a><div class="foot"><span>美国能源部</span><span>每月</span></div></div>
+  </div>
+</section>
+<section class="mod" id="m2">
+  <div class="sec-head"><div class="sec-no">02</div><div><h2>大宗商品数据</h2><p>汇率 / 金属 / 塑料 / 原油 / 物流</p></div><div class="sec-meta"><span class="ok">15项在板</span> · 1项受限（废铜/芯片3项转后台采集）</div></div>
+  <h3 class="grp">汇率一览</h3>
+  <div class="row">
+    <div class="card strip c12" style="grid-column:span 12;grid-row:1" data-mid="21_汇率横条" data-k="21 22 23 24 25"><div class="sc hi" data-k="21"><span class="k">美元中间价</span><span class="v">6.7180</span><span class="s">10-23 · 中国货币网</span></div><div class="sc" data-k="22"><span class="k">美元指数DXY</span><span class="v">101.65</span><span class="s">东方财富</span></div><div class="sc" data-k="23"><span class="k">离岸USDCNH</span><span class="v">6.6726</span><span class="s">东方财富</span></div><div class="sc" data-k="24"><span class="k">EUR/CNY</span><span class="v">7.4841</span><span class="s">新浪财经</span></div><div class="sc" data-k="25"><span class="k">GBP/CNY</span><span class="v">8.9389</span><span class="s">新浪财经</span></div></div>
+  </div>
+  <h3 class="grp">金属价格（铜 · 锡 · 铝）</h3>
+  <div class="row">
+    <div class="card kpi lg c3" style="grid-column:span 3;grid-row:1" data-mid="26_LME铜伦铜3月" data-k="26"><div class="card-top"><span class="t">LME铜（伦铜3月）</span><span class="dot g" title="已接入：新浪行情接口"></span></div><div class="val">14,290<span class="unit">美元/吨</span></div><div class="chart" data-chart="P26"></div><div class="sub" style="margin-top:6px">与东财综合铜双源核验</div><div class="foot"><span>新浪财经（LME通道）</span><span>实时</span></div></div>
+    <div class="card kpi c3" style="grid-column:span 3;grid-row:1" data-mid="27_沪铜期货主连" data-k="27"><div class="card-top"><span class="t">沪铜期货 主连</span><span class="dot g" title="已接入：东方财富"></span></div><div class="val">108,300<span class="unit">元/吨</span></div><div class="sub">沪铜期货主力连续</div><div class="chart" data-chart="P27"></div><div class="foot"><span>东方财富</span><span>实时</span></div></div>
+    <div class="card kpi c3" style="grid-column:span 3;grid-row:1" data-mid="39_锡锭" data-k="39"><div class="card-top"><span class="t">锡锭</span><span class="dot g" title="已接入：生意社现货 + 东财期货回填"></span></div><div class="val">389,170<span class="unit">元/吨</span></div><div class="sub">生意社基准价</div><div class="chart-cap">期货主力连续（历史回填）</div><div class="chart" data-chart="P39" data-col="2"></div><div class="foot"><span>生意社现货 / 东财期货</span><span>每日</span></div></div>
+    <div class="card kpi c3" style="grid-column:span 3;grid-row:1" data-mid="40_铝A00" data-k="40"><div class="card-top"><span class="t">铝（A00）</span><span class="dot g" title="已接入：生意社现货 + 东财期货回填"></span></div><div class="val">23,977<span class="unit">元/吨</span></div><div class="sub">生意社基准价</div><div class="chart-cap">期货主力连续（历史回填）</div><div class="chart" data-chart="P40" data-col="2"></div><div class="foot"><span>生意社现货 / 东财期货</span><span>每日</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card c12" style="grid-column:span 12;grid-row:1" data-mid="28_无氧铜杆价格" data-k="28"><div class="card-top"><span class="t">无氧铜杆价格</span><span class="dot y" title="受限：免费渠道绝对价在登录墙内"></span></div><p class="desc">富宝/长江渠道确认日更（10-23华南报价文章），绝对价格需账号；过渡期以生意社铜基准价 <b>109,763元/吨</b> 作代理参考。</p><div class="foot"><span>富宝资讯 / 生意社</span><span>每日</span></div></div>
+  </div>
+  <h3 class="grp">塑料 · 电子物料 · 原油</h3>
+  <div class="row">
+    <div class="card kpi c3" style="grid-column:span 3;grid-row:1" data-mid="31_PVCSG5" data-k="31"><div class="card-top"><span class="t">PVC（SG5）</span><span class="dot g" title="已接入：生意社现货 + 东财期货回填"></span></div><div class="val">4,960<span class="unit">元/吨</span></div><div class="sub">现货基准 · 电石法5型 5,000-5,060</div><div class="chart-cap">期货主力连续（历史回填）</div><div class="chart" data-chart="P31" data-col="2"></div><div class="foot"><span>生意社现货 / 东财期货</span><span>每日</span></div></div>
+    <div class="card kpi c3" style="grid-column:span 3;grid-row:1" data-mid="32_PP拉丝T30S" data-k="32"><div class="card-top"><span class="t">PP（拉丝T30S）</span><span class="dot g" title="已接入：生意社现货 + 东财期货回填"></span></div><div class="val">10,700<span class="unit">元/吨</span></div><div class="sub">现货基准 · 京博M800E 10,800</div><div class="chart-cap">期货主力连续（历史回填）</div><div class="chart" data-chart="P32" data-col="2"></div><div class="foot"><span>生意社现货 / 东财期货</span><span>每日</span></div></div>
+    <div class="card kpi c3" style="grid-column:span 3;grid-row:1" data-mid="33_PAPC工程塑料" data-k="33"><div class="card-top"><span class="t">PA/PC 工程塑料</span><span class="dot g" title="已接入：生意社（报价动态文章逐日考证回填）"></span></div><div class="val">15,000<span class="unit">元/吨 · PC</span></div><ul class="multi" data-multi="P33"></ul><div class="chart-cap">PC聚碳酸酯（文章考证回填）</div><div class="chart" data-chart="P33" data-col="1" style="min-height:74px;height:74px"></div><div class="foot"><span>生意社（元/吨）</span><span>每日</span></div></div>
+    <div class="card kpi c3" style="grid-column:span 3;grid-row:1" data-mid="36_布伦特原油" data-k="36"><div class="card-top"><span class="t">布伦特原油</span><span class="dot g" title="已接入：新浪"></span></div><div class="val">116.38<span class="unit">美元/桶</span></div><div class="chart" data-chart="P36"></div><div class="foot"><span>新浪财经 · 双源核验</span><span>实时</span></div></div>
+  </div>
+  <h3 class="grp">物流成本</h3>
+  <div class="row">
+    <div class="card kpi c6" style="grid-column:span 6;grid-row:1" data-mid="37_集装箱运价SCFI" data-k="37"><div class="card-top"><span class="t">集装箱运价 SCFI</span><span class="dot g" title="已接入：上海航运交易所"></span></div><div class="val">3,679.58<span class="unit">点</span></div><div class="sub">10-16期 · 欧线 2,154.77 / 美西 4,805.36</div><div class="chart" data-chart="P37"></div><div class="foot"><span>上海航运交易所</span><span>每周</span></div></div>
+    <div class="card kpi c6" style="grid-column:span 6;grid-row:1" data-mid="38_空运运价需求口径" data-k="38"><div class="card-top"><span class="t">空运运价（需求口径）</span><span class="dot g" title="已接入：IATA官方RSS"></span></div><div class="val">+4.4<span class="unit">%</span></div><div class="sub">8月全球CTK同比 · 载货率46.0%</div><div class="chart" data-chart="P38"></div><div class="foot"><a href="https://www.iata.org/api/rss/pressrelease" target="_blank" rel="noopener">IATA月度稿 ↗</a><span>每月</span></div></div>
+  </div>
+</section>
+<section class="mod" id="m3">
+  <div class="sec-head"><div class="sec-no">03</div><div><h2>行业数据</h2><p>厂商动态 / 出货量与格局 / 展会日历 / 上游价格</p></div><div class="sec-meta"><span class="ok">14项已接入</span> · 1项接入中</div></div>
+  <h3 class="grp">厂商动态</h3>
+  <div class="row">
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="41_APPLE相关新闻近7天" data-k="41" data-news="P41"><div class="card-top"><span class="t" title="Apple Newsroom官方新闻稿，仅保留最近7天">APPLE 相关新闻（近7天）</span><span class="dot g" title="已接入：Apple Newsroom RSS"></span></div><ul class="feed"></ul><div class="foot"><a href="https://www.apple.com/newsroom/" target="_blank" rel="noopener">Apple Newsroom ↗</a><span>每日更新 · 近7天</span></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="42_手机厂家新品发布近7天" data-k="42" data-news="P42"><div class="card-top"><span class="t" title="手机厂家新品与快充相关资讯，仅保留最近7天">手机厂家新品发布（近7天）</span><span class="dot g" title="已接入：IT之家手机频道"></span></div><ul class="feed"></ul><div class="foot"><a href="https://www.ithome.com/tags/%E6%89%8B%E6%9C%BA/" target="_blank" rel="noopener">IT之家手机 ↗</a><span>每日更新 · 近7天</span></div></div>
+  </div>
+  <h3 class="grp">出货量与格局</h3>
+  <div class="row">
+    <div class="card c5" style="grid-column:span 5;grid-row:1" data-mid="49_手机品牌份额多季度" data-k="49"><div class="card-top"><span class="t" title="Counterpoint全球智能手机季度出货份额，分组柱状图按季度对比">手机品牌份额（多季度）</span><span class="dot g" title="已接入：Counterpoint新闻稿考证"></span></div><div class="sharechart" data-share="P49"></div><div class="foot"><a href="https://counterpointresearch.com/en/insights/global-smartphone-share" target="_blank" rel="noopener">Counterpoint ↗</a><span>每季</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="44_全球手机出货量" data-k="44"><div class="card-top"><span class="t">全球手机出货量</span><span class="dot g" title="已接入：IDC"></span></div><div class="val">2.763<span class="unit">亿台</span></div><div class="sub">IDC全球季度出货</div><div class="chart" data-chart="P44"></div><div class="foot"><span>IDC</span><span>每季</span></div></div>
+    <div class="card kpi c3" style="grid-column:span 3;grid-row:1" data-mid="43_换机周期" data-k="43"><div class="card-top"><span class="t">换机周期</span><span class="dot g" title="已接入：Counterpoint"></span></div><div class="val">40.4<span class="unit">个月</span></div><div class="sub">2029E · 2023峰值43.4后缩短</div><div class="chart" data-chart="P43"></div><div class="foot"><span>Counterpoint</span><span>每季</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="45_TWS耳机出货" data-k="45"><div class="card-top"><span class="t">TWS耳机出货</span><span class="dot g" title="已接入：Counterpoint"></span></div><div class="val">+3<span class="unit">%</span></div><div class="sub">2025E 同比 · 市场进入成熟期</div><div class="chart" data-chart="P45"></div><div class="foot"><span>Counterpoint</span><span>每季</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="46_穿戴设备手环戒指" data-k="46"><div class="card-top"><span class="t">穿戴设备（手环/戒指）</span><span class="dot g" title="已接入：IDC"></span></div><div class="val">4,560<span class="unit">万台</span></div><div class="sub">IDC季度出货</div><div class="chart" data-chart="P46"></div><div class="foot"><span>IDC</span><span>每季</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="47_PC出货量" data-k="47"><div class="card-top"><span class="t">PC出货量</span><span class="dot g" title="已接入：IDC新闻稿"></span></div><div class="val">6,270<span class="unit">万台</span></div><div class="sub">IDC全球季度出货</div><div class="chart" data-chart="P47"></div><div class="foot"><span>IDC</span><span>每季</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:2" data-mid="48_平板出货量" data-k="48"><div class="card-top"><span class="t">平板出货量</span><span class="dot g" title="已接入：IDC新闻稿"></span></div><div class="val">3,800<span class="unit">万台</span></div><div class="sub">IDC季度出货</div><div class="chart" data-chart="P48"></div><div class="foot"><span>IDC</span><span>每季</span></div></div>
+  </div>
+  <h3 class="grp">展会日历</h3>
+  <div class="row">
+    <div class="card c12" style="grid-column:span 12;grid-row:1" data-mid="50_展会横排" data-k="50 51 53"><div class="hlines"><div class="hln next" data-k="50" style="cursor:pointer" onclick="window.open('https://www.ces.tech/','_blank','noopener')" title="打开CES官网"><div class="hd">01-06/09</div><div class="hn">CES 2027 ↗</div><div class="hs">拉斯维加斯 · 报名已开放</div></div><div class="hln" data-k="51" style="cursor:pointer" onclick="window.open('https://www.mwcbarcelona.com/','_blank','noopener')" title="打开MWC官网"><div class="hd">03-01/04</div><div class="hn">MWC Barcelona 2027 ↗</div><div class="hs">巴塞罗那 Fira Gran Via</div></div><div class="hln" data-k="53" style="cursor:pointer" onclick="window.open('https://www.cantonfair.org.cn/','_blank','noopener')" title="打开广交会官网"><div class="hd">春季/秋季</div><div class="hn">广交会 ↗ <span class="warn-tag">官网动态渲染 · 接入中</span></div><div class="hs">广州 · 线下渠道同步跟踪</div></div></div></div>
+  </div>
+  <h3 class="grp">上游价格 · 结构认证</h3>
+  <div class="row">
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="56_Qi2磁吸认证占比" data-k="56"><div class="card-top"><span class="t" title="WPC无线充电认证库中Qi2（MPP）认证产品占比，反映磁吸快充生态成熟度">Qi2磁吸认证占比</span><span class="dot g" title="已接入：WPC认证产品库"></span></div><div class="ringwrap" data-ring="P56"><div class="ring"><svg viewBox="0 0 72 72" role="img" aria-label="Qi2占认证库34%"><circle class="rb" cx="36" cy="36" r="30"/><circle class="rf" cx="36" cy="36" r="30" stroke-dasharray="64.1 188.5"/></svg><span class="rt">34%</span></div><div class="ringinfo"><div class="rv">4,090 / 12,008 条</div><div class="rs">Qi2（MPP）认证累计 · 最新10-22 · 每周增长</div></div></div><div class="foot"><a href="https://www.wirelesspowerconsortium.com/products/" target="_blank" rel="noopener">WPC产品库 ↗</a><span>每周</span></div></div>
+    <div class="card c8" style="grid-column:span 8;grid-row:1" data-mid="58_存储芯片现货价多品类" data-k="58"><div class="card-top"><span class="t" title="TrendForce现货官方页五品类现货均价；合约价需订阅">存储芯片现货价（多品类）</span><span class="dot g" title="已接入：TrendForce现货官方页"></span></div><div style="display:flex;align-items:stretch;flex:1;margin:4px 0 2px" data-multi="P58"><span data-multi-note style="display:none"></span></div><div class="foot"><span>TrendForce · 现货均价（美元）</span><span>监测口径：现货价免费 · 合约价需订阅</span></div></div>
+  </div>
+</section>
+<section class="mod" id="m4">
+  <div class="sec-head"><div class="sec-no">04</div><div><h2>产品品类</h2><p>充电器 / 通用品类数据（销量·价格·认证·口碑）</p></div><div class="sec-meta"><span class="ok">10项已接入</span> · 5项受限/接入中</div></div>
+  <h3 class="grp">充电器</h3>
+  <div class="row">
+    <div class="card list c5" style="grid-column:span 5;grid-row:1" data-mid="59_充电头网早报" data-k="59" data-news="P59"><div class="card-top"><span class="t">充电头网早报</span><span class="dot g" title="已接入：充电头网"></span></div><ul class="feed"></ul><div class="foot"><a href="https://www.chongdiantou.com" target="_blank" rel="noopener">充电头网 ↗</a><span>每日</span></div></div>
+    <div class="card list c4" style="grid-column:span 4;grid-row:1" data-mid="60_快充瓦数趋势拆解" data-k="60" data-news="P60"><div class="card-top"><span class="t">快充瓦数趋势（拆解）</span><span class="dot g" title="已接入：拆解频道"></span></div><ul class="feed"></ul><div class="foot"><a href="https://www.chongdiantou.com" target="_blank" rel="noopener">拆解频道 ↗</a><span>每日</span></div></div>
+    <div class="card list c3" style="grid-column:span 3;grid-row:1" data-mid="61_苹果AVS新品资讯" data-k="61" data-news="P61"><div class="card-top"><span class="t">苹果AVS新品/资讯</span><span class="dot g" title="已接入：充电头网AVS关键词监测"></span></div><ul class="feed"></ul><div class="foot"><span>充电头网（AVS关键词）</span><span>每周</span></div></div>
+  </div>
+  <h3 class="grp">通用品类数据</h3>
+  <div class="row">
+    <div class="card c5" style="grid-column:span 5;grid-row:1" data-mid="66_品牌销量排名Amazon线材榜" data-k="66"><div class="card-top"><span class="t">品牌销量排名（Amazon线材榜）</span><span class="dot g" title="已接入：Amazon Best Sellers"></span></div><ul class="feed" data-toplist="P66"></ul><div class="sub" data-topsub="P66" style="font-size:11.5px;color:var(--n500)">榜单快照自动统计</div><div class="foot"><span>Amazon Best Sellers</span><span>每日</span></div></div>
+    <div class="card tint kpi c3" style="grid-column:span 3;grid-row:1" data-mid="71_品类增速3C通讯零售" data-k="71"><div class="card-top"><span class="t">品类增速（3C通讯零售）</span><span class="dot g" title="已接入：国家统计局"></span></div><div class="val">+31.1<span class="unit">%</span></div><div class="sub">9月通讯器材类零售1,062亿元<br>1-9月累计 +18.1%</div><div class="chart" data-chart="P71"></div><div class="foot"><span>国家统计局（宏观口径）</span><span>每月</span></div></div>
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="67_品类季度出货量" data-k="67"><div class="card-top"><span class="t">品类季度出货量</span><span class="dot y" title="受限：洛图无充电品类报告"></span></div><p class="desc">洛图科技报告以显示品类为主，充电配件品类缺失；正评估行业报告替代源。</p><div class="foot"><span>洛图科技 RUNTO</span><span>每季</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card list c5" style="grid-column:span 5;grid-row:1" data-mid="68_亚马逊销量榜充电类" data-k="68"><div class="card-top"><span class="t">亚马逊销量榜（充电类）</span><span class="dot g" title="已接入：Amazon Best Sellers"></span></div><ul class="feed" data-toplist="P68"></ul><div class="sub" data-topsub="P68" style="font-size:11.5px;color:var(--n500)">榜单快照自动统计</div><div class="foot"><a href="https://www.amazon.com/Best-Sellers-Cell-Phones-Accessories/zgbs/wireless" target="_blank" rel="noopener">实时榜单 ↗</a><span>每日</span></div></div>
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="72_价格带结构Amazon双类目自动分箱" data-k="72"><div class="card-top"><span class="t" title="由Amazon线材榜与充电类榜单TOP30实价自动分箱统计（占比=该价格带商品数占比）">价格带结构（Amazon双类目自动分箱）</span><span class="dot g" title="已接入：Amazon榜单实价"></span></div><ul class="multi" data-multi="P72"></ul><div class="foot"><span>线材+充电类TOP30 · 实价分箱</span><span>每周</span></div></div>
+    <div class="card kpi c3" style="grid-column:span 3;grid-row:1" data-mid="69_线下零售美国" data-k="69"><div class="card-top"><span class="t">线下零售（美国）</span><span class="dot g" title="已接入：FRED镜像Census"></span></div><div class="val">78.53<span class="unit">亿美元</span></div><div class="sub">9月电子电器专卖店零售额<br>同比 <b class="up">+9.2%</b></div><div class="chart" data-chart="P69"></div><div class="foot"><span>FRED · Census MARTS</span><span>每月</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card list c4" style="grid-column:span 4;grid-row:1" data-mid="70_专利诉讼动态" data-k="70" data-news="安克互动"><div class="card-top"><span class="t">专利诉讼动态</span><span class="dot y" title="互动易已接入；企查查拟RPA接入"></span></div><ul class="feed"></ul><div class="foot"><span>深交所互动易</span><span>每周</span></div></div>
+    <div class="card c8" style="grid-column:span 8;grid-row:1" data-mid="73_认证查询入口USB-IFMFiQi" data-k="73 74 75"><div class="card-top"><span class="t">认证查询入口（USB-IF / MFi / Qi）</span><span class="dot g" title="WPC已接入全量数据；USB-IF会员墙；MFi介绍页可抓"></span></div><div class="chips"><a href="https://www.usb.org/products" target="_blank" rel="noopener" data-k="73">USB-IF 产品查询（TID在会员系统）</a><a href="https://mfi.apple.com" target="_blank" rel="noopener" data-k="74">Apple MFi 门户（流程公开）</a><a href="https://www.wirelesspowerconsortium.com/products/" target="_blank" rel="noopener" data-k="75">WPC Qi 认证库（12,008条全量）</a></div><p class="desc" style="margin-top:6px">Qi/Qi2认证数据已全量接入（品牌/型号/功率/日期）；USB-IF的TID级记录在会员合规系统；MFi授权名录需会员账号。</p><div class="foot"><span>USB-IF / Apple / WPC</span><span>按需/每周</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card c6" style="grid-column:span 6;grid-row:1" data-mid="76_差评关键词分析" data-k="76"><div class="card-top"><span class="t">差评关键词分析</span><span class="dot y" title="保留现状：需Helium 10账号"></span></div><p class="desc">需Helium 10账号（Chrome插件）运行Review Insights；账号到位后接入。</p><div class="foot"><span>Helium 10</span><span>每周</span></div></div>
+    <div class="card c6" style="grid-column:span 6;grid-row:1" data-mid="77_评论增速监测" data-k="77"><div class="card-top"><span class="t">评论增速监测</span><span class="dot y" title="保留现状：需Keepa账号"></span></div><p class="desc">Keepa评论数/价格历史需注册账号（API另计费）；账号到位后接入。</p><div class="foot"><span>Keepa</span><span>每日</span></div></div>
+  </div>
+</section>
+<section class="mod" id="m5">
+  <div class="sec-head"><div class="sec-no">05</div><div><h2>竞对同业数据</h2><p>上市公司 / 非上市公司 / 品牌官网监测</p></div><div class="sec-meta"><span class="ok">37项已接入</span> · 4项受限（大客户/招聘/企查查等RPA）</div></div>
+  <h3 class="grp">上市公司 · 通用监控（点击切换公司）</h3>
+  <div class="co-tabs" id="coTabs"><button class="cotab on" data-cotab="安克创新">安克创新 <small>300866</small></button><button class="cotab" data-cotab="奥海科技">奥海科技 <small>002993</small></button><button class="cotab" data-cotab="佳禾智能">佳禾智能 <small>300793</small></button><button class="cotab" data-cotab="海能实业">海能实业 <small>300787</small></button><button class="cotab" data-cotab="绿联科技">绿联科技 <small>301606</small></button></div>
+  <div class="co-panel" data-copanel="安克创新">
+  <div class="row">
+    <div class="card list c4" style="grid-column:span 4;grid-row:1" data-mid="78_季度报年报巨潮" data-k="78" data-news="安克公告"><div class="card-top"><span class="t">季度报/年报（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>实时</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="79_分业务营收拆分" data-k="79"><div class="card-top"><span class="t">分业务营收拆分</span><span class="dot g" title="已接入：巨潮年报解析"></span></div><div class="val">50.47<span class="unit">%</span></div><div class="sub">充电储能类收入154.02亿元<br>毛利率 41.25%（2025年报）</div><div class="foot"><span>巨潮资讯网</span><span>每季</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="80_大客户集中度" data-k="80"><div class="card-top"><span class="t">大客户集中度</span><span class="dot g" title="已接入：巨潮年报解析"></span></div><div class="val">8.59<span class="unit">%</span></div><div class="sub">前五大客户合计26.20亿元<br>客户结构分散、议价健康</div><div class="foot"><span>巨潮资讯网</span><span>每年</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="205_营收趋势季度" data-k="205"><div class="card-top"><span class="t">营收趋势（季度）</span><span class="dot g" title="已接入：东财业绩接口"></span></div><div class="val">—<span class="unit">亿元</span></div><div class="sub">最新报告期营收 · 净利同比见CSV</div><div class="chart" data-chart="P205"></div><div class="foot"><span>东方财富数据中心</span><span>每季</span></div></div>
+    <div class="card list c4" style="grid-column:span 4;grid-row:1" data-mid="81_产能扩产募投公告" data-k="81" data-news="安克募投"><div class="card-top"><span class="t">产能/扩产/募投公告</span><span class="dot g" title="已接入：巨潮检索"></span></div><ul class="feed"></ul><div class="foot"><span>巨潮（检索"募集资金"40条）</span><span>每周</span></div></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="82_存货应收周转" data-k="82"><div class="card-top"><span class="t">存货 / 应收周转</span><span class="dot g" title="已接入：新浪财经"></span></div><div class="val">4.07<span class="unit">次/年</span></div><div class="sub">存货周转88.4天<br>应收账款周转17.30次（2025）</div><div class="foot"><span>新浪财经</span><span>每季</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card list c4" style="grid-column:span 4;grid-row:1" data-mid="84_专利公告投关监控" data-k="84" data-news="安克互动"><div class="card-top"><span class="t">专利/公告/投关监控</span><span class="dot y" title="互动易已接入；企查查拟RPA接入"></span></div><ul class="feed"></ul><div class="foot"><span>深交所互动易</span><span>每周</span></div></div>
+    <div class="card c8" style="grid-column:span 8;grid-row:1" data-mid="83_招聘职位量监测" data-k="83"><div class="card-top"><span class="t">招聘职位量监测</span><span class="dot y" title="接入中：职位明细由飞书平台动态加载"></span></div><p class="desc">安克招聘站社招5大职能分类可抓（研发/供应链/市场/销售/职能），具体职位数量明细接入中；后续扩展至奥海/佳禾/海能/绿联招聘监控。</p><a class="btn-ext" href="https://career.anker.com.cn" target="_blank" rel="noopener">安克招聘站 ↗</a><div class="foot"><span>安克创新官方招聘站</span><span>每周</span></div></div>
+  </div>
+  </div>
+  <div class="co-panel" data-copanel="奥海科技" hidden>
+  <div class="row">
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="201_营收净利季度" data-k="201"><div class="card-top"><span class="t">营收 / 净利（季度）</span><span class="dot g" title="已接入：东财业绩接口"></span></div><div class="val">—<span class="unit">亿元</span></div><div class="sub">最新报告期营收 · 点击曲线看历史各季</div><div class="chart" data-chart="P201"></div><div class="foot"><span>东方财富数据中心（营收+净利同比在CSV）</span><span>每季</span></div></div>
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="211_存货应收周转" data-k="211"><div class="card-top"><span class="t">存货 / 应收周转</span><span class="dot g" title="已接入：财务指标接口"></span></div><div class="val">—<span class="unit">次/年</span></div><ul class="multi" data-multi="P211"></ul><div class="foot"><span>东财/新浪 财务指标</span><span>每年</span></div></div>
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="221_主营构成最新报告期" data-k="221"><div class="card-top"><span class="t">主营构成（最新报告期）</span><span class="dot g" title="已接入：东财F10主营构成"></span></div><ul class="multi" data-multi="P221"></ul><div class="foot"><span>东财F10 · 分产品营收占比</span><span>每季</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="231_最新公告巨潮" data-k="231" data-news="奥海科技公告"><div class="card-top"><span class="t">最新公告（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>每周</span></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="奥海科技互动_互动易问答" data-news="奥海科技互动"><div class="card-top"><span class="t">互动易问答</span><span class="dot g" title="已接入：互动易接口"></span></div><ul class="feed"></ul><div class="foot"><a href="https://irm.cninfo.com.cn/ircs/index" target="_blank" rel="noopener">深交所互动易 ↗</a><span>每周</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card c12" style="grid-column:span 12;grid-row:1" data-mid="奥海科技_大客户集中度招聘监测年报与官网口径"><div class="card-top"><span class="t">大客户集中度 / 招聘监测（年报与官网口径）</span><span class="dot y" title="年报解析与招聘站动态加载：RPA方案"></span></div><p class="desc">大客户集中度需逐家下载年报PDF解析（参照安克P80方法）、招聘职位量为各公司招聘站动态加载——均已列入RPA方案（见 看板数据固化/RPA任务提示词.md）。</p><div class="foot"><span>巨潮年报 / 公司招聘站</span><span>每年/每周</span></div></div>
+  </div>
+  </div>
+  <div class="co-panel" data-copanel="佳禾智能" hidden>
+  <div class="row">
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="202_营收净利季度" data-k="202"><div class="card-top"><span class="t">营收 / 净利（季度）</span><span class="dot g" title="已接入：东财业绩接口"></span></div><div class="val">—<span class="unit">亿元</span></div><div class="sub">最新报告期营收 · 点击曲线看历史各季</div><div class="chart" data-chart="P202"></div><div class="foot"><span>东方财富数据中心（营收+净利同比在CSV）</span><span>每季</span></div></div>
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="212_存货应收周转" data-k="212"><div class="card-top"><span class="t">存货 / 应收周转</span><span class="dot g" title="已接入：财务指标接口"></span></div><div class="val">—<span class="unit">次/年</span></div><ul class="multi" data-multi="P212"></ul><div class="foot"><span>东财/新浪 财务指标</span><span>每年</span></div></div>
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="222_主营构成最新报告期" data-k="222"><div class="card-top"><span class="t">主营构成（最新报告期）</span><span class="dot g" title="已接入：东财F10主营构成"></span></div><ul class="multi" data-multi="P222"></ul><div class="foot"><span>东财F10 · 分产品营收占比</span><span>每季</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="232_最新公告巨潮" data-k="232" data-news="佳禾智能公告"><div class="card-top"><span class="t">最新公告（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>每周</span></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="佳禾智能互动_互动易问答" data-news="佳禾智能互动"><div class="card-top"><span class="t">互动易问答</span><span class="dot g" title="已接入：互动易接口"></span></div><ul class="feed"></ul><div class="foot"><a href="https://irm.cninfo.com.cn/ircs/index" target="_blank" rel="noopener">深交所互动易 ↗</a><span>每周</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card c12" style="grid-column:span 12;grid-row:1" data-mid="佳禾智能_大客户集中度招聘监测年报与官网口径"><div class="card-top"><span class="t">大客户集中度 / 招聘监测（年报与官网口径）</span><span class="dot y" title="年报解析与招聘站动态加载：RPA方案"></span></div><p class="desc">大客户集中度需逐家下载年报PDF解析（参照安克P80方法）、招聘职位量为各公司招聘站动态加载——均已列入RPA方案（见 看板数据固化/RPA任务提示词.md）。</p><div class="foot"><span>巨潮年报 / 公司招聘站</span><span>每年/每周</span></div></div>
+  </div>
+  </div>
+  <div class="co-panel" data-copanel="海能实业" hidden>
+  <div class="row">
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="203_营收净利季度" data-k="203"><div class="card-top"><span class="t">营收 / 净利（季度）</span><span class="dot g" title="已接入：东财业绩接口"></span></div><div class="val">—<span class="unit">亿元</span></div><div class="sub">最新报告期营收 · 点击曲线看历史各季</div><div class="chart" data-chart="P203"></div><div class="foot"><span>东方财富数据中心（营收+净利同比在CSV）</span><span>每季</span></div></div>
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="213_存货应收周转" data-k="213"><div class="card-top"><span class="t">存货 / 应收周转</span><span class="dot g" title="已接入：财务指标接口"></span></div><div class="val">—<span class="unit">次/年</span></div><ul class="multi" data-multi="P213"></ul><div class="foot"><span>东财/新浪 财务指标</span><span>每年</span></div></div>
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="223_主营构成最新报告期" data-k="223"><div class="card-top"><span class="t">主营构成（最新报告期）</span><span class="dot g" title="已接入：东财F10主营构成"></span></div><ul class="multi" data-multi="P223"></ul><div class="foot"><span>东财F10 · 分产品营收占比</span><span>每季</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="233_最新公告巨潮" data-k="233" data-news="海能实业公告"><div class="card-top"><span class="t">最新公告（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>每周</span></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="海能实业互动_互动易问答" data-news="海能实业互动"><div class="card-top"><span class="t">互动易问答</span><span class="dot g" title="已接入：互动易接口"></span></div><ul class="feed"></ul><div class="foot"><a href="https://irm.cninfo.com.cn/ircs/index" target="_blank" rel="noopener">深交所互动易 ↗</a><span>每周</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card c12" style="grid-column:span 12;grid-row:1" data-mid="海能实业_大客户集中度招聘监测年报与官网口径"><div class="card-top"><span class="t">大客户集中度 / 招聘监测（年报与官网口径）</span><span class="dot y" title="年报解析与招聘站动态加载：RPA方案"></span></div><p class="desc">大客户集中度需逐家下载年报PDF解析（参照安克P80方法）、招聘职位量为各公司招聘站动态加载——均已列入RPA方案（见 看板数据固化/RPA任务提示词.md）。</p><div class="foot"><span>巨潮年报 / 公司招聘站</span><span>每年/每周</span></div></div>
+  </div>
+  </div>
+  <div class="co-panel" data-copanel="绿联科技" hidden>
+  <div class="row">
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="204_营收净利季度" data-k="204"><div class="card-top"><span class="t">营收 / 净利（季度）</span><span class="dot g" title="已接入：东财业绩接口"></span></div><div class="val">—<span class="unit">亿元</span></div><div class="sub">最新报告期营收 · 点击曲线看历史各季</div><div class="chart" data-chart="P204"></div><div class="foot"><span>东方财富数据中心（营收+净利同比在CSV）</span><span>每季</span></div></div>
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="214_存货应收周转" data-k="214"><div class="card-top"><span class="t">存货 / 应收周转</span><span class="dot g" title="已接入：财务指标接口"></span></div><div class="val">—<span class="unit">次/年</span></div><ul class="multi" data-multi="P214"></ul><div class="foot"><span>东财/新浪 财务指标</span><span>每年</span></div></div>
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="224_主营构成最新报告期" data-k="224"><div class="card-top"><span class="t">主营构成（最新报告期）</span><span class="dot g" title="已接入：东财F10主营构成"></span></div><ul class="multi" data-multi="P224"></ul><div class="foot"><span>东财F10 · 分产品营收占比</span><span>每季</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="234_最新公告巨潮" data-k="234" data-news="绿联科技公告"><div class="card-top"><span class="t">最新公告（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>每周</span></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="绿联科技互动_互动易问答" data-news="绿联科技互动"><div class="card-top"><span class="t">互动易问答</span><span class="dot g" title="已接入：互动易接口"></span></div><ul class="feed"></ul><div class="foot"><a href="https://irm.cninfo.com.cn/ircs/index" target="_blank" rel="noopener">深交所互动易 ↗</a><span>每周</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card c12" style="grid-column:span 12;grid-row:1" data-mid="绿联科技_大客户集中度招聘监测年报与官网口径"><div class="card-top"><span class="t">大客户集中度 / 招聘监测（年报与官网口径）</span><span class="dot y" title="年报解析与招聘站动态加载：RPA方案"></span></div><p class="desc">大客户集中度需逐家下载年报PDF解析（参照安克P80方法）、招聘职位量为各公司招聘站动态加载——均已列入RPA方案（见 看板数据固化/RPA任务提示词.md）。</p><div class="foot"><span>巨潮年报 / 公司招聘站</span><span>每年/每周</span></div></div>
+  </div>
+  </div>
+  <h3 class="grp">上市公司 · 个股公告入口</h3>
+  <div class="crow">
+    <div class="cco" data-k="85"><div class="chead"><span class="mono">奥</span><span><div class="cn">奥海科技</div><div class="cs">002993</div></span><span class="dot g" title="已接入：新浪公告页" style="margin-left:auto"></span></div><div class="cd">充电器ODM龙头 · 大客户三星/小米</div><a class="btn-ext" href="http://money.finance.sina.com.cn/corp/go.php/vCB_AllBulletin/stockid/002993.phtml" target="_blank" rel="noopener">公告 ↗</a></div>
+    <div class="cco" data-k="86"><div class="chead"><span class="mono">佳</span><span><div class="cn">佳禾智能</div><div class="cs">300793</div></span><span class="dot g" title="已接入：新浪公告页" style="margin-left:auto"></span></div><div class="cd">耳机/音频ODM制造</div><a class="btn-ext" href="http://money.finance.sina.com.cn/corp/go.php/vCB_AllBulletin/stockid/300793.phtml" target="_blank" rel="noopener">公告 ↗</a></div>
+    <div class="cco" data-k="87"><div class="chead"><span class="mono">海</span><span><div class="cn">海能实业</div><div class="cs">300787</div></span><span class="dot g" title="已接入：新浪公告页" style="margin-left:auto"></span></div><div class="cd">线缆/充电配件外销</div><a class="btn-ext" href="http://money.finance.sina.com.cn/corp/go.php/vCB_AllBulletin/stockid/300787.phtml" target="_blank" rel="noopener">公告 ↗</a></div>
+    <div class="cco" data-k="88"><div class="chead"><span class="mono">安</span><span><div class="cn">安克创新</div><div class="cs">300866</div></span><span class="dot g" title="已接入：官网IR" style="margin-left:auto"></span></div><div class="cd">品牌出海标杆 · 财报PDF直链</div><a class="btn-ext" href="https://www.anker.com.cn/investor/information-disclosure?stock=a-share" target="_blank" rel="noopener">投资者专栏 ↗</a></div>
+    <div class="cco" data-k="89"><div class="chead"><span class="mono">绿</span><span><div class="cn">绿联科技</div><div class="cs">301606</div></span><span class="dot g" title="已接入：新浪公告页" style="margin-left:auto"></span></div><div class="cd">3C配件品牌商</div><a class="btn-ext" href="http://money.finance.sina.com.cn/corp/go.php/vCB_AllBulletin/stockid/301606.phtml" target="_blank" rel="noopener">公告 ↗</a></div>
+  </div>
+  <h3 class="grp">非上市公司 · 监测项</h3>
+  <div class="row">
+    <div class="card list c5" style="grid-column:span 5;grid-row:1" data-mid="90_非上市同业新闻充电头网" data-k="90" data-news="P90"><div class="card-top"><span class="t">非上市同业新闻（充电头网）</span><span class="dot g" title="已接入：充电头网"></span></div><ul class="feed"></ul><div class="foot"><a href="https://www.chongdiantou.com" target="_blank" rel="noopener">充电头网 ↗</a><span>每日</span></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="93_Kickstarter科技众筹热门" data-k="93" data-news="P93"><div class="card-top"><span class="t" title="Kickstarter科技类目当前热门众筹项目（金额/达成率实抓）">Kickstarter 科技众筹（热门）</span><span class="dot g" title="已接入：Kickstarter科技类目"></span></div><ul class="feed"></ul><div class="foot"><a href="https://www.kickstarter.com/discover/categories/technology" target="_blank" rel="noopener">Kickstarter ↗</a><span>每周</span></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:2" data-mid="94_摩点众筹热门" data-k="94" data-news="P94"><div class="card-top"><span class="t" title="摩点当前热门众筹项目（金额/达成率实抓）">摩点众筹（热门）</span><span class="dot g" title="已接入：摩点"></span></div><ul class="feed"></ul><div class="foot"><a href="https://www.modian.me" target="_blank" rel="noopener">摩点 ↗</a><span>每周</span></div></div>
+  </div>
+  <h3 class="grp">非上市公司 · 品牌官网</h3>
+  <div class="crow">
+    <div class="cco" data-k="99"><div class="chead"><span class="mono">倍</span><span><div class="cn">倍思 Baseus</div><div class="cs">baseus.cn</div></span><span class="dot y" title="受限：官网SPA需浏览器渲染" style="margin-left:auto"></span></div><div class="cd">官网为单页动态应用，产品目录接入中。</div><a class="btn-ext" href="https://www.baseus.cn" target="_blank" rel="noopener">访问 ↗</a></div>
+    <div class="cco" data-k="100"><div class="chead"><span class="mono">酷</span><span><div class="cn">酷态科 CUKTECH</div><div class="cs">cuktech.com.cn</div></span><span class="dot g" title="已接入：官网产品目录" style="margin-left:auto"></span></div><div class="cd">产品目录可抓：充电宝/充电器/电能棒在售型号。</div><a class="btn-ext" href="https://cuktech.com.cn" target="_blank" rel="noopener">访问 ↗</a></div>
+    <div class="cco" data-k="101"><div class="chead"><span class="mono">iW</span><span><div class="cn">iWALK 爱沃可</div><div class="cs">iwalk.net</div></span><span class="dot g" title="已接入：官网动态" style="margin-left:auto"></span></div><div class="cd">新品动态可获取：AI快充充电宝67,700mAh等。</div><a class="btn-ext" href="https://www.iwalk.net" target="_blank" rel="noopener">访问 ↗</a></div>
+    <div class="cco" data-k="102"><div class="chead"><span class="mono">Z</span><span><div class="cn">Zendure / SHARGE</div><div class="cs">zendure.com</div></span><span class="dot g" title="已接入：官网产品目录" style="margin-left:auto"></span></div><div class="cd">户用储能与便携充电产品线可抓。</div><a class="btn-ext" href="https://www.zendure.com" target="_blank" rel="noopener">访问 ↗</a></div>
+    <div class="cco" data-k="103"><div class="chead"><span class="mono">V</span><span><div class="cn">威迅 Vention</div><div class="cs">ventiontech.com/zh</div></span><span class="dot g" title="已接入：官网中文站" style="margin-left:auto"></span></div><div class="cd">中文站全品类目录可抓：线材/扩展坞/配件。</div><a class="btn-ext" href="https://ventiontech.com/zh" target="_blank" rel="noopener">访问 ↗</a></div>
+  </div>
+</section>
+
+</main>
+
+<section class="prov-app" id="appendix" data-open="false">
+  <button class="prov-toggle" type="button" id="provToggle">附录 · 数据溯源索引<span class="sum" id="provSum"></span><span class="chev">▼</span></button>
+  <div class="prov-body">
+    <p class="prov-note">溯源四要素：来源机构 · 来源链接 · 采集方式 · 最近抓取日期（本次全部为 <b class="num">2026-10-23</b>）。点击「词条」可回跳对应看板卡片；点击「来源URL」在新标签打开原文；悬停卡片内来源名可查看元信息。</p>
+    <div class="prov-tools">
+      <select id="pfCat"><option value="">全部板块</option></select>
+      <select id="pfStatus"><option value="">全部状态</option><option>成功</option><option>部分成功</option></select>
+      <input id="pfQ" placeholder="搜索词条 / 来源 / URL…">
+      <span class="pcount" id="pfCount"></span>
+    </div>
+    <table class="ptable">
+      <thead><tr><th style="width:52px">序号</th><th style="width:88px">板块</th><th>词条</th><th>来源</th><th>来源URL</th><th style="width:110px">采集方式</th><th style="width:64px">频率</th><th style="width:88px">状态</th></tr></thead>
+      <tbody id="provRows"></tbody>
+    </table>
+  </div>
+</section>
+
+<footer class="d-foot">
+  <span class="lg"><span class="chip c-ok"><span class="cdot"></span>已接入</span> 可自动抓取</span>
+  <span class="lg"><span class="chip c-warn"><span class="cdot"></span>受限/接入中</span> 需账号或浏览器渲染</span>
+  <span>涨跌标识：<b class="up">▲红涨</b> / <b class="down">▼绿跌</b>（中国惯例）</span>
+  <span>数据来源：见「附录 · 数据溯源索引」；数据仅用于内部研究，引用请注明原始来源</span>
+  <span>本页为设计稿：数值为2026-10-23抓取测试值，历史曲线为示例序列，正式版按所示频率自动更新</span>
+</footer>
+
+<button id="toTop" aria-label="回到顶部">↑</button>
+</div>
+
+<script src="data.js"></script>
+<script>
+// 00_core.js —— 核心层：根节点/数据契约/格式化/取数（渲染器的公共依赖）
+// 契约：ACCENT/DDATA 由 data.js 先行加载；本文件只定义变量与纯函数，无DOM副作用
+var root=document.getElementById('dns-dash');
+if(!root)throw new Error('root missing');
+var BIND=DDATA._bind||{};delete DDATA._bind;
+// 显示窗口：每词条默认截取最近N点（WIN），工具栏「周期」选择器可临时覆盖
+var WIN=DDATA._win||{};delete DDATA._win;
+var PSEL=null;
+function wind(pid,rows){
+  if(PSEL==='all')return rows;
+  if(PSEL&&PSEL.months){
+    var t=new Date();t.setMonth(t.getMonth()-PSEL.months);
+    var cs=t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-01';
+    var f=rows.filter(function(r){return r[0]>=cs});
+    if(f.length>=2)return f;
+  }
+  var n=WIN[pid];
+  return (n&&rows.length>n)?rows.slice(-n):rows;
+}
+// 资讯/公告feed：由 DDATA._news（data.js）渲染进 data-news 锚点
+var NEWS=DDATA._news||{};delete DDATA._news;
+// 数据治理元数据（可靠度/口径/待补录/数据截至，来自词条注册表，保留供溯源脚本使用）
+var META=DDATA._meta||{}, PEND=DDATA._pending||{}, ASOF=DDATA._asof||'';
+function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+// 数值格式化
+function fmtN(v,d){d=(d===undefined)?(Math.abs(v)>=1000?0:2):d;
+  var s=Math.abs(v)>=1000?Math.round(v).toLocaleString('en-US'):v.toFixed(d);
+  return s;}
+function fmtT(v){var a=Math.abs(v);if(a>=1000)return Math.round(v).toLocaleString('en-US');
+  if(a>=100)return String(Math.round(v));if(a>=10)return String(Math.round(v*10)/10);
+  return String(Math.round(v*100)/100)}
+function getSeries(pid,col){col=col||1;var d=DDATA[pid];if(!d||!d.rows||!d.rows.length)return null;
+  var rows=d.rows.filter(function(r){return r[col]!==null&&r[col]!==undefined});
+  rows=wind(pid,rows);
+  return rows.length?{rows:rows,col:col,src:d.src}:null;}
+// 05_news.js —— 渲染器：资讯/公告feed（data-news 锚点 ← DDATA._news）
+// v14：日期改为chip样式（i.dchip）
+(function(){
+  var KEY,ITEMS;
+  for(KEY in NEWS){
+    ITEMS=NEWS[KEY];
+    if(!ITEMS||!ITEMS.length)continue;
+    root.querySelectorAll('[data-news]').forEach(function(el){
+      if(el.getAttribute('data-news')!==KEY)return;
+      var ul=el.querySelector('ul.feed');if(!ul)return;
+      ul.innerHTML=ITEMS.map(function(it){
+        var zh=it.title_zh&&it.title_zh!==it.title;
+        var tt=zh?(' title="'+escH(it.title)+'"'):'';
+        return '<li><a class="fi" href="'+escH(it.url||'#')+'" target="_blank" rel="noopener">'
+          +'<i class="dchip">'+escH(it.date||'')+'</i><span'+tt+'>'+escH(zh?it.title_zh:it.title)+'</span></a></li>';
+      }).join('');
+    });
+  }
+})();
+// 空feed兜底提示：数据为空时如实显示（不编造条目）
+root.querySelectorAll('[data-news]').forEach(function(el){
+  var ul=el.querySelector('ul.feed');
+  if(ul&&!ul.querySelector('li')){
+    ul.innerHTML='<li><a class="fi"><i class="dchip">--</i><span>近7天暂无新稿 · 采集器每次运行自动更新</span></a></li>';
+  }
+});
+// 10_theme.js —— 渲染器：板块主题色（m1-m5 → --acc CSS变量）
+['m1','m2','m3','m4','m5'].forEach(function(id){
+  var s=document.getElementById(id); if(s) s.style.setProperty('--acc', ACCENT[id]);
+});
+// 15_chart.js —— 渲染器：行情风交互折线图（.chart[data-chart]，真实日期轴+悬停）
+// v14：线色随窗口区间涨红/跌绿、渐变面积、期初基准虚线、尾点呼吸圈、最新价chip、描画动画
+// 小图（H<150）自动精简：省略最高/最低标注与期初文字，chip 缩小
+var charts=[],v8seq=0;
+var V8REDUCE=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function v8cols(){var cs=getComputedStyle(root);
+  return{up:(cs.getPropertyValue('--up')||'#B42318').trim()||'#B42318',
+         down:(cs.getPropertyValue('--down')||'#0E7A54').trim()||'#0E7A54'}}
+function drawChart(el,redraw){
+  var key=el.getAttribute('data-chart');
+  var ci=parseInt(el.getAttribute('data-col')||'1',10)||1;
+  var s=getSeries(key,ci);
+  if(!s||s.rows.length<2){el.innerHTML='<div class="nodata">数据积累中 · 自2026-10-23起按频率记录，正式序列生成后自动绘制</div>';return;}
+  var b=BIND[key]||[null,null];
+  var W=el.clientWidth||300,H=el.clientHeight||118;
+  var mini=H<150;
+  var pl=mini?44:52,pr=mini?58:66,pt=mini?10:16,pb=mini?18:24,n=s.rows.length;
+  var vals=s.rows.map(function(r){return r[ci]});
+  var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+  var rg=(mx-mn)||Math.abs(mx)*0.02||1,lo=mn-rg*0.15,hi=mx+rg*0.15;
+  function X(i){return pl+i*(W-pl-pr)/(n-1)}
+  function Y(v){return pt+(1-(v-lo)/(hi-lo))*(H-pt-pb)}
+  function XL(t){return t.length>=10?t.slice(0,7):t}
+  function dec(){return (b[1]==null)?2:b[1]}
+  var CC=v8cols(),isUp=vals[n-1]>=vals[0],c=isUp?CC.up:CC.down;
+  var gid='v8g'+(++v8seq);
+  var svg='<svg'+((redraw||V8REDUCE)?' class="redraw"':'')+' width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="历史趋势，悬停查看数值">';
+  var span=hi-lo,rawStep=span/(mini?3:3.5),mag=Math.pow(10,Math.floor(Math.log(rawStep)/Math.LN10));
+  var nm=rawStep/mag,step=(nm>=5?10:nm>=2?5:nm>=1?2:1)*mag;
+  for(var tv=Math.ceil(lo/step)*step,i2=0;tv<=hi+1e-9;tv=(Math.ceil(lo/step)*step+(++i2)*step)){
+    var yy=Y(tv);
+    svg+='<line class="grid" x1="'+pl+'" y1="'+yy+'" x2="'+(W-pr)+'" y2="'+yy+'"/>';
+    svg+='<text x="'+(pl-6)+'" y="'+(yy+3.5)+'" text-anchor="end">'+fmtT(tv)+'</text>';
+  }
+  /* 期初基准虚线（窗口首值，类昨收线） */
+  var y0=Y(vals[0]);
+  svg+='<line class="baseline" x1="'+pl+'" y1="'+y0.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+y0.toFixed(1)+'"/>';
+  if(!mini)svg+='<text class="baselabel" x="'+(pl+4)+'" y="'+(y0-4).toFixed(1)+'">期初 '+fmtT(vals[0])+'</text>';
+  /* 渐变面积 + 主线（描画动画：pathLength=1） */
+  var pts=s.rows.map(function(r,i){return [X(i),Y(r[ci])]});
+  var line=pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ');
+  svg+='<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1">'
+    +'<stop offset="0" stop-color="'+c+'" stop-opacity=".20"/>'
+    +'<stop offset="1" stop-color="'+c+'" stop-opacity="0"/></linearGradient></defs>';
+  svg+='<polygon class="area-a" fill="url(#'+gid+')" points="'+pl+','+(H-pb)+' '+line+' '+(W-pr)+','+(H-pb)+'"/>';
+  svg+='<polyline class="line-a" pathLength="1" fill="none" stroke="'+c+'" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round" points="'+line+'"/>';
+  /* 最高/最低点标注（小图省略） */
+  if(!mini){
+    var imx=0,imn=0;vals.forEach(function(v,i){if(v>vals[imx])imx=i;if(v<vals[imn])imn=i});
+    if(imx!==imn){
+      [[imx,-7],[imn,15]].forEach(function(m){
+        var i=m[0],dy=m[1];if(i===0||i===n-1)return;
+        svg+='<circle class="minmax" cx="'+pts[i][0].toFixed(1)+'" cy="'+pts[i][1].toFixed(1)+'" r="2.6" stroke="'+c+'"/>';
+        svg+='<text class="mmlabel" x="'+pts[i][0].toFixed(1)+'" y="'+(pts[i][1]+dy).toFixed(1)+'" text-anchor="middle">'+fmtT(vals[i])+'</text>';
+      });
+    }
+  }
+  /* 尾点：实心点 + 呼吸圈 + 最新价chip */
+  var lx=pts[n-1][0],ly=pts[n-1][1];
+  svg+='<circle cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="3" fill="#fff" stroke="'+c+'" stroke-width="2"/>';
+  svg+='<circle cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="3" fill="none" stroke="'+c+'" stroke-width="1.5">'
+    +'<animate attributeName="r" values="3;10" dur="1.8s" repeatCount="indefinite"/>'
+    +'<animate attributeName="opacity" values=".55;0" dur="1.8s" repeatCount="indefinite"/></circle>';
+  var chipT=fmtN(vals[n-1],dec()),cw=chipT.length*(mini?6.6:7.4)+(mini?10:14),chh=mini?16:20;
+  var cy=Math.max(pt+chh/2+1,Math.min(H-pb-chh/2-1,ly));
+  svg+='<g class="chip-a"><rect class="chiprect" x="'+(W-cw-3).toFixed(1)+'" y="'+(cy-chh/2).toFixed(1)+'" width="'+cw.toFixed(1)+'" height="'+chh+'" rx="5" fill="'+c+'"/>'
+    +'<text class="chiptext" x="'+(W-3-cw/2).toFixed(1)+'" y="'+(cy+3.5).toFixed(1)+'" text-anchor="middle" font-size="'+(mini?10:11)+'">'+chipT+'</text></g>';
+  var lb=[0,Math.floor((n-1)/2),n-1];
+  for(var li=0;li<lb.length;li++){var i3=lb[li];
+    var a=i3===0?'start':(i3===n-1?'end':'middle');
+    svg+='<text x="'+X(i3).toFixed(1)+'" y="'+(H-4)+'" text-anchor="'+a+'">'+XL(s.rows[i3][0])+'</text>';
+  }
+  svg+='<line class="guide" x1="0" y1="'+pt+'" x2="0" y2="'+(H-pb)+'" style="display:none"/>';
+  svg+='<circle class="hdot" r="4" style="display:none"/>';
+  svg+='<rect class="hit" x="0" y="0" width="'+W+'" height="'+H+'"/>';
+  svg+='</svg>';
+  var tip=document.createElement('div');tip.className='ctool';
+  el.innerHTML=svg;el.appendChild(tip);
+  var gl=el.querySelector('.guide'),hd=el.querySelector('.hdot'),hit=el.querySelector('.hit');
+  hit.addEventListener('pointermove',function(e){
+    var r=el.getBoundingClientRect();var x=e.clientX-r.left;
+    var i=Math.round((x-pl)/((W-pl-pr)/(n-1)));i=Math.max(0,Math.min(n-1,i));
+    var px=X(i),py=Y(s.rows[i][ci]);
+    gl.setAttribute('x1',px);gl.setAttribute('x2',px);gl.style.display='block';
+    hd.setAttribute('cx',px);hd.setAttribute('cy',py);hd.setAttribute('stroke',c);hd.style.display='block';
+    var dtxt='';if(i>0){var dd=Math.round((s.rows[i][ci]-s.rows[i-1][ci])*Math.pow(10,dec()))/Math.pow(10,dec());
+      dtxt='<span class="d '+(dd>=0?'up':'down')+'">（较前期 '+(dd>=0?'+':'')+dd+'）</span>';}
+    tip.innerHTML=escH(s.rows[i][0])+' · <b>'+fmtN(s.rows[i][ci],dec())+'</b> '+escH(b[0]||'')+dtxt;
+    tip.style.display='block';
+    var tx=px+10;if(tx+tip.offsetWidth>W-2)tx=px-tip.offsetWidth-10;
+    tip.style.left=tx+'px';tip.style.top=Math.max(2,py-tip.offsetHeight-10)+'px';
+  });
+  hit.addEventListener('pointerleave',function(){tip.style.display='none';
+    gl.style.display='none';hd.style.display='none'});
+}
+root.querySelectorAll('.chart').forEach(function(el){drawChart(el);charts.push(el)});
+// 17_spark.js —— 渲染器：KPI卡迷你走势（v14新增）
+// 规则：.card.kpi 无 .chart、无多品类/多行清单、且 data-k 首个P号序列≥2点时，
+// 自动在 .foot 前注入 sparkline（趋势涨跌着色 + 淡面积 + 尾点），免卡配置
+(function(){
+  var REDUCE=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  root.querySelectorAll('.card.kpi').forEach(function(card){
+    if(card.querySelector('.chart'))return;
+    if(card.querySelector('ul.multi,[data-multi],.sparkrow'))return;
+    var dk=card.getAttribute('data-k');if(!dk)return;
+    var pid='P'+dk.split(' ')[0];
+    var s=getSeries(pid);if(!s||s.rows.length<3)return;// 少于3点无趋势意义，不注入
+    var row=document.createElement('div');row.className='sparkrow';
+    row.innerHTML='<div class="spark" data-v8spark="'+pid+'"></div>';
+    var foot=card.querySelector('.foot');
+    if(foot)card.insertBefore(row,foot);else card.appendChild(row);
+  });
+  function spark(el){
+    var s=getSeries(el.getAttribute('data-v8spark'));if(!s||s.rows.length<2)return;
+    var W=200,H=36,p=3,n=s.rows.length;
+    var vals=s.rows.map(function(r){return r[1]});
+    var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+    var rg=(mx-mn)||Math.abs(mx)*0.02||1;
+    function X(i){return p+i*(W-2*p)/(n-1)}
+    function Y(v){return p+(1-(v-mn)/rg)*(H-2*p)}
+    var cs=getComputedStyle(root);
+    var c=vals[n-1]>=vals[0]?((cs.getPropertyValue('--up')||'#B42318').trim()):((cs.getPropertyValue('--down')||'#0E7A54').trim());
+    var pts=vals.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1)}).join(' ');
+    el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'
+      +'<polygon fill="'+c+'" opacity=".12" points="'+p+','+(H-p)+' '+pts+' '+(W-p)+','+(H-p)+'"/>'
+      +'<polyline fill="none" stroke="'+c+'" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round" points="'+pts+'"/>'
+      +'<circle cx="'+X(n-1).toFixed(1)+'" cy="'+Y(vals[n-1]).toFixed(1)+'" r="2.4" fill="'+c+'"/></svg>';
+  }
+  root.querySelectorAll('[data-v8spark]').forEach(spark);
+  if(!REDUCE&&'ResizeObserver' in window){
+    var ro=new ResizeObserver(function(es){es.forEach(function(e){if(e.target.classList.contains('spark'))spark(e.target)})});
+    root.querySelectorAll('[data-v8spark]').forEach(function(el){ro.observe(el)});
+  }
+})();
+// 20_share.js —— 渲染器：多季度品牌份额分组柱状图（.sharechart[data-share]）
+var shareEls=[];
+function drawShare(el){
+  var pid=el.getAttribute('data-share');var d=DDATA[pid];
+  if(!d||!d.rows||!d.rows.length||!d.cols||!d.cols.length)return;
+  var W=el.clientWidth||380,H=el.clientHeight||170;
+  var pl=30,pr=8,pt=22,pb=18;
+  var rows=d.rows,n=rows.length,nb=Math.min(d.cols.length,6);
+  var COLORS=['#0065B0','#B45309','#0F766E','#6D28D9','#BE123C','#8A94A0'];
+  var mx=0;rows.forEach(function(r){for(var i=1;i<=nb;i++)if(r[i]!=null&&r[i]>mx)mx=r[i]});
+  if(!mx)mx=100;var hi=Math.ceil(mx/10)*10;
+  function Y(v){return pt+(1-v/hi)*(H-pt-pb)}
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:100%">';
+  for(var g=0;g<=2;g++){var tv=hi*g/2,yy=Y(tv);
+    svg+='<line x1="'+pl+'" y1="'+yy+'" x2="'+(W-pr)+'" y2="'+yy+'" stroke="#E6EBEF" stroke-width="1"/>';
+    svg+='<text class="yt" x="'+(pl-4)+'" y="'+(yy+3)+'" text-anchor="end">'+Math.round(tv)+'</text>';}
+  var slot=(W-pl-pr)/n,bw=Math.max(4,Math.min(12,(slot-6)/nb));
+  function qlabel(s){var m=String(s).split('-');
+    if(m.length>=2){var q=Math.ceil(parseInt(m[1],10)/3);return m[0].slice(2)+'Q'+q;}
+    return String(s).slice(2);}
+  rows.forEach(function(r,gi){
+    var gx=pl+gi*slot+(slot-nb*bw)/2;
+    for(var i=0;i<nb;i++){var v=r[i+1];if(v==null)continue;
+      svg+='<rect x="'+(gx+i*bw).toFixed(1)+'" y="'+Y(v).toFixed(1)+'" width="'+(bw-1.5).toFixed(1)+'" height="'+(Y(0)-Y(v)).toFixed(1)+'" fill="'+COLORS[i]+'"><title>'+r[0]+' · '+d.cols[i]+'：'+v+'%</title></rect>';}
+    svg+='<text class="xt" x="'+(pl+gi*slot+slot/2).toFixed(1)+'" y="'+(H-4)+'" text-anchor="middle">'+qlabel(r[0])+'</text>';});
+  var lx=pl;
+  for(var i2=0;i2<nb;i2++){
+    svg+='<rect x="'+lx+'" y="4" width="8" height="8" fill="'+COLORS[i2]+'"/>';
+    svg+='<text class="leg" x="'+(lx+11)+'" y="12">'+d.cols[i2]+'</text>';
+    lx+=11+String(d.cols[i2]).length*11.5+10;}
+  svg+='</svg>';el.innerHTML=svg;
+}
+root.querySelectorAll('.sharechart').forEach(function(el){drawShare(el);shareEls.push(el)});
+// 25_resize.js —— 全局：窗口变化后重绘所有图表（依赖 15_chart/20_share 的 charts/shareEls）
+// v14：折线重绘传 redraw=true，不重播入场动画
+var rT;window.addEventListener('resize',function(){clearTimeout(rT);
+  rT=setTimeout(function(){charts.forEach(function(el){drawChart(el,true)});shareEls.forEach(drawShare)},150)});
+// 30_multi.js —— 渲染器：多品类/多SKU（data-multi：ul渲染li，strip容器渲染.sc）
+root.querySelectorAll('[data-multi]').forEach(function(el){
+  var pid=el.getAttribute('data-multi');var d=DDATA[pid];
+  if(!d||!d.rows||!d.rows.length||!d.cols)return;
+  var b=BIND[pid]||[null,null];var unit=b[0]||'';var last=d.rows[d.rows.length-1];
+  if(el.tagName==='UL'){
+    var html='';
+    for(var i=1;i<=d.cols.length&&i<last.length;i++){var v=last[i];
+      if(v===null||v===undefined)continue;
+      /* v14：单位启发式——列名含%显示%，含样本/数量不标单位，其余用注册表单位 */
+      var cn=String(d.cols[i-1]),u=cn.indexOf('%')>=0?'%':((cn.indexOf('样本')>=0||cn.indexOf('数量')>=0||cn.indexOf('总数')>=0)?'':unit);
+      html+='<li><span>'+cn+'</span><b>'+fmtN(v,b[1])+'</b>'+(u?'<span class="mu">'+u+'</span>':'')+'</li>';}
+    if(html)el.innerHTML=html;
+  }else{
+    var note=el.querySelector('[data-multi-note]');
+    for(var j=1;j<=d.cols.length&&j<last.length;j++){var v2=last[j];
+      if(v2===null||v2===undefined)continue;
+      var sc=document.createElement('div');sc.className='sc';
+      sc.innerHTML='<span class="k">'+d.cols[j-1]+'</span><span class="v"><span class="vnum">'+fmtN(v2,b[1])+'</span>'+(unit?'<small>'+unit+'</small>':'')+'</span><span class="s">'+last[0]+'</span>';
+      el.insertBefore(sc,note||null);}
+  }
+});
+// 35_bind.js —— 渲染器：数值绑定（.val卡片 / .sc指标条 / ticker / statline）
+// v14：大数字滚动动画（REDUCE降级）、涨跌chip格式化（▲▼+绝对值，红涨绿跌）、.sc 较前值chip
+var V8RBIND=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function v8count(el,to,dec){
+  if(V8RBIND){el.textContent=fmtN(to,dec);return}
+  var from=to*0.72,t0=null;
+  function step(t){if(!t0)t0=t;var p=Math.min(1,(t-t0)/520);p=1-Math.pow(1-p,3);
+    el.textContent=fmtN(from+(to-from)*p,dec);
+    if(p<1)requestAnimationFrame(step)}
+  requestAnimationFrame(step);
+}
+function v8dec(b){return (b[1]==null)?2:b[1]}
+function applyBind(pid, el, valEl, subEl){
+  var s=getSeries(pid);if(!s)return;
+  var b=BIND[pid]||[null,null];
+  var last=s.rows[s.rows.length-1],v=last[1];
+  if(valEl){
+    valEl.innerHTML='<span class="vnum"></span>'+(b[0]?'<span class="unit">'+b[0]+'</span>':'');
+    var vn=valEl.querySelector('.vnum');
+    if(vn)v8count(vn,v,v8dec(b));
+  }
+  if(subEl&&s.rows.length>1){
+    var pv=s.rows[s.rows.length-2][1];
+    var d=Math.round((v-pv)*Math.pow(10,v8dec(b)))/Math.pow(10,v8dec(b));
+    var dir=d>=0?'up':'down',arw=d>=0?'▲':'▼';
+    var pill='<span class="dpill '+dir+'">'+arw+' '+(d>=0?'+':'')+Math.abs(d).toFixed(v8dec(b))+'</span>';
+    subEl.insertAdjacentHTML('afterbegin',pill+' ');
+  }
+}
+root.querySelectorAll('[data-k]').forEach(function(el){
+  var ids=el.getAttribute('data-k').split(' ');var pid='P'+ids[0];
+  if(!DDATA[pid])return;
+  var valEl=el.querySelector('.val'),subEl=el.querySelector('.sub');
+  if(valEl&&BIND[pid])applyBind(pid,el,valEl,subEl);
+  if(el.classList.contains('sc')&&BIND[pid]){
+    var s=getSeries(pid);if(s){var b=BIND[pid]||[null,null];
+      var vEl=el.querySelector('.v');
+      if(vEl)vEl.innerHTML='<span class="vnum">'+fmtN(s.rows[s.rows.length-1][1],b[1])+'</span>'+(b[0]?'<small>'+b[0]+'</small>':'');
+      var sEl=el.querySelector('.s');
+      if(sEl&&!sEl.textContent.includes('·'))sEl.textContent=s.rows[s.rows.length-1][0]+' · '+sEl.textContent;
+      /* v14：较前值chip */
+      if(vEl&&s.rows.length>1){
+        var pv=s.rows[s.rows.length-2][1];
+        var dd=Math.round((s.rows[s.rows.length-1][1]-pv)*Math.pow(10,v8dec(b)))/Math.pow(10,v8dec(b));
+        var chg=document.createElement('span');
+        chg.className='chg '+(dd>=0?'up':'down');
+        chg.textContent=(dd>=0?'▲+':'▼')+Math.abs(dd).toFixed(v8dec(b));
+        vEl.appendChild(chg);
+      }
+    }
+  }
+});
+root.querySelectorAll('[data-tk]').forEach(function(el){
+  var pid=el.getAttribute('data-tk');var s=getSeries(pid);if(!s)return;
+  var b=BIND[pid]||[null,null];var v=s.rows[s.rows.length-1][1];
+  var vEl=el.querySelector('.v');
+  if(vEl){
+    if(b[0]==='%'){var sign=v>=0?'+':'';vEl.textContent=sign+fmtN(v,b[1])+'%';
+      vEl.style.color=v>=0?'var(--up)':'var(--down)';}
+    else vEl.innerHTML='<span class="vnum">'+fmtN(v,b[1])+'</span>'+(b[0]?'<small>'+b[0]+'</small>':'');
+  }
+});
+root.querySelectorAll('[data-vk]').forEach(function(el){
+  var pid=el.getAttribute('data-vk');var s=getSeries(pid);if(!s)return;
+  var b=BIND[pid]||[null,null];var v=s.rows[s.rows.length-1][1];
+  var bEl=el.querySelector('b');if(bEl)bEl.textContent=(v>=0?'':'')+fmtN(v,b[1])+((b[0]==='%')?'%':'');
+});
+// 40_copanel.js —— 渲染器：上市公司切换面板（.cotab → .co-panel 显隐+重绘）
+var cotabs=[].slice.call(root.querySelectorAll('[data-cotab]'));
+cotabs.forEach(function(b){
+  b.addEventListener('click',function(){
+    cotabs.forEach(function(x){x.classList.toggle('on',x===b)});
+    var co=b.getAttribute('data-cotab');
+    root.querySelectorAll('[data-copanel]').forEach(function(p){
+      p.hidden=p.getAttribute('data-copanel')!==co;});
+    root.querySelectorAll('.chart').forEach(function(el){
+      if(!el.closest('[data-copanel]')||!el.closest('[data-copanel]').hidden)drawChart(el);});
+  });
+});
+// 45_period.js —— 渲染器：全局周期选择器（.pctl，切换后重绘所有可见折线图）
+var pbtns=[].slice.call(root.querySelectorAll('.pctl b'));
+pbtns.forEach(function(b){
+  b.addEventListener('click',function(){
+    pbtns.forEach(function(x){x.classList.toggle('on',x===b)});
+    PSEL=b.hasAttribute('data-all')?'all':{months:parseInt(b.getAttribute('data-m'),10)};
+    root.querySelectorAll('.chart').forEach(function(el){
+      var p=el.closest('[data-copanel]');
+      if(!p||!p.hidden)drawChart(el);});
+  });
+});
+// 50_governance.js —— 渲染器：数据治理标注（数据截至 / 可靠度角标 / 快报徽标 / 待补录）
+// 数据来源：词条注册表（META/PEND/ASOF 由 data.js 下发）
+(function(){
+  if(ASOF){var el0=document.getElementById('asof');if(el0)el0.textContent=ASOF;}
+  root.querySelectorAll('.card[data-k]').forEach(function(el){
+    var pid='P'+el.getAttribute('data-k').split(' ')[0];
+    var meta=META[pid]; if(!meta)return;
+    var top=el.querySelector('.card-top'); if(!top)return;
+    var rl=meta.r||'';
+    var b=document.createElement('span');
+    b.className='rlbadge '+(rl==='A'?'a':rl==='C'?'c':'b');
+    b.textContent=rl;
+    b.title='可靠度'+rl+'级'+(meta.k?('：'+meta.k):'')+'（数据治理分级）';
+    top.appendChild(b);
+    if(PEND[pid]){
+      var w=document.createElement('span');w.className='warn-tag';
+      w.textContent='缺'+PEND[pid]+'待考证';w.title='缺失季度待人工考证补录（见待补录清单）';
+      top.appendChild(w);
+    }else{
+      var s=getSeries(pid,1);
+      if(s&&/快报|闪估|ECFIN/.test(s.src||'')){
+        var kb=document.createElement('span');kb.className='kbflag';kb.textContent='快报';
+        kb.title='当前为快报/闪估值，正式值发布后自动替换';
+        top.appendChild(kb);
+      }
+    }
+  });
+})();
+// 55_ring.js —— 渲染器：Qi2环形图（[data-ring]：col1=Qi2数 col2=全库总数）
+// v14：圆弧生长动画 + 占比滚动（REDUCE降级为直出）；结构色定妆品牌蓝
+(function(){
+  var REDUCE=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  root.querySelectorAll('[data-ring]').forEach(function(el){
+    var d=DDATA[el.getAttribute('data-ring')];
+    if(!d||!d.rows||!d.rows.length||d.cols.length<2)return;
+    var last=d.rows[d.rows.length-1],qi2=last[1],tot=last[2];
+    if(qi2==null||!tot)return;
+    var pct=Math.round(qi2/tot*100),C=188.5;
+    var rf=el.querySelector('.rf');
+    if(rf){
+      if(REDUCE){rf.setAttribute('stroke-dasharray',(C*pct/100).toFixed(1)+' '+C);}
+      else{
+        rf.setAttribute('stroke-dasharray','0 '+C);
+        setTimeout(function(){rf.setAttribute('stroke-dasharray',(C*pct/100).toFixed(1)+' '+C)},60);
+      }
+    }
+    var rt=el.querySelector('.rt');
+    if(rt){
+      if(REDUCE){rt.textContent=pct+'%';}
+      else{var t0=null;
+        function step(t){if(!t0)t0=t;var p=Math.min(1,(t-t0)/900);
+          rt.textContent=Math.round(pct*(1-Math.pow(1-p,3)))+'%';
+          if(p<1)requestAnimationFrame(step)}
+        requestAnimationFrame(step);
+      }
+    }
+    var rv=el.querySelector('.rv');if(rv)rv.textContent=fmtN(qi2,0)+' / '+fmtN(tot,0)+' 条';
+    var rs=el.querySelector('.rs');if(rs)rs.textContent='Qi2（MPP）认证累计 · 最新'+String(last[0]).slice(5)+' · 每周增长';
+  });
+})();
+// 60_toplist.js —— 渲染器：Amazon榜单快照（[data-toplist] TOP5图文 + [data-topsub]统计行）
+// v14：名次徽章（金银铜）、价格chip、Anker行高亮
+root.querySelectorAll('[data-toplist]').forEach(function(el){
+  var tp=(typeof TOPS!=='undefined')&&TOPS[el.getAttribute('data-toplist')];
+  if(!tp||!tp.items||!tp.items.length)return;
+  el.innerHTML=tp.items.map(function(it){
+    var rk=it.rank<=3?('rk r'+it.rank):'rk';
+    var ak=/anker/i.test(it.title||'')?'<i class="ankertag">ANKER</i>':'';
+    var pr=it.price!=null?'<i class="ptag">$'+it.price+'</i>':'';
+    var u=it.asin?('https://www.amazon.com/dp/'+it.asin):'https://www.amazon.com/Best-Sellers-Cell-Phones-Accessories/zgbs/wireless';
+    var im=it.img?('<img class="lthumb" loading="lazy" src="'+escH(it.img)+'" alt="">'):'';
+    return '<li><a class="fi" href="'+u+'" target="_blank" rel="noopener">'
+      +'<i class="'+rk+'">'+it.rank+'</i>'+im+'<span>'+it.title+'</span>'+pr+ak+'</a></li>';
+  }).join('');
+});
+root.querySelectorAll('[data-topsub]').forEach(function(el){
+  var tp=(typeof TOPS!=='undefined')&&TOPS[el.getAttribute('data-topsub')];
+  if(!tp)return;
+  el.textContent='TOP'+tp.total+' · Anker '+tp.anker+'席'+(tp.avg?(' · 均价$'+tp.avg):'')+' · 快照'+tp.date+' · '+tp.label;
+});
+// 62_feedfade.js —— 渲染器：滚动feed底部渐隐（内容溢出时提示可下滚，滚到底自动消失）
+root.querySelectorAll('ul.feed').forEach(function(ul){
+  function chk(){ul.classList.toggle('faded',ul.scrollTop+ul.clientHeight<ul.scrollHeight-4)}
+  chk();
+  ul.addEventListener('scroll',chk,{passive:true});
+});
+// 65_nav.js —— 渲染器：导航高亮（IntersectionObserver）+ 回顶按钮
+var links=[].slice.call(root.querySelectorAll('#dnav a'));
+var secs=links.map(function(a){return root.querySelector(a.getAttribute('href'))}).filter(Boolean);
+function mark(id){links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+id)})}
+if('IntersectionObserver' in window && secs.length){
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting)mark(e.target.id)});
+  },{rootMargin:'-40% 0px -55% 0px'});
+  secs.forEach(function(s){io.observe(s)});
+}
+var btn=root.querySelector('#toTop');
+window.addEventListener('scroll',function(){btn.style.display=window.scrollY>500?'block':'none'},{passive:true});
+btn.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
+</script>
+<script>
+// ===== 数据溯源系统（注册表驱动） =====
+var root=document.getElementById('dns-dash');
+if(!root)throw new Error('dns-dash root missing');
+var PROV=[{"id": 1, "cat": "宏观数据", "sub": "美国", "title": "PMI", "source": "东方财富数据中心（全球宏观接口，224个月ISM历史）+ Trading Economics快值", "url": "https://tradingeconomics.com/united-states/manufacturing-pmi", "desc": "美国ISM制造业PMI月度序列（2008-01起）", "freq": "每月", "status": "成功", "sample": "2026-09为54.5（东财ISM），2026-10快值56.0（S&P Global口径）", "note": "v8：东财RPT_ECONOMICVALUE_USANEW通道回填224个月；FRED本机不可达；2026-06东财缺值", "method": "curl-200"}, {"id": 2, "cat": "宏观数据", "sub": "美国", "title": "CPI", "source": "OECD统计门户（SDMX API，转载美国劳工统计局BLS月度CPI）", "url": "https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_PRICES@DF_PRICES_ALL,1.0/USA.M.N.CPI.IX._T.N.?startPeriod=2025-01&format=csvfilewithlabels", "desc": "每月CPI新闻稿，含同比/环比、核心CPI及分项明细", "freq": "每月", "status": "成功", "sample": "2026年9月美国CPI总指数142.1586（2015=100，月度非季调）；2025年9月为137.0366，据此算同比+3.7%，量级合理", "note": "任务建议的BLS官方API实测全军覆没：api.bls.gov的GET与POST均被Akamai硬拦403（浏览器UA和默认UA都拒），download.bls.gov文本接口同样403；FRED fredgraph.csv（参考案例DGS10同款通道）本机复测也持续超时挂起；最终改用OECD SDMX免key接口，curl与python双通道均稳定返回CSV，序列即BLS官方美国CPI全项目指数（2015=100基准，NSA），调startPeriod参数可取任意历史区间", "method": "curl-CSV + python-CSV双验证"}, {"id": 3, "cat": "宏观数据", "sub": "美国", "title": "PCE物价", "source": "美国经济分析局 BEA", "url": "https://www.bea.gov/data/personal-consumption-expenditures-price-index", "desc": "PCE及核心PCE月度物价指数，美联储最看重的通胀指标", "freq": "每月", "status": "成功", "sample": "2026年8月美国PCE物价指数同比+3.4%（7月+3.4%、6月+3.5%、5月+3.8%）；当前发布日2026-09-30，下次发布2026-10-29", "note": "BEA页面服务端渲染，HTML直接含近4个月PCE同比表格（Change From Month One Year Ago）及发布日历", "method": "curl-200"}, {"id": 4, "cat": "宏观数据", "sub": "美国", "title": "10年期美债收益率", "source": "FRED（圣路易斯联储）", "url": "https://fred.stlouisfed.org/series/DGS10", "desc": "10年期美债收益率（DGS10）日度数据，可下载历史序列", "freq": "每日", "status": "成功", "sample": "10年期美债收益率（DGS10）2026-10-21为5.13%（前值2026-10-20为5.12%）", "note": "本机curl直连fred.stlouisfed.org有TLS重协商问题（连接成功但响应体中断/超时，CSV接口fredgraph.csv同样）；改用WebFetch访问series页成功取到最新值与日期。数据本身免费、含官方CSV下载接口 https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10，程序化抓取建议换网络环境或用该CSV接口", "method": "WebFetch（curl直连超时）"}, {"id": 5, "cat": "宏观数据", "sub": "中国", "title": "CPI", "source": "国家统计局（东方财富数据中心RPT_ECONOMY_CPI通道）", "url": "https://www.stats.gov.cn/sj/zxfb/", "desc": "中国CPI同比+环比月度序列（2008-01起）", "freq": "每月", "status": "成功", "sample": "2026-09 同比+0.9% / 环比+0.2%（统计局新闻稿核验一致）", "note": "v8：同比NATIONAL_SAME、环比NATIONAL_SEQUENTIAL，全历史回填，自动核验", "method": "curl-200"}, {"id": 6, "cat": "宏观数据", "sub": "中国", "title": "PPI", "source": "国家统计局（东方财富数据中心RPT_ECONOMY_PPI通道）", "url": "https://data.stats.gov.cn", "desc": "中国PPI同比+环比月度序列（2006-01起）", "freq": "每月", "status": "成功", "sample": "2026-09 同比+5.0% / 环比+1.2%", "note": "v8：解禁——东财通道249个月同比；环比自统计局新闻稿标题逐月积累", "method": "curl-200+接口403"}, {"id": 7, "cat": "宏观数据", "sub": "中国", "title": "计算机通信电子制造业工业增加值", "source": "工业和信息化部", "url": "https://www.miit.gov.cn/gxsj/tjfx/dzxx/index.html", "desc": "电子信息制造业月度运行情况：增加值增速、营收、利润、产量", "freq": "每月", "status": "部分成功", "sample": "无具体数值（栏目页仅返回约5.4KB JS壳，HTML源码中无任何文章/报告链接）", "note": "工信部电子信息制造业栏目页可访问（HTTP 200，标题、栏目元信息在源码中），但文章列表为JS动态加载，尝试的dataproxy数据接口404；需浏览器渲染才能取得月度运行情况报告列表", "method": "curl-200（JS壳）"}, {"id": 8, "cat": "宏观数据", "sub": "欧盟", "title": "HICP物价指数", "source": "Eurostat（欧盟统计局）", "url": "https://ec.europa.eu/eurostat/web/hicp", "desc": "欧盟调和CPI专题页：欧元区及成员国通胀数据与新闻稿", "freq": "每月", "status": "成功", "sample": "2026年10月欧元区HICP年率快报初值3.8%（页面头条：Annual inflation up to 3.8% in the euro area，2026-10-16发布）", "note": "Eurostat HICP专题页服务端渲染（约198KB），含最新通胀头条、成员国数据入口与月度euro-indicators新闻稿链接", "method": "curl-200"}, {"id": 9, "cat": "宏观数据", "sub": "欧盟", "title": "欧元区制造业PMI", "source": "S&P Global PMI", "url": "https://www.pmi.spglobal.com/Public/Home/", "desc": "HCOB欧元区制造业PMI月度新闻稿（指数值、分项与各国数据）", "freq": "每月", "status": "成功", "sample": "2026年9月HCOB欧元区制造业PMI 52.9（52个月新高）；欧元区综合PMI 53.1（41个月新高）；美国制造业PMI 57.0、德国53.8、法国50.3等全球50多个经济体数值同页可见", "note": "S&P Global PMI首页服务端渲染，内置ticker直接给出各经济体最新月度制造业/综合PMI数值与环比方向，数值、分项新闻稿均可点击进入", "method": "curl-200"}, {"id": 10, "cat": "宏观数据", "sub": "欧盟", "title": "欧元区零售销售", "source": "Eurostat（欧盟统计局）", "url": "https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Retail_trade_volume_index_overview", "desc": "欧元区/欧盟零售贸易量指数月度同比环比", "freq": "每月", "status": "成功", "sample": "2026年8月欧元区零售贸易量指数106.9（2021=100），环比+0.8%（Eurostat sts_trtu_m，EA20、G47、季节与日历调整）", "note": "statistics-explained概述页可访问且服务端渲染，但正文为说明性文字、HTML不含具体月度数值（交互数据浏览器为JS）；改用页面所链Eurostat官方数据API（/api/dissemination/statistics/1.0/data/sts_trtu_m）直接取得数值，同比/环比可按unit=PCH_PRE/PCH_SM取", "method": "curl-200+官方JSON API"}, {"id": 11, "cat": "宏观数据", "sub": "欧盟", "title": "德国IFO商业景气指数", "source": "ifo经济研究所", "url": "https://www.ifo.de/en/ifo-business-climate-index", "desc": "德国IFO商业景气指数月度发布、曲线图与新闻稿", "freq": "每月", "status": "成功", "sample": "2026年9月德国IFO商业景气指数89.9点（8月88.8点，连续回升；下次发布2026-10-26 10:30）", "note": "curl直连遇Fastly JS质询页（Client Challenge，部分IP还超时），WebFetch访问同一URL成功取得页面正文与最新数值；浏览器/常规抓取器可正常获取", "method": "WebFetch（curl被JS质询拦截）"}, {"id": 12, "cat": "宏观数据", "sub": "欧盟", "title": "10年期德国国债收益率", "source": "欧洲央行 ECB", "url": "https://www.ecb.europa.eu/stats/financial_markets_and_interest_rates/long_term_interest_rates/html/index.en.html", "desc": "欧央行长期利率统计页，含德国10年期国债收益率", "freq": "每日", "status": "部分成功", "sample": "2026年9月德国10年期国债收益率（长期利率，趋同标准口径）3.47%（荷兰3.56%、法国4.44%、欧元区综合3.93%），序列IRS.M.DE.L.L40.CI.0000.EUR.N.Z，2026-10-12更新", "note": "测试URL可访问（HTTP 200）但仅为说明性落地页，HTML无利率数值表；数据在页面链接的ECB Data Portal（JS应用）中：data-api.ecb.europa.eu无IRT_LT数据流（404）、sdw.ecb.europa.eu本网络直连超时，最终经WebFetch从数据门户取到数值", "method": "curl-200+WebFetch（数据门户）"}, {"id": 13, "cat": "宏观数据", "sub": "欧盟", "title": "欧盟委员会消费者信心指数", "source": "欧盟委员会 DG ECFIN", "url": "https://economy-finance.ec.europa.eu/economic-forecast-and-surveys/business-and-consumer-surveys/latest-business-and-consumer-surveys_en", "desc": "欧盟/欧元区消费者信心指数（含每月快速预估值）", "freq": "每月", "status": "成功", "sample": "2026年10月欧盟消费者信心闪预估值：欧元区-17.9、欧盟-17.3（较9月欧元区降1.1pp、欧盟降1.2pp），2026-10-22更新；另9月ESI欧元区97.9", "note": "欧盟委员会BCS最新调查页服务端渲染，正文直接含每月快报数值与下次发布日历（2026-10-29完整发布）", "method": "curl-200"}, {"id": 14, "cat": "宏观数据", "sub": "新闻与政策", "title": "财经新闻", "source": "CNBC Markets RSS", "url": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258", "desc": "CNBC财经要闻，仅保留最近7天，生成看板时注入", "freq": "每日", "status": "成功", "sample": "要闻标题可直接抓取：S&P 500 and Nasdaq close lower as chip stock rebound fails；South Korea stocks fall over 5% as tech heavyweights follow plunge in Wall Street's AI-linked names", "note": "v8：RSS通道+7天过滤+JSON注入", "method": "curl-200"}, {"id": 15, "cat": "宏观数据", "sub": "新闻与政策", "title": "地缘政治动态", "source": "CNBC World RSS", "url": "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100727362", "desc": "全球政经动态，仅保留最近7天", "freq": "每日", "status": "成功", "sample": "地缘政治要闻示例：Brent crude tops $113, highest level since May, after Trump hints at action on Iran（布伦特原油破113美元，特朗普暗示对伊朗行动）；10-year Treasury yield tumbles below 5%", "note": "v8：RSS通道+7天过滤", "method": "curl-200"}, {"id": 16, "cat": "宏观数据", "sub": "新闻与政策", "title": "美联储议息日历", "source": "美联储官网", "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm", "desc": "FOMC议息会议年度日历（日期、声明、纪要、点阵图）", "freq": "事件驱动", "status": "成功", "sample": "2026年FOMC会议日历：1月27-28日、4月28-29日、7月28-29日、10月27-28日等；每次会议附声明PDF/HTML、实施说明、新闻发布会与纪要链接（如monetary20260128a1.pdf、fomcminutes20260128.pdf）", "note": "美联储官网FOMC日历页服务端渲染（约166KB），会议日期与全部文件链接在HTML源码中，含2026-2028多年安排", "method": "curl-200"}, {"id": 17, "cat": "宏观数据", "sub": "新闻与政策", "title": "美国关税清单（301）动态", "source": "美国贸易代表办公室 USTR", "url": "https://ustr.gov/issue-areas/enforcement/section-301-investigations", "desc": "301调查及对华关税措施官方公告、清单修订与豁免动态", "freq": "事件驱动", "status": "成功", "sample": "页面列出301调查条目：Section 301 – China's Forced Technology Transfer Policies and Practices（2017-08-24启动）、Section 301 – Germany's Persistent Underpayment for Innovative Pharmaceutical Products（2026-06-18启动）、Section 301 – Vietnam's IP（2026-05-29启动）", "note": "USTR 301调查专题页服务端渲染，正文含各301调查名称、启动日期与对应公告/清单入口，可跟踪对华关税措施与豁免动态", "method": "curl-200"}, {"id": 18, "cat": "宏观数据", "sub": "新闻与政策", "title": "能效法规", "source": "美国能源部 DOE", "url": "https://www.energy.gov/eere/buildings/appliance-and-equipment-standards-program", "desc": "电器与设备能效标准法规制定、修订与合规要求", "freq": "事件驱动", "status": "成功", "sample": "页面为DOE电器与设备能效标准计划（Appliance and Equipment Standards Program）官方页：载明其发布电器设备能效标准与测试程序法规（Issues regulations for appliance and equipment standards and test procedures）、公布全部公众会议与评论截止日期、提供rulemaking案卷与合规指导入口", "note": "原URL 302重定向至energy.gov/cmei/同路径页面后200（121KB），内容服务端渲染，与'能效法规'描述相符", "method": "curl-302→200"}, {"id": 20, "cat": "宏观数据", "sub": "新闻与政策", "title": "欧洲央行议息日历", "source": "欧洲央行 ECB", "url": "https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html", "desc": "欧央行管理委员会货币政策会议官方日历", "freq": "事件驱动", "status": "成功", "sample": "ECB管理委员会会议日历：2026-10-28/29货币政策会议（10月29日新闻发布会）、2026-11-25非货币政策会议、2026-12-16/17货币政策会议，含2027年全部安排", "note": "ECB官方日历页（Meetings of the Governing Council and the General Council）服务端渲染，会议日期格式DD/MM/YYYY直接在HTML中", "method": "curl-200"}, {"id": 21, "cat": "大宗商品数据", "sub": "汇率", "title": "美元汇率（USD/CNY）", "source": "中国货币网（中国外汇交易中心）", "url": "https://www.chinamoney.com.cn/chinese/bkccpr/", "desc": "每日授权发布的人民币对美元中间价及历史数据", "freq": "每日", "status": "成功", "sample": "2026-10-23人民币对美元中间价6.7180（10-22为6.7195、10-21为6.7192）", "note": "中国货币网中间价页可访问（HTTP 200，页面文字含中间价形成机制说明），行情数值为Vue壳JS加载；改用其官方JSON接口 /ags/ms/cm-u-bk-ccpr/CcprHisNew?lang=CN&reference=1&startDate=...&endDate=... 直连返回全部币种每日中间价（USD/CNY、EUR/CNY等25个币种），含历史序列", "method": "curl-200+JSON接口"}, {"id": 22, "cat": "大宗商品数据", "sub": "汇率", "title": "美元指数DXY", "source": "东方财富网（公开行情接口）", "url": "https://push2.eastmoney.com/api/qt/stock/get?secid=100.UDI&fields=f43,f57,f58,f60,f86,f169,f170", "desc": "美元指数实时报价、走势图与历史数据", "freq": "每日", "status": "成功", "sample": "美元指数 101.65（2026-10-23 11:18:50）", "note": "东财公开接口免鉴权直接返回JSON，f43为最新价（缩放100倍，10165/100=101.65），f86为行情时间戳，已用f60昨收101.62、f169涨跌0.03、f170涨幅0.03%核算一致确认精度；原investing.com 403反爬弃用", "method": "curl-JSON"}, {"id": 23, "cat": "大宗商品数据", "sub": "汇率", "title": "人民币在岸/离岸汇率", "source": "东方财富网", "url": "https://quote.eastmoney.com/forex/USDCNH.html", "desc": "美元兑离岸人民币实时行情，页面关联在岸汇率与中间价", "freq": "每日", "status": "成功", "sample": "美元兑离岸人民币USDCNH 6.6726（昨收6.6727）；美元人民币中间价USDCNYC 6.718", "note": "页面quote.eastmoney.com本身200但行情为JS渲染，改用东方财富公开行情接口push2.eastmoney.com/api/qt/stock/get?secid=133.USDCNH与120.USDCNYC直接取到实时数值", "method": "curl-200+公开JSON接口"}, {"id": 24, "cat": "大宗商品数据", "sub": "汇率", "title": "欧元汇率（EUR/CNY）", "source": "新浪财经（公开行情接口）", "url": "https://hq.sinajs.cn/list=fx_seurcny", "desc": "欧元兑人民币实时汇率、走势图与历史数据", "freq": "每日", "status": "成功", "sample": "EUR/CNY 7.4841（2026-10-23 11:19:20）", "note": "东财secid=133.EURCNY实测返回data:null失败，改用新浪外汇接口；必须带Referer: https://finance.sina.com.cn，返回GBK编码需转UTF-8；逗号分隔文本第2字段为最新价（7.4841，欧元兑人民币即期），量级在7-10区间合理", "method": "curl-GBK文本"}, {"id": 25, "cat": "大宗商品数据", "sub": "汇率", "title": "英镑汇率", "source": "新浪财经（公开行情接口）", "url": "https://hq.sinajs.cn/list=fx_sgbpcny", "desc": "英镑兑人民币实时汇率与历史行情", "freq": "每日", "status": "成功", "sample": "GBP/CNY 8.9389（2026-10-23 11:18:59）", "note": "东财secid=133.GBPCNY返回data:null，任务建议的新浪代码fx_sgbbcny实测返回空值，逐一试码后确认正确代码为fx_sgbpcny（新浪'英镑兑人民币'计算值）；同样需带Referer、GBK转码，取值8.94在7-10区间合理", "method": "curl-GBK文本"}, {"id": 26, "cat": "大宗商品数据", "sub": "铜价", "title": "LME铜价", "source": "新浪财经（公开行情接口）", "url": "https://hq.sinajs.cn/list=hf_CAD", "desc": "LME铜官方价、合约信息与库存（延迟行情免费）", "freq": "每日", "status": "成功", "sample": "LME铜(3月) 14163.96美元/吨（2026-10-23 11:19:05）", "note": "新浪hf_CAD返回名称'伦铜'即LME铜3月，第1字段最新价14163.96美元/吨；数值高于历史8000-12000区间，已用东财109.LCPT（综合铜03/LME，f43=14155.50，其f169涨跌77.5与新浪昨收14078核算吻合）交叉验证一致，确认为真实行情；无需启用COMEX铜兜底方案；GBK编码需转码", "method": "curl-GBK文本"}, {"id": 27, "cat": "大宗商品数据", "sub": "铜价", "title": "沪铜期货价格", "source": "东方财富网", "url": "https://quote.eastmoney.com/qihuo/cum.html", "desc": "沪铜主力连续合约实时价格与各月合约报价", "freq": "每日", "status": "成功", "sample": "沪铜主连107770元/吨（跌-0.97%）；各月合约cu2611=107770、cu2612=106860、cu2701=106150元/吨", "note": "页面quote.eastmoney.com/qihuo/cum.html 200但行情JS渲染，用东方财富公开接口push2.eastmoney.com/api/qt/stock/get?secid=113.cuM及futsseapi.eastmoney.com/list/SHFE取到主力与各月合约实时价", "method": "curl-200+公开JSON接口"}, {"id": 28, "cat": "大宗商品数据", "sub": "铜价", "title": "无氧铜杆价格", "source": "富宝资讯铜产业链频道（f139.com）/长江有色铜材频道（备查）", "url": "https://www.f139.com/chain/copper（每日发布'华南市场无氧铜杆价格'文章，如 /info/1_38655_45842796_1.html）", "desc": "无氧铜杆日度报价文章标题与涨跌信息（确认日更）；免费渠道绝对价格在登录墙内，可以生意社铜基准价作代理参考", "freq": "每日", "status": "部分成功", "sample": "10月23日'华南市场无氧铜杆价格（20261023）'文章已发布（确认日更）；长江有色接口同日返回'无氧铜杆8MM价格 对比前一交易日跌1000.00元/吨'，但价格绝对值被锁定图标遮蔽", "note": "实测SMM/长江有色(PC+m版+API /mobile/priceList/detailempContent)/富宝(PC+m版+searchInfoList接口)/Mysteel(PC+m版)/生意社/金投后确认：8mm无氧铜杆现货报价绝对值在所有免费渠道均位于登录墙或JS墙内，免费只能确认每日更新与涨跌额，拿不到具体数值。长江有色接口仅公开涨跌（10-23无氧铜杆8MM跌1000元/吨），价格列替换为锁定图标。如看板可接受代理口径，可用生意社铜基准价(109763.33元/吨,10-22)近似代替（口径为1#电解铜，与铜杆价差约800-1500元加工费）", "method": "curl-200-价格需登录"}, {"id": 29, "cat": "大宗商品数据", "sub": "铜价", "title": "废铜价格", "source": "富宝资讯（f139.com）铜产业链频道", "url": "https://www.f139.com/chain/copper", "desc": "废铜（光亮铜）价格指数日度数值及时间戳", "freq": "每日", "status": "成功", "sample": "2026年10月23日光亮铜价格指数报93000元/吨（09:46更新）；10月22日93500元/吨；10月21日93600元/吨", "note": "频道页为服务端渲染、无需登录，'数据统计'栏每日更新'光亮铜价格指数报XX元/吨'格式条目，HTML标题直接含具体数值（1#光亮铜/光亮铜线口径，富宝综合指数，与SMM 1#光亮铜报价口径相近但为富宝自有指数）。页面另含铜精矿、电解铜等板块每日资讯标题", "method": "curl-200"}, {"id": 31, "cat": "大宗商品数据", "sub": "塑料", "title": "PVC价格", "source": "生意社PVC产业网", "url": "https://pvc.100ppi.com/", "desc": "PVC基准价、SG5现货报价及大商所期货行情", "freq": "每日", "status": "成功", "sample": "PVC SG5优等品山东信发4960元/吨(2026-10-21)；10月22日临沂电石法5型主流报价5000-5060元/吨；大商所PVC2611合约收盘4934元/吨(2026-10-22)", "note": "v8：生意社现货+东财期货主连(114.VM)回填250个交易日，曲线为期货主力口径", "method": "curl-200+HW_CHECKcookie绕过"}, {"id": 32, "cat": "大宗商品数据", "sub": "塑料", "title": "PP价格", "source": "生意社PP产业网", "url": "https://pp.100ppi.com", "desc": "PP拉丝/纤维基准价、各牌号厂商报价与行情资讯", "freq": "每日", "status": "成功", "sample": "PP T30S拉丝级(荆门石化)10700元/吨(2026-10-23)；京博M800E 10800元/吨；宁波台塑5200XT 12100元/吨", "note": "v8：生意社现货+东财期货主连(114.ppM)回填250个交易日，曲线为期货主力口径", "method": "curl-200+HW_CHECKcookie绕过"}, {"id": 33, "cat": "大宗商品数据", "sub": "塑料", "title": "PA/PC工程塑料价格", "source": "生意社工程塑料频道", "url": "https://www.100ppi.com/chanye/gcsl.html", "desc": "PA6/PA66/PC等工程塑料基准价与市场价", "freq": "每周", "status": "成功", "sample": "10月23日生意社PC基准价14800.00元/吨、PA6基准价15000.00元/吨、PA66基准价19100.00元/吨；PC利华益维远市场价15200元/吨", "note": "工程塑料频道服务端渲染，HW_CHECK cookie绕过后HTML直接含PA6/PA66/PC/PET/POM基准价与市场价", "method": "curl-200+HW_CHECKcookie绕过"}, {"id": 34, "cat": "大宗商品数据", "sub": "电子物料", "title": "快充协议芯片（多型号）", "source": "立创商城（多型号现货价）", "url": "https://item.szlcsc.com/3222591.html", "desc": "LDR6028/CH224K/IP2726/LDR6328四款在售SKU现货价分列跟踪", "freq": "每季", "status": "成功", "sample": "LDR6028 ¥4.6368 / CH224K ¥2.22 / IP2726 ¥2.71 / LDR6328 ¥4.032（2026-10-27）", "note": "v8：多SKU扩展；CH224K库存偏低（47）缺货时该列留空", "method": "curl-200-HTML内嵌JSON-LD"}, {"id": 35, "cat": "大宗商品数据", "sub": "电子物料", "title": "eMarker芯片（多型号）", "source": "立创商城（多型号现货价）", "url": "https://item.szlcsc.com/8528245.html", "desc": "HUSB332A/HUSB332B两款在售SKU现货价分列跟踪", "freq": "每季", "status": "成功", "sample": "HUSB332A ¥0.864 / HUSB332B ¥0.92（2026-10-27）", "note": "v8：多SKU扩展", "method": "curl-200-HTML内嵌JSON-LD"}, {"id": 36, "cat": "大宗商品数据", "sub": "原油", "title": "布伦特原油价格", "source": "新浪财经（公开行情接口）", "url": "https://hq.sinajs.cn/list=hf_OIL", "desc": "布伦特原油期货实时价格、走势图与历史数据", "freq": "每日", "status": "成功", "sample": "布伦特原油 113.865美元/桶（2026-10-23 11:19:14）", "note": "新浪hf_OIL返回名称'布伦特原油'，第1字段即最新价113.865美元/桶；数值略高于常规50-100参考区间，已用东财112.B00Y（布伦特原油当月连续，113.71）交叉验证两源一致，确认为2026-10-23真实行情而非异常值；GBK编码需转码", "method": "curl-GBK文本"}, {"id": 37, "cat": "大宗商品数据", "sub": "物流成本", "title": "集装箱运价指数SCFI/FBX", "source": "上海航运交易所（当期）+ 媒体转引考证回填", "url": "https://www.sse.net.cn/", "desc": "SCFI上海出口集装箱运价指数及分航线结算运价（每周五发布）", "freq": "每周", "status": "成功", "sample": "2026-10-23 综合3681.34；近12周：08-07 3276→10-23 3681", "note": "v8：回填12周（Container News全年图表+多家媒体散点交叉，见物流存储考证-D.md）；官网历史接口需登录", "method": "curl-200-详情页SSR表格"}, {"id": 38, "cat": "大宗商品数据", "sub": "物流成本", "title": "空运运价", "source": "IATA月度货运市场稿（官方）", "url": "https://www.iata.org/api/rss/pressrelease", "desc": "全球航空货运月度需求：CTK同比、载货率等（IATA月度新闻稿，需求口径非运价点位）", "freq": "每月", "status": "成功", "sample": "2026-08 +4.4%；2026-02 +11.2%；2026-03 -4.8%（中东扰动）", "note": "v8：考证回填2025-09起7个月，逐条URL见行业历史考证-C.md；2026-09稿未发布", "method": "curl-200"}, {"id": 39, "cat": "大宗商品数据", "sub": "其他金属", "title": "锡价", "source": "生意社（100ppi.com）锡基准价", "url": "https://www.100ppi.com/rawmex/detail-492.html", "desc": "锡锭基准价日度数值及涨跌幅", "freq": "每日", "status": "成功", "sample": "锡基准价383210.00元/吨（更新时间10-22 16:20，较昨日-1.41%；三个月均价413302.89元/吨）", "note": "v8：生意社现货+东财期货主连(113.snM)回填250个交易日，曲线为期货主力口径", "method": "curl-200+HW_CHECKcookie绕过"}, {"id": 40, "cat": "大宗商品数据", "sub": "其他金属", "title": "铝价", "source": "生意社（100ppi.com）铝基准价", "url": "https://www.100ppi.com/rawmex/detail-482.html", "desc": "A00铝基准价日度数值及涨跌幅", "freq": "每日", "status": "成功", "sample": "铝基准价23720.00元/吨（更新时间10-22 16:20，较昨日+0.42%；三个月均价23943.02元/吨）", "note": "v8：生意社现货+东财期货主连(113.alM)回填250个交易日，曲线为期货主力口径", "method": "curl-200+HW_CHECKcookie绕过"}, {"id": 41, "cat": "行业数据", "sub": "厂商动态", "title": "APPLE相关新闻", "source": "IT之家RSS（苹果生态关键词）", "url": "https://www.ithome.com/rss/", "desc": "Apple相关中文资讯，仅保留最近7天（Apple Newsroom无RSS）", "freq": "每日", "status": "成功", "sample": "最新新闻稿：'Formula 1 United States Grand Prix streams live on Apple TV this weekend'(2026-10-22)；Hot News源含'Apple Reports Second Quarter Results'财报稿", "note": "v8：改IT之家中文源+7天过滤", "method": "curl-200+官方RSS"}, {"id": 42, "cat": "行业数据", "sub": "厂商动态", "title": "手机厂家新品发布新闻", "source": "IT之家RSS（手机/快充关键词）", "url": "https://www.ithome.com/rss/", "desc": "手机厂家新品资讯，仅保留最近7天", "freq": "每日", "status": "成功", "sample": "《大哥大造型 ADHD ONE\"手机\"发布，只能接打电话》2026-10-22；《摩托罗拉首款宽屏折叠手机 Razr Flex 跑分曝光：高通第五代骁龙 8 芯片》2026-10-20；标签页SSR共解析出19条近期新闻（标题+日期）", "note": "v8：7天过滤", "method": "curl-200"}, {"id": 43, "cat": "行业数据", "sub": "出货量与格局", "title": "手机换机周期/平均售价ASP走势", "source": "Counterpoint官方报告页", "url": "https://counterpointresearch.com/en/reports/smartphone-replacement-cycle-forecast-2016-2029", "desc": "全球手机换机周期月数及2016-2029走势预测", "freq": "每季", "status": "成功", "sample": "2023=43.4个月峰值 → 2024=43.0 → 2029E=40.4", "note": "v8：考证回填；2019-2022/2025官方未公开逐年值，留空", "method": "curl-200+文本提取"}, {"id": 44, "cat": "行业数据", "sub": "出货量与格局", "title": "手机全球出货量", "source": "IDC全球手机季度追踪（新闻稿考证）", "url": "https://www.idc.com/promo/smartphone-market-share", "desc": "全球智能手机季度/全年出货量、增速及厂商份额榜单", "freq": "每季", "status": "成功", "sample": "2025Q4=336.3百万台(+2.3%)；2026Q3=255.3(-22.0%为初步值)", "note": "v8：回填14个季度（2023Q1起），出处见行业历史考证-C.md", "method": "curl-200+文本提取"}, {"id": 45, "cat": "行业数据", "sub": "出货量与格局", "title": "TWS耳机出货量", "source": "Counterpoint/Canalys年度稿（考证）", "url": "https://counterpointresearch.com/en/insights/tws-market-entering-maturity-poised-for-moderate-growth-through-2028", "desc": "全球TWS耳机出货量规模、增速与市场预测", "freq": "每季", "status": "成功", "sample": "2024=329.2M(+7%)；2022=287.7M(-2%,Canalys口径)", "note": "v8：回填2020-2024年度值，机构口径已在来源列标注不可跨比", "method": "curl-200+文本提取"}, {"id": 46, "cat": "行业数据", "sub": "出货量与格局", "title": "其他穿戴设备（手环/戒指）出货量", "source": "IDC腕上穿戴（新闻稿考证）", "url": "https://www.idc.com/wp-json/wp/v2/press-release?search=wearable&per_page=10", "desc": "全球可穿戴设备（手环、手表、智能戒指）出货量与厂商份额", "freq": "每季", "status": "成功", "sample": "2025Q2=49.2M(+12.3%)；2026Q2=48.0M(-4.3%)", "note": "v8：回填4季度+1推算值（标注）；部分季度IDC无单季稿留空", "method": "curl-HTML + python-REST"}, {"id": 47, "cat": "行业数据", "sub": "出货量与格局", "title": "PC出货量", "source": "IDC全球PC季度追踪（新闻稿考证）", "url": "https://www.idc.com/wp-json/wp/v2/press-release?search=PC%20tracker&per_page=10", "desc": "全球PC季度出货量及联想/惠普/戴尔等厂商排名", "freq": "每季", "status": "成功", "sample": "2025Q3=75.8M(+9.4%,Win10停服)；2026Q2=68.2M(-4.9%)", "note": "v8：回填10个季度（2024Q1起）", "method": "curl-HTML + python-REST"}, {"id": 48, "cat": "行业数据", "sub": "出货量与格局", "title": "平板出货量", "source": "IDC全球平板季度追踪（新闻稿考证）", "url": "https://www.idc.com/wp-json/wp/v2/press-release?search=tablet&per_page=10", "desc": "全球平板季度出货量、增速及厂商份额", "freq": "每季", "status": "成功", "sample": "2024Q3=39.6M(+20.4%)；2025Q2=38.3M", "note": "v8：回填7个季度；缺失季度见考证文件说明", "method": "curl-HTML + python-REST"}, {"id": 49, "cat": "行业数据", "sub": "出货量与格局", "title": "手机品牌份额变化", "source": "Counterpoint官方季度份额对照表", "url": "https://counterpointresearch.com/en/insights/global-smartphone-share", "desc": "全球智能手机品牌份额季度追踪", "freq": "每季", "status": "成功", "sample": "2025Q4：苹果25.0%/三星18.1%；2026Q2：三星23%/苹果21%/小米11%", "note": "v8：扩6品牌×6季度官方原表值，分组柱状图带图例", "method": "curl-200+文本提取"}, {"id": 50, "cat": "行业数据", "sub": "展会日历", "title": "CES展会信息", "source": "CES官网（CTA主办）", "url": "https://www.ces.tech", "desc": "CES每年拉斯维加斯展期日期、展馆布局、参展商名录", "freq": "事件驱动", "status": "成功", "sample": "CES 2027：2027年1月6-9日，拉斯维加斯；页面显示'Registration for CES 2027 is now open'（报名已开放）", "note": "官网首页服务端渲染，含下届展期日期/地点/注册入口", "method": "curl-200+文本提取"}, {"id": 51, "cat": "行业数据", "sub": "展会日历", "title": "MWC展会信息", "source": "MWC Barcelona官网（GSMA主办）", "url": "https://www.mwcbarcelona.com", "desc": "MWC巴塞罗那展会日期、主题、参展与议程信息", "freq": "事件驱动", "status": "成功", "sample": "MWC27：2027年3月1-4日，巴塞罗那Fira Gran Via展馆，GSMA主办，预计超100,000名决策者参会", "note": "官网首页服务端渲染，含下届展会日期/地点/参会规模信息", "method": "curl-200+文本提取"}, {"id": 53, "cat": "行业数据", "sub": "展会日历", "title": "广交会信息", "source": "中国进出口商品交易会官网", "url": "https://www.cantonfair.org.cn", "desc": "广交会各届三期展期日期、展区设置、参展指引", "freq": "事件驱动", "status": "部分成功", "sample": "—", "note": "URL返回200且标题/meta正常，但首页为Vue SPA空壳（HTML仅2.5KB，无正文）；数据需浏览器JS渲染，程序化抓不到；公开接口/websiteapi/common/exhibitionInfo无鉴权调用返回500", "method": "curl-200(JS空壳)+API探测"}, {"id": 56, "cat": "行业数据", "sub": "结构渗透率", "title": "Qi2磁吸无线充（WPC认证产品库监测）", "source": "WPC认证产品库（jpsapi/ajax/products/qi）", "url": "https://jpsapi.wirelesspowerconsortium.com/ajax/products/qi", "desc": "Qi认证产品库全量记录（12,008条），按功率档MPP/Qi版本2.x筛出Qi2磁吸产品4,090条，含品牌/型号/功率/认证日期", "freq": "半年度", "status": "成功", "sample": "4,094 / 12,012条（34%）", "note": "GET接口一次取全量12,008条（人工页在wirelesspowerconsortium.com/products/），本地按功率档MPP*/Qi版本2.x筛Qi2；用户决定由Counterpoint付费渗透率报告改为此口径；v10环形图接线CSV自动更新", "method": "requests-JSON"}, {"id": 58, "cat": "行业数据", "sub": "上游价格", "title": "存储芯片价格（DRAM/NAND）", "source": "TrendForce现货价官方页（5品类）", "url": "https://www.trendforce.com/price/dram/dram_spot", "desc": "DRAM/NAND现货价与合约价（页面可切换NAND栏目）", "freq": "每周", "status": "成功", "sample": "2026-10-27：DDR4 8Gb $47.04 / DDR4 16Gb $82.62 / DDR5 16Gb $61.33 / NAND 256Gb $18.37 / 512Gb $18.59", "note": "v8：扩5品类分列（采集器已改5品类解析）；无RSS，页结构稳定可脚本化", "method": "curl-200+文本提取"}, {"id": 59, "cat": "产品品类", "sub": "充电器", "title": "充电头网早报", "source": "充电头网（curl_cffi过JS验证）·新闻分类页", "url": "https://www.chongdiantou.com/brand/1786585462612.html", "desc": "每日汇总全球充电行业资讯（新品、快充、芯片、无线充动态）", "freq": "每日", "status": "成功", "sample": "10月28日充电早报等3条（近7天）", "note": "v10：新增采集器接线，标题过滤\"早报\"", "method": "curl_cffi+HTML解析"}, {"id": 60, "cat": "产品品类", "sub": "充电器", "title": "快充瓦数趋势", "source": "充电头网（curl_cffi过JS验证）·拆解分类页", "url": "https://www.chongdiantou.com/1746334861255.html", "desc": "新品充电器拆解报告，持续披露功率瓦数、快充协议与方案", "freq": "每日", "status": "成功", "sample": "小米金沙江10000mAh 45W拆解等3条", "note": "v10：新增采集器接线", "method": "curl_cffi+HTML解析"}, {"id": 61, "cat": "产品品类", "sub": "充电器", "title": "苹果AVS相关新品/产品资讯", "source": "充电头网（curl_cffi过JS验证）·新闻页（AVS/苹果关键词）", "url": "https://www.chongdiantou.com/archives/1758248042216.html", "desc": "与苹果AVS（可调电压电源）协议相关的新品发布、产品资讯与拆解评测，充电头网AVS关键词监测", "freq": "每日", "status": "成功", "sample": "苹果首款折叠屏快充测试：15V AVS调压等3条", "note": "v10：新增采集器接线；AVS低频可能0条", "method": "curl_cffi+HTML解析"}, {"id": 66, "cat": "产品品类", "sub": "通用品类数据", "title": "各品牌出货量（品牌排名）", "source": "Amazon Best Sellers（线材类目TOP30实价）", "url": "https://www.amazon.com/Best-Sellers-Cell-Phones-Accessories-Cell-Phone-Cables-Adapters/zgbs/wireless/21209107011", "desc": "Amazon线材类Best Sellers品牌排名（美国市场口径，相对排名非出货量）", "freq": "每季", "status": "成功", "sample": "TOP30 · Anker 4席 · 均价$10.64 · 快照2026-10-27", "note": "京东search.jd.com psort=3实测302跳'京东验证'风控页不可抓，改用Amazon Best Sellers：美国市场销量排名代理（排名为相对销量指示，非国内电商各品牌绝对销量/出货量）；v10卡片接线CSV：TOP3+Anker席数/均价自动渲染", "method": "curl --compressed + Chrome UA + cookie i18n-prefs=USD（强制美元显示）；解析HTML中gridItemRoot块内zg-bdg-text(排名)+img alt(标题)+p13n-sc-price(价格)；同品牌按标题首词/品牌词聚合得份额结构"}, {"id": 67, "cat": "产品品类", "sub": "通用品类数据", "title": "品类季度出货量", "source": "洛图科技 RUNTO", "url": "http://www.runtotech.com/MarketInsights/index.html", "desc": "移动电源等品类月度/季度零售量、出货量及品牌榜报告", "freq": "每季", "status": "部分成功", "sample": "报告列表含《半年报 | 2026上半年中国电视市场出货量下降10.1%，全年总量将再创新低》《洛图快报 | 2026年8月中国电视市场品牌月度出货》《季报 | 2026Q1全球液晶电视面板出货量下跌3.2%》等出货量/品牌榜报告", "note": "页面服务端渲染可抓，出货量与品牌榜报告摘要齐全；但该站报告以电视/显示器/面板等显示品类为主，未见移动电源、充电配件品类报告，与词条描述'移动电源等品类零售量'不完全匹配", "method": "curl-200→解析HTML报告列表标题"}, {"id": 68, "cat": "产品品类", "sub": "通用品类数据", "title": "亚马逊销量榜（Best Sellers充电类）", "source": "Amazon Best Sellers（充电类目TOP30实价）", "url": "https://www.amazon.com/Best-Sellers-Cell-Phones-Accessories/zgbs/wireless", "desc": "手机配件大类Best Sellers实时排名（含充电器、数据线、充电宝）", "freq": "每周", "status": "成功", "sample": "TOP30 · Anker 4席 · 均价$16.28 · 快照2026-10-27", "note": "curl需加--compressed解gzip（否则乱码误判），实测无Captcha，榜单为服务端渲染真实Best Sellers排名，可提取商品名/排名/ASIN；v10卡片接线CSV", "method": "curl--compressed-200→解析HTML榜单商品名与ASIN"}, {"id": 69, "cat": "产品品类", "sub": "通用品类数据", "title": "线下零售渠道数据", "source": "FRED（圣路易斯联储）镜像美国普查局MARTS序列：Electronics and Appliance Stores零售额", "url": "https://fred.stlouisfed.org/series/RSEAS", "desc": "美国电子电器专卖店零售月度销售额（Census MARTS经FRED镜像，官方大类口径，亿美元）", "freq": "每月", "status": "成功", "sample": "RSEAS季调月度序列：2026-09为78.53亿美元、2026-08为78.06亿美元、2025-09为71.79亿美元，同比+9.2%；数据页 https://fred.stlouisfed.org/data/RSEAS 列全历史月度值", "note": "口径为美国普查局MARTS的电子电器专卖店(NAICS 443)线下零售额（季调、百万美元），是官方免费数据，但为渠道大类口径，无Circana式SKU/品牌级POS明细；census.gov网页与PDF实测403、api.census.gov需密钥、FRED本机直连超时，经WebFetch通道抓取成功", "method": "WebFetch抓 https://fred.stlouisfed.org/series/RSEAS（最新值）及 /data/RSEAS（历史值）；部署环境如可直连FRED，用 fredgraph.csv?id=RSEAS 免密钥CSV"}, {"id": 70, "cat": "产品品类", "sub": "通用品类数据", "title": "专利诉讼动态", "source": "企查查", "url": "https://www.qcc.com", "desc": "按企业查询司法诉讼、裁判文书，可检索专利数据库", "freq": "事件驱动", "status": "部分成功", "sample": "无（检索需登录）", "note": "www.qcc.com首页可访问（200，标题'企查查 - 查企业_查老板_查风险_企业信息查询系统'），但司法诉讼、裁判文书、专利检索功能需登录账号，未登录状态无法获取具体企业诉讼数据；【方案已定】用户本机登录企查查后，用RPA浏览器自动化带登录会话抓取诉讼/专利数据", "method": "curl-200→首页正常但检索功能登录墙"}, {"id": 71, "cat": "产品品类", "sub": "通用品类数据", "title": "品类增速（同比）", "source": "国家统计局-数据发布大厅（固定列表页）", "url": "https://www.stats.gov.cn/sj/zxfb/", "desc": "统计局社零通讯器材类零售额月度同比/累计同比（宏观口径，如2026年9月+31.1%）", "freq": "每月", "status": "成功", "sample": "《2026年1—9月份社会消费品零售总额增长1.1%》(2026-10-19发布)：表格SSR可解析——通讯器材类9月零售额1062亿元、同比+31.1%，1—9月累计8123亿元、同比+18.1%；家用电器和音像器材类9月881亿元、+1.9%（注：data.stats.gov.cn被WAF拦，勿用）", "note": "固定发布大厅列表页（实测可用，同为序号5的入口）：每月定位最新社会消费品零售总额新闻稿，正文含通讯器材类零售额同比；原单篇新闻稿URL弃用", "method": "curl --compressed + UA；先抓列表页 www.stats.gov.cn/sj/zxfb/ 定位最新《…社会消费品零售总额…》稿链接，再抓正文解析<table>单元格（列序：当月绝对量/当月同比/累计绝对量/累计同比）"}, {"id": 72, "cat": "产品品类", "sub": "通用品类数据", "title": "价格带结构（价位段占比、均价）", "source": "Amazon Best Sellers：Cell Phone Cables & Adapters 价格统计（美国市场代理）", "url": "https://www.amazon.com/Best-Sellers-Cell-Phones-Accessories-Cell-Phone-Cables-Adapters/zgbs/wireless/21209107011", "desc": "Amazon榜单TOP30价格带分布与均价（美国市场截面价）", "freq": "每月", "status": "成功", "sample": "榜单前30名中22条含可解析价格：均价$10.08，区间分布<$5:0席、$5-10:17席、$10-15:4席、$20-30:1席，最低$6.91最高$22.99；充电器榜20条含价、均价$14.29", "note": "口径为美国亚马逊畅销榜在线价格（TOP30截面），非国内电商全渠道销量加权价格带结构；可按月抓取统计各价位段席位占比与均价做趋势代理，约1/4商品无价格（变体/无货）需剔除", "method": "curl --compressed + UA + cookie i18n-prefs=USD（不加此cookie价格显示为CNY）；正则提取 p13n-sc-price 元素内美元金额，分箱统计"}, {"id": 73, "cat": "产品品类", "sub": "通用品类数据", "title": "USB-IF认证查询", "source": "USB-IF", "url": "https://www.usb.org/products", "desc": "USB-IF官方认证产品库，按TID、公司、规格检索", "freq": "每月", "status": "部分成功", "sample": "无具体TID认证记录（数据库需会员账号）", "note": "usb.org/products可访问（200，标题'Product Search | USB-IF'，Drupal服务端渲染），但该页仅为搜索入口无默认产品列表，站内搜索'Anker'无结果；TID级认证记录在compliance.usb.org合规系统，integrators-list跳转groups.usb.org CAS会员登录页，公开侧无法检索具体认证产品", "method": "curl-200→搜索入口页，认证库CAS登录墙"}, {"id": 74, "cat": "产品品类", "sub": "通用品类数据", "title": "MFi认证查询", "source": "Apple MFi Program", "url": "https://mfi.apple.com", "desc": "苹果MFi计划官方页：授权范围与加入流程", "freq": "每月", "status": "成功", "sample": "mfi.apple.com公开介绍页含Overview/How It Works/Who Needs to Join/FAQs/Enroll栏目；Enroll页具体流程：'What You Need to Enroll: 1. Confirm that your company should join the MFi Program. If you intend to develop or manufacture an electronic accessory which will connect to an Apple device using MFi licensed technology, your company must first join the MFi Program... 2. Create an Apple Account using your business email address'", "note": "实测https://mfi.apple.com为公开介绍页（200，不跳登录），'授权范围与加入流程'可直接抓取；注：MFi授权制造商名单与产品数据库（/login）需MFi会员账号", "method": "curl-200→提取介绍页与Enroll加入流程正文"}, {"id": 75, "cat": "产品品类", "sub": "通用品类数据", "title": "Qi/Qi2认证查询", "source": "WPC无线充电联盟", "url": "https://www.wirelesspowerconsortium.com/products/", "desc": "Qi认证产品官方数据库入口，凭WPC ID核验", "freq": "每月", "status": "成功", "sample": "Qi认证数据库实测抓到12008条认证记录：Qi-ID 24417，Brand=Anker，产品'Anker MagGo Power Bank 2 Pro'，部件号A110R，类型PTx product，功率档MPP25/25W，Qi版本2.2.1，认证日期2026-08-21；另Spigen Wireless Car Charger（EV25MFTQA）认证日期2026-10-22", "note": "products页服务端渲染，导航至Qi Product Database（jpsapi.wirelesspowerconsortium.com/products/qi），其DataTables数据源为公开JSON接口/ajax/products/qi，python requests直取全量认证记录", "method": "curl-200→定位DataTables AJAX接口→requests取JSON全量记录"}, {"id": 76, "cat": "产品品类", "sub": "通用品类数据", "title": "差评关键词分析", "source": "Helium 10", "url": "https://kb.helium10.com/hc/en-us/articles/48006601967643-Review-Insights-Analyze-Customer-Feedback-with-Amazon-Data", "desc": "亚马逊商品评论聚合分析，提取差评关键词与反馈主题", "freq": "每月", "status": "部分成功", "sample": "KB文章可访问，正文：'Review Insights is a feature within the Helium 10 Chrome Extension that helps you understand what customers are saying about a product... Powered directly by Amazon's official Customer Feedback API'（更新于2026-04-03）", "note": "首次请求403，重试后200。注意：该URL为Helium 10帮助中心功能说明文档（可正常访问），非数据接口；实际差评关键词分析数据需注册Helium 10账号并使用Chrome Extension工具", "method": "curl-403→重试-200→提取KB文章正文"}, {"id": 77, "cat": "产品品类", "sub": "通用品类数据", "title": "评论增速监测", "source": "Keepa", "url": "https://keepa.com", "desc": "追踪亚马逊商品价格、销售排名与评论数历史走势", "freq": "每月", "status": "部分成功", "sample": "官网标题'Keepa - Amazon Price Tracker'可正常访问", "note": "keepa.com可访问（200），但主站为需登录的Web应用，商品价格/销售排名/评论数历史走势数据需注册账号（API另收费），程序化抓取无公开数据", "method": "curl-200→主站为登录制Web应用"}, {"id": 78, "cat": "竞对同业数据", "sub": "上市公司", "title": "季度报（财报下载）", "source": "巨潮资讯网（类型过滤：定期报告）", "url": "http://www.cninfo.com.cn/new/commonUrl?url=disclosure/list/notice", "desc": "法定披露平台公告列表页，可下载各公司定期报告PDF", "freq": "每周", "status": "成功", "sample": "2026年半年度报告+摘要（当前2条；三季报发布后自动纳入）", "note": "v10：原静态样例卡（含预写的未发布三季报）改为真实数据", "method": "API+POST"}, {"id": 79, "cat": "竞对同业数据", "sub": "上市公司", "title": "分业务营收和毛利率拆分", "source": "巨潮资讯网", "url": "http://www.cninfo.com.cn/new/commonUrl?url=disclosure/list/notice", "desc": "下载年报/半年报取分部数据章节（分产品/分地区收入与毛利率）", "freq": "每季", "status": "成功", "sample": "安克创新2025年年度报告（238页PDF）'营业收入构成'披露：分产品充电储能类收入15,401,752,793.44元、占50.47%、毛利率41.25%（毛利率同比-0.21%）；智能创新类8,271,291,709.88元占27.11%；智能影音类6,833,490,946.62元占22.39%；分地区境外收入占96.62%", "note": "巨潮接口下载2025年年报PDF后用pymupdf解析，分产品/分地区收入与毛利率章节完整可提取", "method": "巨潮接口下载年报PDF→pymupdf提取分部数据表"}, {"id": 80, "cat": "竞对同业数据", "sub": "上市公司", "title": "大客户集中度（前五大客户占比）", "source": "巨潮资讯网", "url": "http://www.cninfo.com.cn/new/commonUrl?url=disclosure/list/notice", "desc": "年报前五名客户合计销售占比披露项", "freq": "半年度", "status": "成功", "sample": "安克创新2025年年报披露：前五名客户合计销售金额2,620,183,007.03元，占年度销售总额比例8.59%；前5大客户明细：客户一588,018,110.54元（1.93%）、客户二554,288,495.41元（1.82%）、客户三552,096,408.50元（1.81%）", "note": "同79：年报PDF'前五名客户'章节完整披露合计占比与明细，程序化可提取", "method": "巨潮接口下载年报PDF→pymupdf提取前五大客户表"}, {"id": 81, "cat": "竞对同业数据", "sub": "上市公司", "title": "产能利用率、扩产与募投公告", "source": "巨潮资讯网（类型过滤：募集/扩产类）", "url": "http://www.cninfo.com.cn/new/commonUrl?url=disclosure/list/notice", "desc": "按募投项目、扩产等关键词检索公告，跟踪产能进度", "freq": "每周", "status": "成功", "sample": "可转债转股情况公告等10条", "note": "v10：新增采集逻辑接线", "method": "API+POST"}, {"id": 82, "cat": "竞对同业数据", "sub": "上市公司", "title": "存货周转/应收账款数据", "source": "新浪财经", "url": "http://money.finance.sina.com.cn/corp/go.php/vFD_FinancialGuideLine/stockid/300866/ctrl/2025/displaytype/4.phtml", "desc": "财务指标页：存货/应收账款周转率与天数（改stockid查其他公司）", "freq": "每季", "status": "成功", "sample": "安克创新(300866)2025年财务指标页（GB2312服务端渲染表格）：存货周转率4.0733次、存货周转天数88.38天、应收账款周转率17.3042次、应收账款周转天数20.80天（2025-12-31累计列；四列依次为年报/三季报/中报/一季报）", "note": "新浪财经财务指标页直接服务端渲染，curl+GB18030解码即可解析全表，改stockid参数可查其他公司", "method": "curl-200→GB18030解码→提取周转率指标表格"}, {"id": 83, "cat": "竞对同业数据", "sub": "上市公司", "title": "招聘职位量监测", "source": "安克创新官方招聘站（示例）", "url": "https://career.anker.com.cn", "desc": "在招职位数量、校招/社招结构，反映扩张方向（各公司同法监控）", "freq": "每月", "status": "部分成功", "sample": "Gatsby预渲染内容含'安克创新社会招聘'板块及职能类别：采购与供应链类、产品与体验类、研发技术类、市场营销类、数据开发类；page-data.json显示职位申请入口跳转飞书招聘平台（https://anker-in.jobs.feishu.cn/campushirecn/position/application）", "note": "career.anker.com.cn可访问（200，'安克创新招聘·安克创新校园招聘·加入安克创新|安克招聘网'），社招/校招板块与职能分类可抓；但具体在招职位列表与数量由飞书招聘平台JS异步加载，程序化抓不到职位明细", "method": "curl-200→Gatsby预渲染HTML+page-data.json→职位列表为JS/飞书平台加载"}, {"id": 84, "cat": "竞对同业数据", "sub": "上市公司", "title": "专利/公告/投资者关系综合监控", "source": "深交所互动易 newircs/search/searchResult", "url": "https://irm.cninfo.com.cn/newircs/index/search", "desc": "企查查公司页：专利、工商变更、公告与新闻综合监控", "freq": "每周", "status": "成功", "sample": "安克最新问答8条", "note": "POST表单接口：pageNo=1&pageSize=10&searchTypes=1,2,3,4,5,6&keyWord=%E5%AE%89%E5%85%8B%E5%88%9B%E6%96%B0（Content-Type: application/x-www-form-urlencoded），返回JSON含contentType(1=投资者问答,3=公告)、mainContent、updateDate(Unix秒时间戳)；注意searchTypes=11时返回空，需用1,2,3,4,5,6。候选爱企查aiqicha.baidu.com被百度安全验证码拦截（curl与WebFetch均302至wappass.baidu.com图形验证页，无真实数据），弃用。互动易覆盖公告+投资者问答；专利监控需另行渠道（互动易仅通过问答/纠纷类提问间接覆盖专利话题，如NEC知识产权诉讼提问）；v10问答JSON化，P70/P84两卡自动注入", "method": "API"}, {"id": 85, "cat": "竞对同业数据", "sub": "上市公司-个股", "title": "奥海科技（002993）公告入口", "source": "新浪财经", "url": "http://money.finance.sina.com.cn/corp/go.php/vCB_AllBulletin/stockid/002993.phtml", "desc": "奥海科技全部公告列表（法定原文以巨潮资讯网为准）", "freq": "每周", "status": "成功", "sample": "最新公告：《奥海科技：2026年9月15日投资者关系活动记录表》2026-09-15；次条《关于参加2026年广东辖区投资者集体接待日…的公告》2026-09-11", "note": "新浪公告页服务端渲染(GBK)，公告标题+日期+详情链接直接在HTML列表中，列表含中报、股权激励、对外投资等全部公告", "method": "curl-200+iconv-GBK解析"}, {"id": 86, "cat": "竞对同业数据", "sub": "上市公司-个股", "title": "佳禾智能（300793）公告入口", "source": "新浪财经", "url": "http://money.finance.sina.com.cn/corp/go.php/vCB_AllBulletin/stockid/300793.phtml", "desc": "佳禾智能公告列表，含年报、转债与投资者关系公告", "freq": "每周", "status": "成功", "sample": "最新公告：《佳禾智能：关于2026年第三季度可转债转股情况的公告》2026-10-08；次条《关于筹划股权收购事项暨签署〈收购意向协议〉的公告》2026-09-18", "note": "服务端渲染公告列表，含年报/可转债/投资者关系公告，与词条描述相符", "method": "curl-200+iconv-GBK解析"}, {"id": 87, "cat": "竞对同业数据", "sub": "上市公司-个股", "title": "海能实业（300787）公告入口", "source": "新浪财经", "url": "http://money.finance.sina.com.cn/corp/go.php/vCB_AllBulletin/stockid/300787.phtml", "desc": "海能实业公告列表，含定期报告、回购进展", "freq": "每周", "status": "成功", "sample": "最新公告：《海能实业：关于回购公司股份的进展公告》2026-10-08；次条《关于2026年第三季度可转换公司债券转股情况的公告》2026-10-08", "note": "服务端渲染公告列表，最新条目即回购进展，含定期报告类公告", "method": "curl-200+iconv-GBK解析"}, {"id": 88, "cat": "竞对同业数据", "sub": "上市公司-个股", "title": "安克创新（300866）公告入口", "source": "安克创新官网投资者专栏", "url": "https://www.anker.com.cn/investor/information-disclosure?stock=a-share", "desc": "官网IR页：财务报告、公告披露、治理文件汇总", "freq": "每周", "status": "成功", "sample": "IR页HTML内嵌财报PDF直链：《2026-04-30_2026年一季度报告.pdf》《2026-04-10_2025年年度报告.pdf》《2025-10-30_2025年三季度报告.pdf》等定期报告序列", "note": "Next.js页面但财务报告/公告披露列表为SSR输出，PDF文件名含日期可直接解析，无需登录", "method": "curl-200解析SSR内容"}, {"id": 89, "cat": "竞对同业数据", "sub": "上市公司-个股", "title": "绿联科技（301606）公告入口", "source": "新浪财经", "url": "http://money.finance.sina.com.cn/corp/go.php/vCB_AllBulletin/stockid/301606.phtml", "desc": "绿联科技公告列表，含定期报告、H股发行进展", "freq": "每周", "status": "成功", "sample": "最新公告：《绿联科技：回购股份报告书》2026-10-20；次条《关于回购股份事项前十名股东…持股情况的公告》2026-10-20", "note": "服务端渲染公告列表，最新为回购报告书，列表含董事会决议等定期/临时公告", "method": "curl-200+iconv-GBK解析"}, {"id": 90, "cat": "竞对同业数据", "sub": "非上市公司", "title": "非上市同业新闻监测", "source": "充电头网（curl_cffi过JS验证）·新闻页（非上市品牌关键词）", "url": "https://www.chongdiantou.com", "desc": "充电配件垂直媒体：倍思、酷态科、闪极等新品与供应链新闻", "freq": "每日", "status": "成功", "sample": "近7天0条（如实显示占位）", "note": "v10：新增采集器接线；品牌口径与品牌官网区一致", "method": "curl_cffi+HTML解析"}, {"id": 92, "cat": "竞对同业数据", "sub": "非上市公司", "title": "电商销售额监测（月销量）", "source": "Amazon Best Sellers充电类榜单（固定页）+商品页月购徽章", "url": "https://www.amazon.com/Best-Sellers-Cell-Phones-Accessories/zgbs/wireless", "desc": "Amazon商品页'bought in past month'月购买量区间（美国市场月销量代理）", "freq": "每月", "status": "成功", "sample": "充电器商品页SSR含元素 id=\"pqv-bought-in-last-month\"，文本\"10K+ bought in past month\"；同页可抓价格$9.99、\"54,945 global ratings\"；注意徽章非全量覆盖（B088NRLMPV等部分商品该div为空）", "note": "固定Best Sellers充电类榜单页：按月枚举榜单商品→逐个取商品页bought in past month月购区间（美国市场月销量代理）；原单商品页URL弃用；v9起看板不再单独展示（用户要求），采集保留", "method": "curl --compressed + UA + i18n-prefs=USD + Accept-Language: en-US；商品页 /dp/{ASIN} 直接SSR，正则 '>([\\dK+,]+)\\+?\\s*bought in past month'，徽章缺失时标记null"}, {"id": 93, "cat": "竞对同业数据", "sub": "非上市公司", "title": "Kickstarter众筹表现", "source": "Kickstarter discover JSON接口（curl_cffi）", "url": "https://www.kickstarter.com/discover/categories/technology", "desc": "Technology类目页，筛选充电类项目金额与支持人数", "freq": "每周", "status": "成功", "sample": "iMicro XL15 · $54,173 · 542%达成（充电/电子配件相关7/12）", "note": "v9：拆独立卡；12项目快照+JSON注入", "method": "API(curl_cffi)"}, {"id": 94, "cat": "竞对同业数据", "sub": "非上市公司", "title": "摩点众筹表现", "source": "摩点 realtime/get_simple_product JSONP", "url": "https://www.modian.com", "desc": "数码潮玩类众筹项目目标金额、已筹金额与进度", "freq": "每周", "status": "成功", "sample": "《艾希：续》¥3,867.7万 · 386766%达成", "note": "v9：拆独立卡；金额榜Top10+科技类保底", "method": "API(JSONP)"}, {"id": 95, "cat": "竞对同业数据", "sub": "非上市公司", "title": "融资和IPO辅导动态", "source": "深圳证监局", "url": "https://www.csrc.gov.cn/shenzhen/c105618/common_list.shtml", "desc": "深圳辖区辅导备案公示：倍思、闪极等的IPO辅导进展（融资配IT桔子）", "freq": "事件驱动", "status": "成功", "sample": "接口返回共363条辅导公示，示例：《中金公司关于深圳市正浩创新科技股份有限公司(EcoFlow)首次公开发行股票并上市辅导备案信息公示》2021-09-30", "note": "列表页本身AJAX动态加载，数据接口 /searchList/{channelid}?_isJson=true 返回JSON(标题+日期+URL)，解析简单；v9起看板不再单独展示（用户要求），采集保留", "method": "curl-200+JSON接口"}, {"id": 97, "cat": "竞对同业数据", "sub": "非上市公司", "title": "社媒声量监测（小红书/抖音）", "source": "新榜公开榜单频道（新榜旗下，现行域名ls.newrank.cn）", "url": "https://ls.newrank.cn/rankmore", "desc": "小红书品牌声量、爆文排行与投放榜（抖音配蝉妈妈）", "freq": "每月", "status": "成功", "sample": "榜单目录（curl直抓96KB，SSR）：'抖音精选月度精选作者 第5期 2026-10-19'、'快手MCN影响力排行榜 第88期 2026-10-09'、'Focus 30小红书电商经营月度榜单 第8期 2025-07-14'（榜单名+期数+更新日期，复现抓取验证通过）", "note": "按用户决定：监测范围限定为新榜公开榜单目录（榜单名/期数/日期，SSR免登录可抓）；账号级声量数值不做。原新红xh.newrank.cn已注销且无迁移域名；v9起看板不再单独展示（用户要求），采集保留", "method": "curl-200（浏览器辅助验证登录墙）"}, {"id": 98, "cat": "竞对同业数据", "sub": "非上市公司", "title": "同规格SKU调价频率监测", "source": "慢慢买", "url": "https://www.manmanbuy.com", "desc": "查淘宝/京东商品历史价格曲线与低价记录，跟踪调价频率", "freq": "每周", "status": "部分成功", "sample": "主站title='慢慢买比价网-查询历史价格走势（支持淘宝、京东等）'，工具页HistoryLowest.aspx 200（'查询商品历史价格走势（支持京东，天猫，淘宝等）'）；但未拿到具体商品价格曲线数值", "note": "首页/工具页可访问，但商品分类页为JS跳转中转页(加密令牌)，历史价格查询依赖浏览器插件/APP环境，程序化POST接口未命中(500)；v9起看板不再单独展示（用户要求），采集保留", "method": "curl-200-接口500"}, {"id": 99, "cat": "竞对同业数据", "sub": "非上市公司-个股", "title": "倍思 Baseus", "source": "倍思官网", "url": "https://www.baseus.cn", "desc": "国内官方商城：新品上市、主推SKU与品牌活动（海外站baseus.com）", "freq": "每月", "status": "部分成功", "sample": "title='Baseus倍思 伸缩线充电产品全球销量第一'，含品牌关键词；页面仅14KB SPA空壳，无任何产品名/价格", "note": "官网为Vue/React单页应用，curl仅返回壳文件；WebFetch渲染通道同样只取到标题，产品/SKU数据需浏览器执行JS或找商城API", "method": "curl-200-SPA空壳+WebFetch确认"}, {"id": 100, "cat": "竞对同业数据", "sub": "非上市公司-个股", "title": "酷态科 ZTEC", "source": "CUKTECH酷态科官网", "url": "https://cuktech.com.cn", "desc": "官网新品与品牌动态，覆盖移动电源、充电器、数据线", "freq": "每月", "status": "成功", "sample": "移动电源页(19万字节SSR)产品目录：10号超级电能棒、15号移动电源Air、CP13电能块「口袋版」、10号氮化镓充电器Ultra、30号电能仓等", "note": "官网200且产品列表服务端渲染，产品名称可直接解析（价格在商城端，页面未含）", "method": "curl-200解析SSR产品目录"}, {"id": 101, "cat": "竞对同业数据", "sub": "非上市公司-个股", "title": "iWALK", "source": "iWALK官网", "url": "https://www.iwalk.net", "desc": "全球官网：口袋充电宝等新品与品牌动态", "freq": "每月", "status": "成功", "sample": "首页博客区新品动态：《iWALK AI 快充充电宝 67700mAh震撼发布》《iWALK爱沃可荣获2025 iF设计大奖》《iWALK Launches Michael Kors Collection》", "note": "curl仅得9KB JS空壳(title=Home)，经web_reader渲染同URL成功提取新品/品牌动态；定期抓取需渲染通道", "method": "curl-200-空壳→web_reader-200"}, {"id": 102, "cat": "竞对同业数据", "sub": "非上市公司-个股", "title": "Zendure征拓 / SHARGE闪极", "source": "Zendure官网", "url": "https://www.zendure.com", "desc": "征拓官网新品动态（闪极以同样方式监控sharge.com）", "freq": "每月", "status": "成功", "sample": "Shopify官网(87万字节)产品目录：SolarFlow 800 Plus、SolarFlow 2400 AC Plus、AB2000L Battery(1920Wh)、Smart Meter 3CT等", "note": "URL可访问且产品链接/名称SSR输出(/products/*路径可直接解析)；页面主推户用储能新品线", "method": "curl-200解析产品目录"}, {"id": 103, "cat": "竞对同业数据", "sub": "非上市公司-个股", "title": "威迅 Vention", "source": "Vention官网", "url": "https://ventiontech.com/zh", "desc": "中文官网：连接线/HDMI等新品与产品目录更新", "freq": "每月", "status": "成功", "sample": "中文官网(76万字节SSR)产品：140W 4-Port GaN5.0 Charger with Smart Display、7-in-2 Plug-in Docking Station、HDMI Converter等", "note": "ventiontech.com/zh 200，title='Vention——创新生活'，产品卡与分类目录在HTML中可直接解析", "method": "curl-200解析产品目录"}, {"id": 201, "cat": "竞对同业", "sub": "上市公司", "title": "奥海科技·季度业绩", "source": "东方财富数据中心", "url": "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_LICO_FN_CPD", "desc": "奥海科技(002993)季度营收/净利及同比", "freq": "每季", "status": "成功", "sample": "2026H1营收79.23亿+148.33%（并表沃量）", "note": "v9新增；14季度", "method": "API"}, {"id": 202, "cat": "竞对同业", "sub": "上市公司", "title": "佳禾智能·季度业绩", "source": "东方财富数据中心", "url": "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_LICO_FN_CPD", "desc": "佳禾智能(300793)季度业绩", "freq": "每季", "status": "成功", "sample": "2026H1营收11.37亿+13.2%", "note": "v9新增；14季度", "method": "API"}, {"id": 203, "cat": "竞对同业", "sub": "上市公司", "title": "海能实业·季度业绩", "source": "东方财富数据中心", "url": "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_LICO_FN_CPD", "desc": "海能实业(300787)季度业绩", "freq": "每季", "status": "成功", "sample": "2026Q3营收27.44亿+13.7%", "note": "v9新增；14季度", "method": "API"}, {"id": 204, "cat": "竞对同业", "sub": "上市公司", "title": "绿联科技·季度业绩", "source": "东方财富数据中心", "url": "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_LICO_FN_CPD", "desc": "绿联科技(301606)季度业绩", "freq": "每季", "status": "成功", "sample": "2026H1营收58.21亿+50.9%", "note": "v9新增；14季度", "method": "API"}, {"id": 205, "cat": "竞对同业", "sub": "上市公司", "title": "安克创新·季度业绩", "source": "东方财富数据中心", "url": "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_LICO_FN_CPD", "desc": "安克创新(300866)季度业绩（面板趋势）", "freq": "每季", "status": "成功", "sample": "2026H1营收166.05亿+29.05%", "note": "v9新增；14季度", "method": "API"}, {"id": 211, "cat": "竞对同业", "sub": "上市公司", "title": "奥海科技·存货/应收周转", "source": "东方财富数据中心", "url": "https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_F10_FINANCE_MAINFINADATA", "desc": "年报口径周转率", "freq": "每年", "status": "成功", "sample": "CHZZL/YSZKZZL 3期", "note": "v9新增", "method": "API"}, {"id": 212, "cat": "竞对同业", "sub": "上市公司", "title": "佳禾智能·存货/应收周转", "source": "东方财富数据中心", "url": "https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_F10_FINANCE_MAINFINADATA", "desc": "同上", "freq": "每年", "status": "成功", "sample": "3期年报", "note": "v9新增", "method": "API"}, {"id": 213, "cat": "竞对同业", "sub": "上市公司", "title": "海能实业·存货/应收周转", "source": "东方财富数据中心", "url": "https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_F10_FINANCE_MAINFINADATA", "desc": "同上", "freq": "每年", "status": "成功", "sample": "3期年报", "note": "v9新增", "method": "API"}, {"id": 214, "cat": "竞对同业", "sub": "上市公司", "title": "绿联科技·存货/应收周转", "source": "东方财富数据中心", "url": "https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_F10_FINANCE_MAINFINADATA", "desc": "同上", "freq": "每年", "status": "成功", "sample": "3期年报", "note": "v9新增", "method": "API"}, {"id": 221, "cat": "竞对同业", "sub": "上市公司", "title": "奥海科技·主营构成", "source": "https://emweb.securities.eastmoney.com/PC_HSF10/BusinessAnalysis/PageAjax", "url": "https://emweb.securities.eastmoney.com/PC_HSF10/BusinessAnalysis/PageAjax", "desc": "最新报告期分产品营收占比", "freq": "每季", "status": "成功", "sample": "2026-06-30分产品", "note": "v9新增", "method": "API"}, {"id": 222, "cat": "竞对同业", "sub": "上市公司", "title": "佳禾智能·主营构成", "source": "https://emweb.securities.eastmoney.com/PC_HSF10/BusinessAnalysis/PageAjax", "url": "https://emweb.securities.eastmoney.com/PC_HSF10/BusinessAnalysis/PageAjax", "desc": "同上", "freq": "每季", "status": "成功", "sample": "最新期", "note": "v9新增", "method": "API"}, {"id": 223, "cat": "竞对同业", "sub": "上市公司", "title": "海能实业·主营构成", "source": "https://emweb.securities.eastmoney.com/PC_HSF10/BusinessAnalysis/PageAjax", "url": "https://emweb.securities.eastmoney.com/PC_HSF10/BusinessAnalysis/PageAjax", "desc": "同上", "freq": "每季", "status": "成功", "sample": "最新期", "note": "v9新增", "method": "API"}, {"id": 224, "cat": "竞对同业", "sub": "上市公司", "title": "绿联科技·主营构成", "source": "https://emweb.securities.eastmoney.com/PC_HSF10/BusinessAnalysis/PageAjax", "url": "https://emweb.securities.eastmoney.com/PC_HSF10/BusinessAnalysis/PageAjax", "desc": "同上", "freq": "每季", "status": "成功", "sample": "最新期", "note": "v9新增", "method": "API"}, {"id": 231, "cat": "竞对同业", "sub": "上市公司", "title": "奥海科技·最新公告", "source": "巨潮资讯网", "url": "http://www.cninfo.com.cn", "desc": "巨潮公告近10条快照", "freq": "每周", "status": "成功", "sample": "2026-09-11 投资者集体接待日公告", "note": "v9新增；topSearch解析orgId，备注存PDF链接", "method": "API+POST"}, {"id": 232, "cat": "竞对同业", "sub": "上市公司", "title": "佳禾智能·最新公告", "source": "巨潮资讯网", "url": "http://www.cninfo.com.cn", "desc": "同上", "freq": "每周", "status": "成功", "sample": "近10条", "note": "v9新增", "method": "API+POST"}, {"id": 233, "cat": "竞对同业", "sub": "上市公司", "title": "海能实业·最新公告", "source": "巨潮资讯网", "url": "http://www.cninfo.com.cn", "desc": "同上", "freq": "每周", "status": "成功", "sample": "近10条", "note": "v9新增", "method": "API+POST"}, {"id": 234, "cat": "竞对同业", "sub": "上市公司", "title": "绿联科技·最新公告", "source": "巨潮资讯网", "url": "http://www.cninfo.com.cn", "desc": "同上", "freq": "每周", "status": "成功", "sample": "近10条", "note": "v9新增", "method": "API+POST"}];
+var STATMAP={'成功':['c-ok','已接入'],'部分成功':['c-warn','受限/接入中'],'失败':['c-warn','失败']};
+// 状态点 → 文字chip
+root.querySelectorAll('span.dot.g,span.dot.y').forEach(function(d){
+  var c=document.createElement('span');c.className='chip '+(d.classList.contains('g')?'c-ok':'c-warn');
+  if(d.title)c.title=d.title;
+  c.innerHTML='<span class="cdot"></span>'+(d.classList.contains('g')?'已接入':'受限/接入中');
+  d.replaceWith(c);
+});
+// 卡片：id + 底部来源行注入
+root.querySelectorAll('[data-k]').forEach(function(el){
+  var ids=el.getAttribute('data-k').split(' ');
+  var pid='P'+ids[0];
+  el.id='card-'+pid;
+  var p=null;for(var i=0;i<PROV.length;i++){if(PROV[i].id==ids[0]){p=PROV[i];break}}
+  var foot=el.querySelector('.foot');if(!foot||!p)return;
+  var first=foot.firstElementChild;
+  var sup=document.createElement('sup');sup.className='src-ref';sup.setAttribute('data-ref',pid);sup.textContent='['+pid+']';sup.title='点击查看溯源详情';
+  if(first&&first.tagName==='A'){first.appendChild(sup);}
+  else if(first&&first.tagName==='SPAN'&&!first.querySelector('a')){
+    first.classList.add('srcline');
+    first.innerHTML='<span class="src-name" data-ref="'+pid+'">'+first.textContent+'</span>'+sup.outerHTML+
+      '<a class="src-link" href="'+p.url+'" target="_blank" rel="noopener" title="打开来源页">⧉</a>';
+  }
+  if(ids.length>1&&foot.querySelector('.srcline')){
+    var sup2=document.createElement('sup');sup2.className='src-ref';sup2.setAttribute('data-ref',pid);
+    sup2.textContent='+'+(ids.length-1);sup2.title='本卡合并监测'+ids.length+'项，详见附录';
+    foot.querySelector('.srcline').appendChild(sup2);
+  }
+});
+// 全局溯源tooltip（单节点+委托）
+var tip=document.createElement('div');tip.className='prov-tip';tip.setAttribute('role','tooltip');root.appendChild(tip);
+var tipTimer=null,hideTimer=null;
+function provById(pid){for(var i=0;i<PROV.length;i++){if('P'+PROV[i].id===pid)return PROV[i]}return null}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function tipHTML(p){
+  var st=STATMAP[p.status]||['',''];
+  var h='<div class="pt-t">'+esc(p.title)+' · P'+p.id+'</div>';
+  h+='<div class="pt-row"><span class="pt-k">来源</span><span class="pt-v">'+esc(p.source)+'</span></div>';
+  h+='<div class="pt-row"><span class="pt-k">链接</span><span class="pt-v"><a href="'+esc(p.url)+'" target="_blank" rel="noopener">'+esc(p.url.length>58?p.url.slice(0,58)+'…':p.url)+'</a></span></div>';
+  h+='<div class="pt-row"><span class="pt-k">采集</span><span class="pt-v">'+esc(p.method||'—')+'</span></div>';
+  h+='<div class="pt-row"><span class="pt-k">频率</span><span class="pt-v">'+esc(p.freq||'—')+' · 上次抓取 '+esc(p.lastFetch||'2026-10-23')+'</span></div>';
+  h+='<div class="pt-row"><span class="pt-k">状态</span><span class="pt-v"><span class="pchip '+st[0]+'">'+st[1]+'</span></span></div>';
+  if(p.sample)h+='<div class="pt-row"><span class="pt-k">实测</span><span class="pt-v">'+esc(p.sample.length>76?p.sample.slice(0,76)+'…':p.sample)+'</span></div>';
+  if(p.note)h+='<div class="pt-row"><span class="pt-k">备注</span><span class="pt-v">'+esc(p.note.length>70?p.note.slice(0,70)+'…':p.note)+'</span></div>';
+  return h;
+}
+document.addEventListener('mouseover',function(e){
+  var t=e.target.closest('[data-ref]');if(!t)return;
+  clearTimeout(hideTimer);
+  tipTimer=setTimeout(function(){
+    var p=provById(t.getAttribute('data-ref'));if(!p)return;
+    tip.innerHTML=tipHTML(p);tip.style.display='block';
+    var r=t.getBoundingClientRect();
+    tip.style.left='0px';tip.style.top='0px';
+    var tw=tip.offsetWidth,th=tip.offsetHeight;
+    var lx=r.left;if(lx+tw>window.innerWidth-12)lx=window.innerWidth-tw-12;
+    var ly=r.bottom+8;if(ly+th>window.innerHeight-12)ly=r.top-th-8;
+    tip.style.left=Math.max(8,lx)+'px';tip.style.top=Math.max(8,ly)+'px';
+  },150);
+});
+document.addEventListener('mouseout',function(e){
+  var t=e.target.closest('[data-ref]');if(!t)return;
+  clearTimeout(tipTimer);
+  hideTimer=setTimeout(function(){tip.style.display='none'},250);
+});
+tip.addEventListener('mouseenter',function(){clearTimeout(hideTimer)});
+tip.addEventListener('mouseleave',function(){tip.style.display='none'});
+// 序号点击 → 附录行
+document.addEventListener('click',function(e){
+  var t=e.target.closest('.src-ref');if(!t)return;
+  var app=document.getElementById('appendix');
+  app.setAttribute('data-open','true');
+  renderProv();
+  var row=document.getElementById('prov-'+t.getAttribute('data-ref'));
+  if(row){row.scrollIntoView({behavior:'smooth',block:'center'});
+    row.classList.remove('flash');void row.offsetWidth;row.classList.add('flash');}
+});
+document.getElementById('provbtn').addEventListener('click',function(){
+  var app=document.getElementById('appendix');
+  app.setAttribute('data-open','true');renderProv();
+});
+// ===== 溯源索引表 =====
+function renderProv(){
+  var cat=document.getElementById('pfCat').value,st=document.getElementById('pfStatus').value,q=document.getElementById('pfQ').value.trim().toLowerCase();
+  var rows=PROV.filter(function(p){
+    if(cat&&p.cat!==cat)return false;
+    if(st&&p.status!==st)return false;
+    if(q&&(p.title+' '+p.source+' '+p.url).toLowerCase().indexOf(q)<0)return false;
+    return true;
+  });
+  document.getElementById('provRows').innerHTML=rows.map(function(p){
+    var stc=STATMAP[p.status]||['',''];
+    var u=esc(p.url);var us=u.replace(/^https?:\/\//,'');
+    return '<tr id="prov-P'+p.id+'"><td class="pnum">P'+p.id+'</td><td>'+esc(p.cat)+'</td>'+
+      '<td class="ptitle" data-goto="card-P'+p.id+'" title="回跳看板卡片">'+((window.DDATA&&DDATA._meta&&DDATA._meta['P'+p.id]&&DDATA._meta['P'+p.id].r)?('<span class="rlbadge '+(DDATA._meta['P'+p.id].r==='A'?'a':DDATA._meta['P'+p.id].r==='C'?'c':'b')+'" title="可靠度'+DDATA._meta['P'+p.id].r+'级'+(DDATA._meta['P'+p.id].k?'：'+DDATA._meta['P'+p.id].k:'')+'">'+DDATA._meta['P'+p.id].r+'</span> '):'')+esc(p.title)+'</td>'+
+      '<td>'+esc(p.source)+'</td>'+
+      '<td><a href="'+u+'" target="_blank" rel="noopener">'+esc(us.length>44?us.slice(0,44)+'…':us)+'</a></td>'+
+      '<td>'+esc(p.method||'—')+'</td><td>'+esc(p.freq||'—')+'</td>'+
+      '<td><span class="pchip '+stc[0]+'">'+stc[1]+'</span></td></tr>';
+  }).join('')||'<tr><td colspan="8" style="color:var(--n500);padding:18px">无匹配条目</td></tr>';
+  document.getElementById('pfCount').textContent='显示 '+rows.length+' / '+PROV.length+' 条';
+}
+document.getElementById('provToggle').addEventListener('click',function(){
+  var app=document.getElementById('appendix');
+  var open=app.getAttribute('data-open')==='true';
+  app.setAttribute('data-open',open?'false':'true');
+  if(!open)renderProv();
+});
+['pfCat','pfStatus'].forEach(function(id){document.getElementById(id).addEventListener('change',renderProv)});
+document.getElementById('pfQ').addEventListener('input',renderProv);
+document.getElementById('provRows').addEventListener('click',function(e){
+  var t=e.target.closest('[data-goto]');if(!t)return;
+  var card=document.getElementById(t.getAttribute('data-goto'));
+  if(card){card.scrollIntoView({behavior:'smooth',block:'center'});
+    card.style.transition='box-shadow .3s';card.style.boxShadow='0 0 0 3px rgba(0,101,176,.25)';
+    setTimeout(function(){card.style.boxShadow=''},1200);}
+});
+// 初始化：板块下拉 + 摘要
+(function(){
+  var cats={};PROV.forEach(function(p){cats[p.cat]=1});
+  var sel=document.getElementById('pfCat');
+  Object.keys(cats).forEach(function(c){var o=document.createElement('option');o.textContent=c;sel.appendChild(o)});
+  var srcs={};PROV.forEach(function(p){srcs[p.source]=1});
+  var lim=PROV.filter(function(p){return p.status!=='成功'}).length;
+  document.getElementById('provSum').textContent='共 '+PROV.length+' 条 · '+Object.keys(srcs).length+' 个来源 · '+lim+' 项受限/接入中 · 最近抓取 2026-10-23';
+  window.__provOK=true;
+})();</script>
+</body>
+</html>
