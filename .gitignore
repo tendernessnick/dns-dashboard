@@ -5,6 +5,9 @@ __pycache__/
 # 采集运行临时产物
 *.log
 
+# 验收截图中间产物（结论记录于 docs/看板模块化/00_模块化设计与规范.md）
+看板/_shots_v15/
+
 # 系统文件
 Thumbs.db
 .DS_Store

@@ -20,12 +20,12 @@
 </div></header>
 <div class="mline"></div>
 <nav class="toolbar"><div class="toolbar-in">
-  <span id="dnav" style="display:flex;height:100%">
+  <span id="dnav">
     <a class="tlink" href="#m1">宏观数据</a><a class="tlink" href="#m2">大宗商品</a><a class="tlink" href="#m3">行业数据</a><a class="tlink" href="#m4">产品品类</a><a class="tlink" href="#m5">竞对同业</a>
   </span>
   <span class="tspace"></span>
-  <span class="pctl" title="切换折线图显示周期（仅影响曲线渲染，不改动固化数据）"><i>周期</i><b class="on">默认</b><b data-m="3">3月</b><b data-m="6">6月</b><b data-m="12">1年</b><b data-m="36">3年</b><b data-all="1">全部</b></span>
-  <a class="tbtn" href="#appendix" id="provbtn">数据溯源索引</a>
+  <span class="tb2"><span class="pctl" title="切换折线图显示周期（仅影响曲线渲染，不改动固化数据）"><i>周期</i><b class="on">默认</b><b data-m="3">3月</b><b data-m="6">6月</b><b data-m="12">1年</b><b data-m="36">3年</b><b data-all="1">全部</b></span>
+  <a class="tbtn" href="#appendix" id="provbtn">数据溯源索引</a></span>
 </div></nav>
 <div class="ticker"><div class="ticker-in">
   <span class="tk-eyebrow">今日焦点</span>
@@ -52,10 +52,10 @@
       <input id="pfQ" placeholder="搜索词条 / 来源 / URL…">
       <span class="pcount" id="pfCount"></span>
     </div>
-    <table class="ptable">
+    <div class="twrap"><table class="ptable">
       <thead><tr><th style="width:52px">序号</th><th style="width:88px">板块</th><th>词条</th><th>来源</th><th>来源URL</th><th style="width:110px">采集方式</th><th style="width:64px">频率</th><th style="width:88px">状态</th></tr></thead>
       <tbody id="provRows"></tbody>
-    </table>
+    </table></div>
   </div>
 </section>
 

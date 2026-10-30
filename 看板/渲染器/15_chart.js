@@ -24,7 +24,7 @@ function drawChart(el,redraw){
   function dec(){return (b[1]==null)?2:b[1]}
   var CC=v8cols(),isUp=vals[n-1]>=vals[0],c=isUp?CC.up:CC.down;
   var gid='v8g'+(++v8seq);
-  var svg='<svg'+((redraw||V8REDUCE)?' class="redraw"':'')+' width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="历史趋势，悬停查看数值">';
+  var svg='<svg'+((redraw||V8REDUCE)?' class="redraw"':'')+' width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="历史趋势，悬停或左右滑动查看数值">';
   var span=hi-lo,rawStep=span/(mini?3:3.5),mag=Math.pow(10,Math.floor(Math.log(rawStep)/Math.LN10));
   var nm=rawStep/mag,step=(nm>=5?10:nm>=2?5:nm>=1?2:1)*mag;
   for(var tv=Math.ceil(lo/step)*step,i2=0;tv<=hi+1e-9;tv=(Math.ceil(lo/step)*step+(++i2)*step)){
@@ -77,6 +77,7 @@ function drawChart(el,redraw){
   var tip=document.createElement('div');tip.className='ctool';
   el.innerHTML=svg;el.appendChild(tip);
   var gl=el.querySelector('.guide'),hd=el.querySelector('.hdot'),hit=el.querySelector('.hit');
+  function v8hideTick(){tip.style.display='none';gl.style.display='none';hd.style.display='none'}
   hit.addEventListener('pointermove',function(e){
     var r=el.getBoundingClientRect();var x=e.clientX-r.left;
     var i=Math.round((x-pl)/((W-pl-pr)/(n-1)));i=Math.max(0,Math.min(n-1,i));
@@ -90,7 +91,10 @@ function drawChart(el,redraw){
     var tx=px+10;if(tx+tip.offsetWidth>W-2)tx=px-tip.offsetWidth-10;
     tip.style.left=tx+'px';tip.style.top=Math.max(2,py-tip.offsetHeight-10)+'px';
   });
-  hit.addEventListener('pointerleave',function(){tip.style.display='none';
-    gl.style.display='none';hd.style.display='none'});
+  hit.addEventListener('pointerleave',v8hideTick);
+  /* v15移动端：触摸抬手/系统中断（滚页面接管）时收尾提示；.hit 的 touch-action:pan-y
+     保证竖扫滚页面、横扫刷数值两种手势并存（样式见 _style_v8.css v15段） */
+  hit.addEventListener('pointercancel',v8hideTick);
+  hit.addEventListener('pointerup',function(e){if(e.pointerType!=='mouse')v8hideTick()});
 }
 root.querySelectorAll('.chart').forEach(function(el){drawChart(el);charts.push(el)});
