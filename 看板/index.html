@@ -977,6 +977,32 @@ root.querySelectorAll('[data-vk]').forEach(function(el){
   var b=BIND[pid]||[null,null];var v=s.rows[s.rows.length-1][1];
   var bEl=el.querySelector('b');if(bEl)bEl.textContent=(v>=0?'':'')+fmtN(v,b[1])+((b[0]==='%')?'%':'');
 });
+/* v14.1修复：静态日期占位统一刷新。
+   背景：骨架ticker日期行、卡JSON指标行标签/指标条说明/环形文案中的日期是构建期占位，
+   此前绑定器只刷新数值导致"数值新、日期旧"。此块按各自数据最新一行的日期同步，
+   只替换已存在的日期token（前缀日期·来源 / 最新MM-DD /（MM-DD）/（M月）），不动来源等其余文本。 */
+(function(){
+  function pidOf(host){
+    if(!host)return null;
+    var p=host.getAttribute('data-tk')||host.getAttribute('data-vk')||host.getAttribute('data-ring');
+    if(!p){var dk=host.getAttribute('data-k');p=dk?('P'+String(dk).trim().split(/\s+/)[0].replace(/^P/,'')):null;}
+    return p;
+  }
+  function fresh(el){
+    var s=getSeries(pidOf(el.closest('[data-tk],[data-vk],[data-k],[data-ring]')));
+    if(!s||!s.rows||!s.rows.length)return;
+    var last=String(s.rows[s.rows.length-1][0]);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(last))return;
+    var md=last.slice(5,10),mo=Number(last.slice(5,7))+'月',t=el.textContent;
+    var out=t.replace(/(^|\s)(\d{1,2}-\d{1,2})(期)?(\s*·)/,'$1'+md+'$3$4')
+             .replace(/最新(\d{1,2}-\d{1,2})/,'最新'+md)
+             .replace(/（(\d{1,2}-\d{1,2})）/,'（'+md+'）')
+             .replace(/（(\d{1,2})月）/,'（'+mo+'）')
+             .replace(/(^|\s)(\d{1,2})月(\s*·)/,'$1'+mo+'$3');
+    if(out!==t)el.textContent=out;
+  }
+  root.querySelectorAll('.tk>.s,.sc>.s,.statline>.k,.rs').forEach(fresh);
+})();
 // 40_copanel.js —— 渲染器：上市公司切换面板（.cotab → .co-panel 显隐+重绘）
 var cotabs=[].slice.call(root.querySelectorAll('[data-cotab]'));
 cotabs.forEach(function(b){
