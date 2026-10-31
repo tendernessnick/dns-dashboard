@@ -40,7 +40,7 @@ function drawChart(el,redraw){
   var pts=s.rows.map(function(r,i){return [X(i),Y(r[ci])]});
   var line=pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ');
   svg+='<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1">'
-    +'<stop offset="0" stop-color="'+c+'" stop-opacity=".20"/>'
+    +'<stop offset="0" stop-color="'+c+'" stop-opacity=".18"/>'
     +'<stop offset="1" stop-color="'+c+'" stop-opacity="0"/></linearGradient></defs>';
   svg+='<polygon class="area-a" fill="url(#'+gid+')" points="'+pl+','+(H-pb)+' '+line+' '+(W-pr)+','+(H-pb)+'"/>';
   svg+='<polyline class="line-a" pathLength="1" fill="none" stroke="'+c+'" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round" points="'+line+'"/>';
@@ -71,7 +71,7 @@ function drawChart(el,redraw){
     svg+='<text x="'+X(i3).toFixed(1)+'" y="'+(H-4)+'" text-anchor="'+a+'">'+XL(s.rows[i3][0])+'</text>';
   }
   svg+='<line class="guide" x1="0" y1="'+pt+'" x2="0" y2="'+(H-pb)+'" style="display:none"/>';
-  svg+='<circle class="hdot" r="4" style="display:none"/>';
+  svg+='<circle class="hdot" r="4.5" style="display:none"/>';
   svg+='<rect class="hit" x="0" y="0" width="'+W+'" height="'+H+'"/>';
   svg+='</svg>';
   var tip=document.createElement('div');tip.className='ctool';

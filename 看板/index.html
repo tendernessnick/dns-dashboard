@@ -425,6 +425,48 @@
   #dns-dash #toTop{right:14px;bottom:calc(18px + env(safe-area-inset-bottom))}
 }
 
+/* ===== v16 视觉精修层（2026-11-01）：设计令牌/卡片分层/英雄ticker/图表细节/入场动效/空态 ===== */
+/* A. 设计令牌：间距刻度 + 字号阶梯 + 三级elevation */
+#dns-dash{
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s6:24px;--s8:32px;
+  --fs-xs:11px;--fs-sm:12px;--fs-md:13px;--fs-base:14px;--fs-lg:17px;--fs-xl:21px;--fs-2xl:28px;--fs-3xl:34px;
+  --el-rest:0 1px 2px rgba(15,24,32,.05),0 1px 3px rgba(15,24,32,.04);
+  --el-hover:0 2px 4px rgba(15,24,32,.06),0 12px 24px -8px rgba(15,24,32,.14);
+  --el-pop:0 6px 12px -4px rgba(15,24,32,.12),0 20px 40px -12px rgba(15,24,32,.20);
+}
+#dns-dash .mod{margin-top:48px}
+#dns-dash .grp{margin:24px 2px 12px}
+#dns-dash .row,#dns-dash .crow{gap:16px}
+/* B. 卡片分层质感：更轻边框 + el-rest→el-hover 抬升150ms；foot统一 */
+#dns-dash .card{border-color:#E4EAEF;box-shadow:var(--el-rest);padding:16px 18px 14px}
+#dns-dash .card:hover{box-shadow:var(--el-hover);transform:translateY(-2px);border-color:#C9D5DF}
+#dns-dash .cco{border-color:#E4EAEF;box-shadow:var(--el-rest)}
+#dns-dash .cco:hover{box-shadow:var(--el-hover);transform:translateY(-2px)}
+#dns-dash .foot{border-top:1px solid #EEF2F6;padding-top:10px}
+/* C. 今日焦点 → 英雄摘要条 */
+#dns-dash .ticker{background:linear-gradient(90deg,#F4F9FE 0,#FFFFFF 240px)}
+#dns-dash .ticker-in{position:relative;padding-left:24px;min-height:66px}
+#dns-dash .ticker-in::before{content:"";position:absolute;left:10px;top:12px;bottom:12px;width:4px;border-radius:2px;background:linear-gradient(180deg,var(--brand),var(--brand-300))}
+#dns-dash .tk-eyebrow{font:700 11px/16px var(--fn);color:var(--brand);letter-spacing:.16em;align-self:flex-start;padding:6px 0}
+#dns-dash .tk .v{font-weight:800;font-size:20px}
+#dns-dash .tk .k{font-weight:600}
+#dns-dash .tk .s{color:#8895A2}
+/* D. 图表细节 */
+#dns-dash .chart .grid{stroke:#EDF1F5}
+#dns-dash .chart .baseline{stroke:#C9D4DD}
+#dns-dash .ctool{border-radius:8px;box-shadow:var(--el-pop);padding:7px 11px}
+/* F. 空态精修：符号 + 两行层次 */
+#dns-dash .chart .nodata{flex-direction:column;gap:6px;padding:18px;text-align:center}
+#dns-dash .chart .nodata::before{content:"◌";font:400 24px/1 var(--fnnum);color:var(--n300)}
+/* E. 滚动入场：js-anim 由 65_nav 在(非REDUCE且支持IO)时添加；无JS/REDUCE永不隐藏 */
+#dns-dash.js-anim .card,#dns-dash.js-anim .cco{animation:none}
+#dns-dash.js-anim .card:not(.in),#dns-dash.js-anim .cco:not(.in){opacity:0}
+#dns-dash.js-anim .card.in,#dns-dash.js-anim .cco.in{animation:v8rise .4s ease-out both}
+@media (max-width:660px){
+  #dns-dash .ticker-in{padding-left:16px}
+  #dns-dash .ticker-in::before{left:4px}
+}
+
 </style>
 <div id="dns-dash">
 <div class="rule3"></div>
@@ -829,7 +871,7 @@ function drawChart(el,redraw){
   var pts=s.rows.map(function(r,i){return [X(i),Y(r[ci])]});
   var line=pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ');
   svg+='<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1">'
-    +'<stop offset="0" stop-color="'+c+'" stop-opacity=".20"/>'
+    +'<stop offset="0" stop-color="'+c+'" stop-opacity=".18"/>'
     +'<stop offset="1" stop-color="'+c+'" stop-opacity="0"/></linearGradient></defs>';
   svg+='<polygon class="area-a" fill="url(#'+gid+')" points="'+pl+','+(H-pb)+' '+line+' '+(W-pr)+','+(H-pb)+'"/>';
   svg+='<polyline class="line-a" pathLength="1" fill="none" stroke="'+c+'" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round" points="'+line+'"/>';
@@ -860,7 +902,7 @@ function drawChart(el,redraw){
     svg+='<text x="'+X(i3).toFixed(1)+'" y="'+(H-4)+'" text-anchor="'+a+'">'+XL(s.rows[i3][0])+'</text>';
   }
   svg+='<line class="guide" x1="0" y1="'+pt+'" x2="0" y2="'+(H-pb)+'" style="display:none"/>';
-  svg+='<circle class="hdot" r="4" style="display:none"/>';
+  svg+='<circle class="hdot" r="4.5" style="display:none"/>';
   svg+='<rect class="hit" x="0" y="0" width="'+W+'" height="'+H+'"/>';
   svg+='</svg>';
   var tip=document.createElement('div');tip.className='ctool';
@@ -1193,6 +1235,21 @@ root.querySelectorAll('ul.feed').forEach(function(ul){
   ul.addEventListener('scroll',chk,{passive:true});
 });
 // 65_nav.js —— 渲染器：导航高亮（IntersectionObserver）+ 回顶按钮
+// v16：卡片滚动入场（一次性；REDUCE/无IO 时回退v14行为，绝不隐藏内容）
+(function(){
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  if(!('IntersectionObserver' in window))return;
+  var els=[].slice.call(root.querySelectorAll('.card,.cco'));
+  if(!els.length)return;
+  root.classList.add('js-anim');
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}});
+  },{rootMargin:'0px 0px 96px 0px'});
+  els.forEach(function(el){
+    if(el.getBoundingClientRect().top<window.innerHeight+80){el.classList.add('in')}
+    else{io.observe(el)}
+  });
+})();
 var links=[].slice.call(root.querySelectorAll('#dnav a'));
 var secs=links.map(function(a){return root.querySelector(a.getAttribute('href'))}).filter(Boolean);
 function mark(id){links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+id)})}
