@@ -1,7 +1,31 @@
 {
- "updated": "2026-10-31T03:26:25+00:00",
+ "updated": "2026-10-31T09:32:54+00:00",
  "source": "CNBC World",
  "items": [
+  {
+   "date": "10-31",
+   "title": "Hong Kong telecom company agrees to halt U.S. operations under pressure",
+   "title_zh": "",
+   "url": "https://www.cnbc.com/2026/10/31/hong-kong-telecom-firm-agrees-to-halt-us-operations-under-pressure.html"
+  },
+  {
+   "date": "10-31",
+   "title": "Trump called out Big Oil profits. Here’s how much their refining earnings have surged since",
+   "title_zh": "",
+   "url": "https://www.cnbc.com/2026/10/31/trump-big-oil-refining-profits.html"
+  },
+  {
+   "date": "10-31",
+   "title": "AI is coming to construction sites. But does it make workers safer?",
+   "title_zh": "",
+   "url": "https://www.cnbc.com/2026/10/31/ai-construction-worker-safety.html"
+  },
+  {
+   "date": "10-31",
+   "title": "Meta outlook revised downward by S&P on cash flow and capex concerns",
+   "title_zh": "",
+   "url": "https://www.cnbc.com/2026/10/30/meta-outlook-to-revised-to-negative-by-sp-after-cash-flow-negative.html"
+  },
   {
    "date": "10-31",
    "title": "Binance loses $6.3 billion in crypto heist—what happens to your money when an exchange gets hacked",
@@ -22,33 +46,9 @@
   },
   {
    "date": "10-31",
-   "title": "Reddit stock plunges 29% after weak outlook, wrapping its worst day ever",
+   "title": "Stock market rocked as investors dump tech shares; Nasdaq suffers worst day since June: Live updates",
    "title_zh": "",
-   "url": "https://www.cnbc.com/2026/10/30/reddit-stock-q3-earnings.html"
-  },
-  {
-   "date": "10-31",
-   "title": "'Bad time to troll': Binance co-founder Zhao asks Musk for support after hack",
-   "title_zh": "",
-   "url": "https://www.cnbc.com/2026/10/30/binance-hack-elon-musk-tesla-spacex.html"
-  },
-  {
-   "date": "10-31",
-   "title": "Binance hack: Investigators in a 'cat and mouse game' to recover $6.3 billion in stolen funds",
-   "title_zh": "",
-   "url": "https://www.cnbc.com/2026/10/30/binance-hack-stolen-crypto-recovery.html"
-  },
-  {
-   "date": "10-31",
-   "title": "Tankers defy sharp escalation of Iranian attacks to keep crude oil flowing through Strait of Hormuz",
-   "title_zh": "",
-   "url": "https://www.cnbc.com/2026/10/30/tanker-attack-strait-hormuz-iran-war-oil.html"
-  },
-  {
-   "date": "10-31",
-   "title": "The AI investing story had a rough week. It may be time to take profits while you still can",
-   "title_zh": "",
-   "url": "https://www.cnbc.com/2026/10/30/ai-stocks-selloff-ai-spending-returns.html"
+   "url": "https://www.cnbc.com/2026/10/29/stock-market-today-live-updates.html"
   }
  ]
 }
