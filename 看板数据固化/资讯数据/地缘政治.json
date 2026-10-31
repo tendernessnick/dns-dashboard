@@ -1,54 +1,54 @@
 {
- "updated": "2026-10-30T06:01:25+00:00",
+ "updated": "2026-10-31T03:26:25+00:00",
  "source": "CNBC World",
  "items": [
   {
-   "date": "10-30",
-   "title": "Biggest-ever crypto hack impacts $6.3 billion as Binance works to contain fallout",
+   "date": "10-31",
+   "title": "Binance loses $6.3 billion in crypto heist—what happens to your money when an exchange gets hacked",
+   "title_zh": "",
+   "url": "https://www.cnbc.com/make-it/2026/10/30/binance-crypto-hack-customer-funds.html"
+  },
+  {
+   "date": "10-31",
+   "title": "$6.3 billion Binance hack is largest crypto theft on record",
    "title_zh": "",
    "url": "https://www.cnbc.com/2026/10/29/circle-tether-freeze-funds-impacted-by-potential-binance-security-issue.html"
   },
   {
-   "date": "10-30",
-   "title": "BOJ holds rates as underlying inflation aligns with 2% target for first time since 2013",
+   "date": "10-31",
+   "title": "Intel stock has worst day since 1970s, wiping about $12 billion off government's stake",
    "title_zh": "",
-   "url": "https://www.cnbc.com/2026/10/30/boj-inflation-target-rates.html"
+   "url": "https://www.cnbc.com/2026/10/30/amazon-intel-earnings-big-tech-ai-spending-concerns.html"
   },
   {
-   "date": "10-30",
-   "title": "Nasdaq-100 futures fall as Amazon and Intel swoon after earnings: Live updates",
+   "date": "10-31",
+   "title": "Reddit stock plunges 29% after weak outlook, wrapping its worst day ever",
    "title_zh": "",
-   "url": "https://www.cnbc.com/2026/10/29/stock-market-today-live-updates.html"
+   "url": "https://www.cnbc.com/2026/10/30/reddit-stock-q3-earnings.html"
   },
   {
-   "date": "10-30",
-   "title": "Israel faces weeks of coalition haggling as Netanyahu’s party claims election 'stolen'",
+   "date": "10-31",
+   "title": "'Bad time to troll': Binance co-founder Zhao asks Musk for support after hack",
    "title_zh": "",
-   "url": "https://www.cnbc.com/2026/10/30/israel-election-netanyahu-eisenkot-coalition-talks-.html"
+   "url": "https://www.cnbc.com/2026/10/30/binance-hack-elon-musk-tesla-spacex.html"
   },
   {
-   "date": "10-30",
-   "title": "Intel plunges on a major guidance miss. What went wrong — and how to proceed",
+   "date": "10-31",
+   "title": "Binance hack: Investigators in a 'cat and mouse game' to recover $6.3 billion in stolen funds",
    "title_zh": "",
-   "url": "https://www.cnbc.com/investingclub/2026/10/29/intel-plunges-on-a-major-guidance-miss-what-went-wrong-how-to-proceed.html"
+   "url": "https://www.cnbc.com/2026/10/30/binance-hack-stolen-crypto-recovery.html"
   },
   {
-   "date": "10-30",
-   "title": "Intel stock plunges 21% as chipmaker blames PC slowdown for weak guidance",
+   "date": "10-31",
+   "title": "Tankers defy sharp escalation of Iranian attacks to keep crude oil flowing through Strait of Hormuz",
    "title_zh": "",
-   "url": "https://www.cnbc.com/2026/10/29/intel-intc-q3-earnings-report-2026-.html"
+   "url": "https://www.cnbc.com/2026/10/30/tanker-attack-strait-hormuz-iran-war-oil.html"
   },
   {
-   "date": "10-30",
-   "title": "Microsoft plans to raise $25 billion in debt as it pursues AI buildout",
+   "date": "10-31",
+   "title": "The AI investing story had a rough week. It may be time to take profits while you still can",
    "title_zh": "",
-   "url": "https://www.cnbc.com/2026/10/29/microsoft-25-billion-debt-offering.html"
-  },
-  {
-   "date": "10-30",
-   "title": "FedEx Freight delivers a much-needed quarterly beat. Where we stand on shares now",
-   "title_zh": "",
-   "url": "https://www.cnbc.com/investingclub/2026/10/29/fedex-freight-delivers-a-much-needed-quarterly-beat-where-we-stand-on-shares-now.html"
+   "url": "https://www.cnbc.com/2026/10/30/ai-stocks-selloff-ai-spending-returns.html"
   }
  ]
 }

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""P69 行业数据-美国线下零售：FRED RSEAS月度全量历史（直连超时多重试，仍不通则经web.archive.org回源取同一CSV）"""
+"""P69 行业数据-美国线下零售：FRED RSEAS月度全量历史（直连超时多重试，仍不通则经web.archive.org回源取同一CSV）
+通道升级三期修复：原采集器用裸requests（trust_env=True），桌面系统代理拉起时被劫持到不稳线路导致
+持续超时；现统一改走common.http_get（显式直连+重试），同源同口径不变。"""
 import os
 import re
 import sys
 import time
-
-import requests
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
@@ -18,13 +18,14 @@ BACKFILL_MONTHS = 24
 
 
 def _fetch_fred(retries=4):
-    """直连FRED，偶发超时多重试"""
+    """直连FRED，偶发超时多重试（common.http_get显式直连，免疫系统代理）"""
     last = None
     for i in range(retries):
         try:
-            r = requests.get(CSV_URL, headers={'User-Agent': common.UA}, timeout=30)
-            if r.status_code == 200 and 'observation_date' in r.text[:100]:
-                return r.text, '直连'
+            txt = common.http_get(CSV_URL, retries=0, timeout=30)
+            if 'observation_date' in txt[:100]:
+                return txt, '直连'
+            last = RuntimeError(f'HTTP异常响应(前100字符): {txt[:60]}')
         except Exception as e:  # noqa: BLE001
             last = e
         time.sleep(3)
@@ -39,23 +40,26 @@ def _fetch_via_wayback():
     api = ('https://archive.org/wayback/available?url='
            + urllib.parse.quote('https://fred.stlouisfed.org/graph/fredgraph.csv?id=RSEAS', safe=''))
     try:
-        r = requests.get(api, headers={'User-Agent': common.UA}, timeout=30)
-        closest = (r.json().get('archived_snapshots') or {}).get('closest') or {}
+        txt = common.http_get(api, retries=0, timeout=30)
+        closest = ((_json.loads(txt).get('archived_snapshots') or {}).get('closest') or {})
         snap_url = closest.get('url')
         if snap_url:
             raw = re.sub(r'/web/(\d{14})/', r'/web/\1id_/', snap_url, count=1)
-            r2 = requests.get(raw, headers={'User-Agent': common.UA}, timeout=60)
-            if r2.status_code == 200 and 'observation_date' in r2.text[:200]:
-                return r2.text, 'web.archive.org已有快照'
+            t2 = common.http_get(raw, retries=0, timeout=60)
+            if 'observation_date' in t2[:200]:
+                return t2, 'web.archive.org已有快照'
     except Exception:  # noqa: BLE001
         pass
     # 无快照→Save Page Now回源（有频次限制，429时提示稍后重试）
-    r = requests.get(SPN_URL, headers={'User-Agent': common.UA}, timeout=90)
-    if r.status_code == 429:
-        raise RuntimeError('Wayback回源限流(HTTP 429)，请稍后重试')
-    if r.status_code != 200 or 'observation_date' not in r.text[:200]:
-        raise RuntimeError(f'Wayback回源失败: HTTP {r.status_code}')
-    return r.text, 'web.archive.org回源'
+    try:
+        r = common.http_get(SPN_URL, retries=0, timeout=90)
+        if 'observation_date' not in r[:200]:
+            raise RuntimeError(f'Wayback回源失败: 异常响应')
+        return r, 'web.archive.org回源'
+    except RuntimeError as e:
+        if '429' in str(e):
+            raise RuntimeError('Wayback回源限流(HTTP 429)，请稍后重试')
+        raise
 
 
 def run():

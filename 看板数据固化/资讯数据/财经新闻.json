@@ -1,7 +1,13 @@
 {
- "updated": "2026-10-30T06:00:23+00:00",
+ "updated": "2026-10-31T03:26:08+00:00",
  "source": "CNBC Markets",
  "items": [
+  {
+   "date": "10-30",
+   "title": "Euro zone economy slows to 0.4% growth in Q3 as crisis-hit France contracts",
+   "title_zh": "",
+   "url": "https://www.cnbc.com/2026/10/30/euro-zone-gdp-france.html"
+  },
   {
    "date": "10-30",
    "title": "Third-quarter U.S. GDP increases a better-than-expected 3.4% as September inflation accelerates",
@@ -43,12 +49,6 @@
    "title": "The UK cuts energy bills, taxes banks and boosts defense in high-stakes budget",
    "title_zh": "",
    "url": "https://www.cnbc.com/2026/10/28/uk-autumn-budget-cost-living-defense-ai.html"
-  },
-  {
-   "date": "10-28",
-   "title": "World Bank's Banga: Availability of capital 'not really an issue' as AI demand drives up borrowing costs",
-   "title_zh": "",
-   "url": "https://www.cnbc.com/2026/10/27/world-bank-president-ajay-banga.html"
   }
  ]
 }
