@@ -1,7 +1,13 @@
 {
- "updated": "2026-10-31T09:32:52+00:00",
+ "updated": "2026-11-02T10:11:37+00:00",
  "source": "CNBC Markets",
  "items": [
+  {
+   "date": "11-02",
+   "title": "South Korea targets 'world's highest performance' sovereign AI model in record new budget",
+   "title_zh": "",
+   "url": "https://www.cnbc.com/2026/11/02/south-korea-ai-spending-budget.html"
+  },
   {
    "date": "10-30",
    "title": "Euro zone economy slows to 0.4% growth in Q3 as crisis-hit France contracts",
@@ -43,12 +49,6 @@
    "title": "Bessent says 'not necessarily' a mistake if the Fed hikes again",
    "title_zh": "",
    "url": "https://www.cnbc.com/2026/10/28/scott-bessent-interview.html"
-  },
-  {
-   "date": "10-28",
-   "title": "The UK cuts energy bills, taxes banks and boosts defense in high-stakes budget",
-   "title_zh": "",
-   "url": "https://www.cnbc.com/2026/10/28/uk-autumn-budget-cost-living-defense-ai.html"
   }
  ]
 }
