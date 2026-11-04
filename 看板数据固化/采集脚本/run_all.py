@@ -14,7 +14,7 @@ sys.path.insert(0, HERE)
 import common
 
 # 东财push2行情族（来源归一期P-C4）：单IP渐进式限流，组内采集器间保持≥8s间隔
-EM_HEAVY = {'22', '23', '27', '31', '32', '39', '40'}
+EM_HEAVY = {'22', '23', '27', '30', '31', '32', '39', '40', '52'}
 
 def main():
     only = {str(int(a.upper().lstrip('P'))) for a in sys.argv[1:]} if len(sys.argv) > 1 else None
@@ -27,7 +27,7 @@ def main():
         return
     results = []
     for f in files:
-        m = re.match(r'collect_P(\d+)', f)  # 只取数字段，兼容 P43_huanji / P84b 等命名
+        m = re.match(r'collect_P(\d+)', f)  # 只取数字段
         pid = m.group(1) if m else f[len('collect_P'):].split('_')[0]
         if only and pid.lstrip('0') not in only:
             continue

@@ -458,3 +458,7 @@
 20261102_180924,2026-11-02 18:27:23,P93,Kickstarter科技热门,成功,4.5,latest,"Top12快照, Top1 ""ToolDance X1: Smart Desktop CNC with Industrial Capability"" 已筹$16,138,378 达成32276.8%(3154人); JSON 8条"
 20261102_180924,2026-11-02 18:27:38,P94,摩点众筹热度,成功,14.0,latest,"Top12快照, Top1 ""十周年《艾希》续作《艾希：续》Steam版众筹开启"" 已筹39,673,823元 达成396738.23%(246046人); JSON 8条"
 20261102_180924,2026-11-02 18:27:42,P95,深圳IPO辅导备案,成功,2.8,latest,"共363条, 最新""中金公司关于深圳市正浩创新科技股份有限公司首次公开发行股票并上市辅导备案信息公示""(2021-09-30)"
+20261103_235704,2026-11-03 23:59:47,P30,沪金主连,失败,163.4,latest,"失败原因: GET失败 https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=113.aum&klt=101&fqt=1&lmt=120&end=20500101&fields1=f1,f2,f3&fields2=f51,f53: HTTPSConnectionPool(host='push2his.eastmoney.com', port=443): Read timed out. (read timeout=25)"
+20261103_235704,2026-11-04 00:01:12,P52,沪银主连,失败,76.4,latest,"失败原因: GET失败 https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=113.agm&klt=101&fqt=1&lmt=120&end=20500101&fields1=f1,f2,f3&fields2=f51,f53: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+,2026-11-04 11:12:51,P30,沪金主连,成功,1.8,latest,"回填120天, 最新2026-11-04=847.14, 快照847.14(一致)"
+,2026-11-04 11:13:01,P52,沪银主连,成功,2.0,latest,"回填120天, 最新2026-11-04=11736.0, 快照11736.0(一致)"
