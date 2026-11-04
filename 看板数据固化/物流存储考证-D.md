@@ -35,7 +35,7 @@
 - 2026-10-23：DDR5 16Gb = 61.267，NAND 512Gb TLC = 18.833（TrendForce现货价页当日Session Average，采集器首次运行留存）。
 
 ### 固定页可得性结论（P58）
-- **可得**：TrendForce 英文现货价页 /price/dram/dram_spot 与 /price/flash/flash_spot 即固定公开页，两页合计覆盖全部5个品类，且结构稳定（2026-10-23 与 10-27 两次抓取解析一致）。已将采集器 collect_P58_dram_nand.py 从2品类扩为5品类，维持页面解析方案。
+- **可得**：TrendForce 英文现货价页 /price/dram/dram_spot 与 /price/flash/flash_spot 即固定公开页，两页合计覆盖全部5个品类，且结构稳定（2026-10-23 与 10-27 两次抓取解析一致）。已将采集器 collect_P58_存储芯片价格.py 从2品类扩为5品类，维持页面解析方案。
 - **无 RSS**：trendforce.com/rss、/rss.xml、/presscenter/news/rss 等均404（2026-10-27 探测）。
 - 备用人工源：观点网每日发布"TrendForce现货均价"摘要稿（含DDR4/DDR5各条目涨跌），适合RPA手册收录作人工备份；CFM闪存市场 chinaflashmarket.com/price 为另一免费报价看板（口径不同）。
 
@@ -80,5 +80,5 @@ https://container-news.com/scfi/
 ## C. 变更清单
 - `CSV数据/大宗商品-P37-SCFI运价指数.csv`：新增2026-08-07~2026-10-09共10行（历史为手工考证）；2026-10-16/10-23两行保持原状。
 - `CSV数据/产品品类-P58-存储芯片价格.csv`：表头扩为5品类（DDR4_8Gb/DDR4_16Gb/DDR5_16Gb/NAND_256Gb/NAND_512Gb），10-23旧行值已迁移保留。
-- `采集脚本/collect_P58_dram_nand.py`：扩为5品类解析（DRAM页3条+NAND页2条），量级校验按品类分设。
+- `采集脚本/collect_P58_存储芯片价格.py`：扩为5品类解析（DRAM页3条+NAND页2条），量级校验按品类分设。
 - `采集脚本/collect_P37_SCFI.py`：未改动。

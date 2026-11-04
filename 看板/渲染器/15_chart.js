@@ -93,7 +93,7 @@ function drawChart(el,redraw){
   });
   hit.addEventListener('pointerleave',v8hideTick);
   /* v15移动端：触摸抬手/系统中断（滚页面接管）时收尾提示；.hit 的 touch-action:pan-y
-     保证竖扫滚页面、横扫刷数值两种手势并存（样式见 _style_v8.css v15段） */
+     保证竖扫滚页面、横扫刷数值两种手势并存（样式见 _style.css v15段） */
   hit.addEventListener('pointercancel',v8hideTick);
   hit.addEventListener('pointerup',function(e){if(e.pointerType!=='mouse')v8hideTick()});
 }

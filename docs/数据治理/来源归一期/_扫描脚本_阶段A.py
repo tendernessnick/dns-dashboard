@@ -8,7 +8,7 @@ import re
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 
-BASE = r'E:\个人资料\工作实习相关\2026-2027深圳和宏\研报数据整理\数据看板构建\看板数据固化'
+BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', '看板数据固化'))  # ../../../看板数据固化（2026-11-03 目录迁出研报数据整理，由绝对路径改为相对本脚本定位，再搬家无需修改）
 SCRIPTS = os.path.join(BASE, '采集脚本')
 
 # ---------- 1) 注册表 ----------

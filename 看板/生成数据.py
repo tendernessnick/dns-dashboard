@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-生成数据 v12：固化CSV + 资讯JSON → data.js（看板唯一需要频繁更新的文件）
+生成数据：固化CSV + 资讯JSON → data.js（看板唯一需要频繁更新的文件）
 页面壳（index.html）长期稳定，本脚本只重写 data.js，毫秒级完成、不联网。
 用法：python 生成数据.py    （采集 run_all.py 之后运行）
 """

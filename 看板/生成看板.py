@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-生成看板 v14（组装器）：看板骨架.html + 布局.csv + 模块/*.json + 渲染器/*.js + _style_v8.css
+生成看板（组装器）：看板骨架.html + 布局.csv + 模块/*.json + 渲染器/*.js + _style.css
     → index.html（页面壳，不含数据）
 
 v13 模块化改造（2026-10-29），取代 v12 的「看板模板.html + 字符串补丁」机制：
@@ -27,7 +27,7 @@ SKEL = os.path.join(BASE, '看板骨架.html')
 LAYOUT = os.path.join(BASE, '布局.csv')
 MOD_DIR = os.path.join(BASE, '模块')
 REN_DIR = os.path.join(BASE, '渲染器')
-CSS = os.path.join(BASE, '_style_v8.css')
+CSS = os.path.join(BASE, '_style.css')
 
 # ============ 读入 ============
 skeleton = open(SKEL, encoding='utf-8').read()
@@ -397,7 +397,7 @@ with open(OUT, 'w', encoding='utf-8') as f:
     f.write(html)
 
 unused = set(CARDS) - {r['引用'] for r in layout if r['类型'] == 'C'}
-print('页面壳已重建(v14):', os.path.basename(OUT), os.path.getsize(OUT) // 1024, 'KB（不含数据）')
+print('页面壳已重建:', os.path.basename(OUT), os.path.getsize(OUT) // 1024, 'KB（不含数据）')
 print('卡片', sum(1 for r in layout if r['类型'] == 'C'), '张 / 板块', len(sections),
       '个 / 渲染器', len(glob.glob(os.path.join(REN_DIR, "*.js"))), '个')
 if unused:

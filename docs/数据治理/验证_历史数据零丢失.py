@@ -8,7 +8,7 @@ import os
 import re
 import sys
 
-BASE = r'E:\个人资料\工作实习相关\2026-2027深圳和宏\研报数据整理\数据看板构建'
+BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))  # ../../ = 数据看板构建/ 仓库根（2026-11-03 目录迁出研报数据整理，由绝对路径改为相对本脚本定位，再搬家无需修改）
 BK = os.path.join(BASE, '看板数据固化', '_备份_CSV数据_20261028')
 CU = os.path.join(BASE, '看板数据固化', 'CSV数据')
 SKIP_COLS = {'数据日期', '数据来源'}

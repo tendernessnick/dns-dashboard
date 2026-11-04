@@ -9,7 +9,7 @@ import py_compile
 import re
 import sys
 
-BASE = r'E:\个人资料\工作实习相关\2026-2027深圳和宏\研报数据整理\数据看板构建'
+BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))  # ../../ = 数据看板构建/ 仓库根（2026-11-03 目录迁出研报数据整理，由绝对路径改为相对本脚本定位，再搬家无需修改）
 CS = os.path.join(BASE, '看板数据固化', '采集脚本')
 CSV_DIR = os.path.join(BASE, '看板数据固化', 'CSV数据')
 OUT = os.path.join(BASE, 'docs', '数据治理')
