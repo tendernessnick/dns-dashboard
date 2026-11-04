@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""P32 大宗商品-PP拉丝现货+期货：现货=生意社PP(拉丝)基准价(vane/detail-718,T30S)；期货主力=东财114.ppM(聚丙烯主连)日K回填近250个交易日"""
+"""P32 大宗商品-PP拉丝现货+期货：现货=生意社PP(拉丝)基准价(vane/detail-718,T30S)；
+期货主力=新浪期货日K(PP0)近1年（2026-11-04起主通道；东财114.ppM备用），只补空缺不回写历史。"""
 import csv
 import os
 import re
@@ -17,9 +18,10 @@ CSV_PATH = os.path.join(common.CSV_DIR, '大宗商品-P32-PP拉丝价.csv')
 COLUMNS = ['数据日期', '数值', '单位', '期货主力元/吨', '数据来源', '备注']
 OLD_COLUMNS = ['数据日期', '数值', '单位', '数据来源', '备注']
 URL = 'https://www.100ppi.com/vane/detail-718.html'
-FUT_SECID = '114.ppM'
+FUT_SECID = '114.ppM'     # 东财备用通道
+FUT_SINA = 'PP0'          # 新浪主通道符号
 FUT_NAME = '聚丙烯主连'
-FUT_NOTE = '聚丙烯主连收盘(东财回填)'
+FUT_NOTE_EM = '聚丙烯主连收盘(东财回填)'
 SPOT_NOTE = 'PP拉丝级(T30S)现货基准价'
 SPOT_RANGE = (5000, 30000)
 
@@ -50,18 +52,28 @@ def _spot(html):
     return f'{ymd[:4]}-{ymd[4:6]}-{ymd[6:]}', val
 
 
+def _futures_kline():
+    """期货主力日K：主=新浪(PP0)，备=东财(114.ppM)。返回[(date, close), 来源, 备注]。"""
+    try:
+        return common.sina_kline('hf_' + FUT_SINA, y=1), '新浪财经', '聚丙烯主连收盘(新浪日K)'
+    except Exception:  # noqa: BLE001
+        time.sleep(2)
+        return common.em_kline(FUT_SECID, lmt=250), '东方财富', FUT_NOTE_EM
+
+
 def run():
     try:
         _migrate()
-        kl = common.em_kline(FUT_SECID, lmt=250)
+        kl, fsrc, fnote = _futures_kline()
         if not kl:
             raise RuntimeError('期货日K为空')
         common.bulk_backfill(CSV_PATH, kl, '期货主力元/吨',
-                             unit='元/吨', source='东方财富', note=FUT_NOTE)
+                             unit='元/吨', source=fsrc, note=fnote, fill_empty_only=True)
         time.sleep(1)
         html = common.hw_check_get(URL)
         date_str, val = _spot(html)
-        fut_detail = f'期货{FUT_NAME}({FUT_SECID})回填{len(kl)}天, 最新{kl[-1][0]}={kl[-1][1]}'
+        fut_code = FUT_SINA if fsrc == '新浪财经' else FUT_SECID
+        fut_detail = f'期货{FUT_NAME}({fut_code}@{fsrc})回填{len(kl)}天, 最新{kl[-1][0]}={kl[-1][1]}'
         if not date_str or not val:
             return '失败', f'未匹配到PP(拉丝)基准价条目; {fut_detail}'
         v = float(val)

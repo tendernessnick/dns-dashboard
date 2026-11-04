@@ -312,10 +312,11 @@ def em_kline(secid, klt=101, fqt=1, lmt=120):
     return _backoff(_one)
 
 
-def bulk_backfill(csv_path, klines, column, unit='元/吨', source='东方财富', note=''):
+def bulk_backfill(csv_path, klines, column, unit='元/吨', source='东方财富', note='', fill_empty_only=False):
     """期货日K批量回填（一次读改写，供P31/P32/P39/P40复用）。
     klines: [(date, close)]；column如'期货主力元/吨'。
-    已有行仅更新column列并保留原数据来源/备注（不覆盖现货口径）；仅当字段为空时补unit/source/note。"""
+    已有行仅更新column列并保留原数据来源/备注（不覆盖现货口径）；仅当字段为空时补unit/source/note。
+    fill_empty_only=True时只补空缺单元格，不回写已有值（2026-11-04通道切换起用：固化历史不回写）。"""
     rows = {}
     cols = None
     if os.path.exists(csv_path):
@@ -329,6 +330,8 @@ def bulk_backfill(csv_path, klines, column, unit='元/吨', source='东方财富
         raise RuntimeError(f'{csv_path} 无表头，须先由采集器建表')
     for date, close in klines:
         r = rows.setdefault(date, {c: '' for c in cols})
+        if fill_empty_only and str(r.get(column, '')).strip():
+            continue
         r[cols[0]] = date
         r[column] = close
         if not r.get('单位'):
@@ -370,6 +373,30 @@ def sina_kline(symbol, y=1):
     arr = json.loads(m.group(1))
     cut = (datetime.date.today() - datetime.timedelta(days=365 * y)).isoformat()
     return [(a['d'], float(a['c'])) for a in arr if a['d'] >= cut]
+
+
+def sina_forex_kline(symbol, y=1):
+    """新浪外汇日K。symbol如 DINIW/fx_susdcnh/fx_seurcny。返回[(date, close)]（最近y年）。
+    记录为'date,open,low,high,close,'管道分隔；字段顺序经2026-11-04腾讯whUSDX今开/昨收交叉核验，
+    解析时校验高低收自洽，异常即抛错（防静默错位）。"""
+    txt = http_get('https://vip.stock.finance.sina.com.cn/forex/api/jsonp.php/'
+                   f'var%20t=/NewForexService.getDayKLine?symbol={symbol}',
+                   referer='https://finance.sina.com.cn/')
+    m = re.search(r'\("(.*)"\)', txt, re.S)
+    if not m:
+        raise RuntimeError('新浪外汇日K解析失败')
+    cut = (datetime.date.today() - datetime.timedelta(days=365 * y)).isoformat()
+    out = []
+    for rec in m.group(1).split('|'):
+        f = rec.strip().split(',')
+        if len(f) < 5 or not f[0]:
+            continue
+        d, o, l, h, c = f[0], float(f[1]), float(f[2]), float(f[3]), float(f[4])
+        if h < l or h < o or h < c or l > o or l > c:
+            raise RuntimeError(f'新浪外汇日K高低收异常 {d}')
+        if d >= cut:
+            out.append((d, c))
+    return out
 
 
 def parse_date_label(label):
