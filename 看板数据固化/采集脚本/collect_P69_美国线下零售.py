@@ -32,6 +32,37 @@ def _fetch_fred(retries=4):
     raise RuntimeError(f'直连FRED失败: {last}')
 
 
+def _fetch_fred_api():
+    """备用1：FRED官方API（api.stlouisfed.org，需免费key，见_keys.py）。
+    与fredgraph.csv同一序列RSEAS同源同口径；返回[(date, value)]升序。"""
+    import json as _json
+    try:
+        from _keys import FRED_API_KEY
+    except ImportError:
+        raise RuntimeError('_keys.py不存在')
+    if not FRED_API_KEY:
+        raise RuntimeError('FRED_API_KEY未配置')
+    api = ('https://api.stlouisfed.org/fred/series/observations?series_id=RSEAS'
+           f'&api_key={FRED_API_KEY}&file_type=json&sort_order=desc&limit=36')
+    d = _json.loads(common.http_get(api, retries=1, timeout=30))
+    obs = d.get('observations') or []
+    if d.get('error_code') or not obs:
+        raise RuntimeError(f'FRED API异常: {str(d.get("error_message"))[:80]}')
+    rows = []
+    for o in obs:
+        v = str(o.get('value', '')).strip()
+        if v in ('.', ''):
+            continue
+        try:
+            rows.append((o['date'], float(v)))
+        except (KeyError, ValueError):
+            continue
+    rows.reverse()  # desc→asc
+    if len(rows) < BACKFILL_MONTHS:
+        raise RuntimeError(f'API有效月份数不足: {len(rows)}')
+    return rows, 'FRED官方API'
+
+
 def _fetch_via_wayback():
     """经web.archive.org获取FRED原CSV（存档爬虫回源抓取的同一文件，非镜像改写）：
     先查已有快照；无快照时触发Save Page Now回源新建。"""
@@ -63,33 +94,52 @@ def _fetch_via_wayback():
 
 
 def run():
-    try:
+    rows, how = None, ''
+    try:  # 主：fredgraph.csv直连
         text, how = _fetch_fred()
-    except Exception:  # noqa: BLE001
-        try:
-            text, how = _fetch_via_wayback()
-        except Exception as e:  # noqa: BLE001
-            return '失败', f'FRED直连与回源均失败: {e}'
-    lines = text.strip().splitlines()
-    rows = []
-    for line in lines:
-        parts = line.split(',')
-        if len(parts) != 2 or parts[0] == 'observation_date':
-            continue
-        if not re.match(r'^\d{4}-\d{2}-\d{2}$', parts[0]):
-            continue
-        v = parts[1].strip()
-        if v in ('.', ''):
-            continue
-        try:
-            rows.append((parts[0], float(v)))
-        except ValueError:
-            continue
-    if len(rows) < BACKFILL_MONTHS:
-        return '失败', f'RSEAS有效月份数不足: {len(rows)}'
+        rows = []
+        for line in text.strip().splitlines():
+            parts = line.split(',')
+            if len(parts) != 2 or parts[0] == 'observation_date':
+                continue
+            if not re.match(r'^\d{4}-\d{2}-\d{2}$', parts[0]):
+                continue
+            v = parts[1].strip()
+            if v in ('.', ''):
+                continue
+            try:
+                rows.append((parts[0], float(v)))
+            except ValueError:
+                continue
+        if len(rows) < BACKFILL_MONTHS:
+            return '失败', f'RSEAS有效月份数不足: {len(rows)}'
+    except Exception as e1:  # noqa: BLE001
+        try:  # 备1：FRED官方API（2026-11-05新增，key见_keys.py）
+            rows, how = _fetch_fred_api()
+        except Exception as e2:  # noqa: BLE001
+            try:  # 备2：web.archive.org回源
+                text, how = _fetch_via_wayback()
+                rows = []
+                for line in text.strip().splitlines():
+                    parts = line.split(',')
+                    if len(parts) != 2 or parts[0] == 'observation_date':
+                        continue
+                    if not re.match(r'^\d{4}-\d{2}-\d{2}$', parts[0]):
+                        continue
+                    v = parts[1].strip()
+                    if v in ('.', ''):
+                        continue
+                    try:
+                        rows.append((parts[0], float(v)))
+                    except ValueError:
+                        continue
+            except Exception as e3:  # noqa: BLE001
+                return '失败', f'FRED直连/API/回源均失败: 直连[{str(e1)[:60]}] API[{str(e2)[:60]}] 回源[{str(e3)[:60]}]'
     rows = rows[-BACKFILL_MONTHS:]
     note = f'美国零售和食品服务销售额(季调,月度)；近{BACKFILL_MONTHS}个月回填'
-    if how != '直连':
+    if how == 'FRED官方API':
+        note += '；fredgraph超时，经FRED官方API获取同一序列'
+    elif how != '直连':
         note += f'；本机直连FRED超时，经{how}获取原CSV'
     for d, v in rows:
         ym = d[:7]  # 月度数据日期=当月期末
