@@ -245,13 +245,9 @@ for _p, _lab in (('P66', '线材榜'), ('P68', '充电榜')):
     if _t:
         TOPS[_p] = _t
 
-# ============ RPA图文数据（v18：P91我爱音频网·耳机评测）→ REVIEWS ============
-# 数据为标准化任务「每日评测」已采文章的同步副本，落盘契约见
-# 看板数据固化/RPA数据/我爱音频网评测/索引.md：卡片词条/摘要写入 _meta.json，
+# ============ 图文数据（v18：P91我爱音频网·耳机评测；v18.2：P90充电头网·拆解）→ REVIEWS ============
+# 数据契约：图文数据/<任务目录>/*/*/_meta.json（产品名/品类tag/发布日期/原文链接/chips/摘要/照片），
 # 本脚本只搬运（按发布日期取最近6篇），照片压缩后base64内联保持离线可用。
-REVIEWS = {}
-
-
 def _img_datauri(path, width=320, quality=70):
     """照片文件 → 宽320px JPEG base64 dataURI（失败返回空串，卡面以占位块渲染）"""
     try:
@@ -268,30 +264,39 @@ def _img_datauri(path, width=320, quality=70):
         return ''
 
 
-_rpa_dir = os.path.join(FIX, 'RPA数据', '我爱音频网评测')
-_metas = []
-for _fp in glob.glob(os.path.join(_rpa_dir, '*', '*', '_meta.json')):
-    try:
-        _m = json.load(open(_fp, encoding='utf-8'))
-    except Exception:
-        continue
-    if not (_m.get('产品名') and _m.get('原文链接')):
-        continue
-    _photos = [os.path.normpath(os.path.join(os.path.dirname(_fp), _ph))
-               for _ph in (_m.get('照片') or [])[:2]]
-    _metas.append({'m': _m, 'photos': [p for p in _photos if os.path.exists(p)]})
-if _metas:
-    _metas.sort(key=lambda x: x['m'].get('发布日期') or '', reverse=True)
-    _items = []
-    for _x in _metas[:6]:
+def _scan_reviews(rel):
+    """扫描 图文数据/<rel>/*/*/_meta.json → {'items':[最近6篇], 'updated':最大发布日期} 或 None"""
+    rdir = os.path.join(FIX, '图文数据', rel)
+    metas = []
+    for _fp in glob.glob(os.path.join(rdir, '*', '*', '_meta.json')):
+        try:
+            _m = json.load(open(_fp, encoding='utf-8'))
+        except Exception:
+            continue
+        if not (_m.get('产品名') and _m.get('原文链接')):
+            continue
+        _photos = [os.path.normpath(os.path.join(os.path.dirname(_fp), _ph))
+                   for _ph in (_m.get('照片') or [])[:2]]
+        metas.append({'m': _m, 'photos': [p for p in _photos if os.path.exists(p)]})
+    if not metas:
+        return None
+    metas.sort(key=lambda x: x['m'].get('发布日期') or '', reverse=True)
+    items = []
+    for _x in metas[:6]:
         _m = _x['m']
-        _items.append({'name': _m['产品名'], 'tag': _m.get('品类tag', ''),
-                       'date': (_m.get('发布日期') or '')[5:10],
-                       'chips': [str(c) for c in (_m.get('chips') or [])[:6]],
-                       'desc': _m.get('摘要', ''), 'url': _m['原文链接'],
-                       'img': _img_datauri(_x['photos'][0]) if _x['photos'] else ''})
-    REVIEWS['P91'] = {'items': _items,
-                      'updated': max(x['m'].get('发布日期') or '' for x in _metas)}
+        items.append({'name': _m['产品名'], 'tag': _m.get('品类tag', ''),
+                      'date': (_m.get('发布日期') or '')[5:10],
+                      'chips': [str(c) for c in (_m.get('chips') or [])[:6]],
+                      'desc': _m.get('摘要', ''), 'url': _m['原文链接'],
+                      'img': _img_datauri(_x['photos'][0]) if _x['photos'] else ''})
+    return {'items': items, 'updated': max(x['m'].get('发布日期') or '' for x in metas)}
+
+
+REVIEWS = {}
+for _key, _rel in (('P91', '我爱音频网评测'), ('P90', '充电头网拆解')):
+    _r = _scan_reviews(_rel)
+    if _r:
+        REVIEWS[_key] = _r
 
 # ============ 写 data.js ============
 def _js(obj):
