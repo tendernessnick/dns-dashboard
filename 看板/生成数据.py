@@ -245,9 +245,10 @@ for _p, _lab in (('P66', '线材榜'), ('P68', '充电榜')):
     if _t:
         TOPS[_p] = _t
 
-# ============ RPA图文数据（v18：P91我爱音频网·拆解）→ REVIEWS ============
-# 落盘契约见 看板数据固化/RPA数据/我爱音频网拆解/执行prompt.md：卡片词条/摘要由采集会话
-# 写入 _meta.json，本脚本只搬运（按发布日期取最近6篇），照片压缩后base64内联保持离线可用。
+# ============ RPA图文数据（v18：P91我爱音频网·耳机评测）→ REVIEWS ============
+# 数据为标准化任务「每日评测」已采文章的同步副本，落盘契约见
+# 看板数据固化/RPA数据/我爱音频网评测/索引.md：卡片词条/摘要写入 _meta.json，
+# 本脚本只搬运（按发布日期取最近6篇），照片压缩后base64内联保持离线可用。
 REVIEWS = {}
 
 
@@ -267,7 +268,7 @@ def _img_datauri(path, width=320, quality=70):
         return ''
 
 
-_rpa_dir = os.path.join(FIX, 'RPA数据', '我爱音频网拆解')
+_rpa_dir = os.path.join(FIX, 'RPA数据', '我爱音频网评测')
 _metas = []
 for _fp in glob.glob(os.path.join(_rpa_dir, '*', '*', '_meta.json')):
     try:
