@@ -16,7 +16,7 @@
       }).join('');
       var img=it.img
         ?'<img class="rthumb" src="'+it.img+'" alt="'+escH(it.name)+'" loading="lazy">'
-        :'<span class="rthumb rnoimg">52audio</span>';
+        :'<span class="rthumb rnoimg">'+escH(d.noimg||'图')+'</span>';
       return '<a class="revcard" href="'+escH(it.url||'#')+'" target="_blank" rel="noopener">'
         +img
         +'<span class="rinfo"><span class="rl1"><span class="rname">'+escH(it.name)+'</span>'

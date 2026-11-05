@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """P94 竞对同业-摩点众筹：全站金额榜+科技类金额榜取项目ID，realtime/get_simple_product
-JSONP批量接口取已筹/达成率/支持者，Top12快照，并写 资讯数据/modian.json(Top8)"""
+JSONP批量接口取已筹/达成率/支持者，Top12快照，写 资讯数据/modian.json(Top8)；
+并落盘项目图文（logo2照片+_meta.json[chips接口数值照录]）→ 图文数据/摩点众筹/，
+供看板P94图文卡（70_review.js渲染，_crowd_common共用）"""
 import json
 import os
 import re
@@ -11,6 +13,7 @@ import datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 import _news_common
+import _crowd_common
 
 PID = 94
 TITLE = '摩点众筹热度'
@@ -25,10 +28,27 @@ LIST_ALL = 'https://zhongchou.modian.com/all/top_money/going'
 LIST_TECH = 'https://zhongchou.modian.com/technology/top_money/going'
 API = ('https://zhongchou.modian.com/realtime/get_simple_product'
        '?ids={ids}&if_all=1&jsonpcallback=cb')
+TUWEN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         '图文数据', '摩点众筹')
 # 3C配件相关关键词(项目名匹配即在备注标注)
 ACC_KW = ['充电', '数据线', '线材', '支架', '磁吸', '键盘', '鼠标', '耳机', '音响',
           '音箱', '电源', '插线板', '蓝牙', '触控', '摄像头', '屏幕', '指纹',
           '充电宝', '数码', '桌面', 'hub', '扩展坞', '无线充']
+
+
+def _md_download(url, fp):
+    """摩点图片下载(moimg.net直链无反爬，requests直连)。"""
+    import requests
+    try:
+        r = requests.get(url, headers={'User-Agent': common.UA,
+                                       'Referer': 'https://zhongchou.modian.com/'}, timeout=40)
+        if r.status_code == 200 and len(r.content) > 3000:
+            with open(fp, 'wb') as f:
+                f.write(r.content)
+            return True
+    except Exception:  # noqa: BLE001
+        pass
+    return False
 
 
 def list_ids(url):
@@ -139,9 +159,35 @@ def run():
         _drop_stale_ranks(CSV, [r['排名'] for r in rows])
         n_news = _news_common.save_news('modian.json', '摩点众筹热门(金额榜)',
                                         news[:NEWS_N])
+        # —— v18.3 图文落盘：logo2照片+chips(接口数值照录) → 图文数据/摩点众筹/
+        n_new, n_ref, n_noimg = 0, 0, 0
+        for p in picked:
+            url2 = f"https://zhongchou.modian.com/item/{p['id']}.html"
+            amount2 = round(float(p['backer_money_rew']), 2)
+            rate2 = round(float(p.get('rate') or 0), 2)
+            backers2 = int(p.get('backer_count') or 0)
+            days2 = days_left(p.get('end_time', ''))
+            chips = [f'已筹¥{amount2 / 1e4:.1f}万', f'达成{rate2:.0f}%',
+                     f'支持{backers2}人',
+                     '已结束' if days2 == '' or days2 <= 0 else f'剩{days2:.0f}天']
+            imgs = [str(p.get(k)) for k in ('logo2', 'wb_logo_1')
+                    if str(p.get(k) or '').startswith('http')]
+            st, _ = _crowd_common.upsert_project(
+                TUWEN_DIR, url2, str(p.get('name', ''))[:60],
+                str(p.get('category') or ''), chips, amount2,
+                summary='', img_urls=tuple(imgs), download=_md_download)
+            if st == '新':
+                n_new += 1
+                time.sleep(1)                     # 约定: 同站点请求间隔
+            elif st == '刷新':
+                n_ref += 1
+            else:
+                n_noimg += 1
         detail = (f'Top{len(rows)}快照, Top1 "{rows[0]["项目名"]}" '
                   f'已筹{rows[0]["已筹金额元"]:,.0f}元 达成{rows[0]["达成率%"]}%'
-                  f'({rows[0]["支持人数"]}人); JSON {n_news}条')
+                  f'({rows[0]["支持人数"]}人); JSON {n_news}条; '
+                  f'图文 新增{n_new} 刷新{n_ref}'
+                  + (f' 缺照片{n_noimg}' if n_noimg else ''))
         return '成功', detail
     except Exception as e:  # noqa: BLE001
         return '失败', str(e)

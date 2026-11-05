@@ -245,9 +245,9 @@ for _p, _lab in (('P66', '线材榜'), ('P68', '充电榜')):
     if _t:
         TOPS[_p] = _t
 
-# ============ 图文数据（v18：P91我爱音频网·耳机评测；v18.2：P90充电头网·拆解）→ REVIEWS ============
+# ============ 图文数据（v18：P91评测；v18.2：P90拆解；v18.3：P93/P94众筹项目图文）→ REVIEWS ============
 # 数据契约：图文数据/<任务目录>/*/*/_meta.json（产品名/品类tag/发布日期/原文链接/chips/摘要/照片），
-# 本脚本只搬运（按发布日期取最近6篇），照片压缩后base64内联保持离线可用。
+# 本脚本只搬运（按发布日期取最近6篇，同日按排序值），照片压缩后base64内联保持离线可用。
 def _img_datauri(path, width=320, quality=70):
     """照片文件 → 宽320px JPEG base64 dataURI（失败返回空串，卡面以占位块渲染）"""
     try:
@@ -264,8 +264,9 @@ def _img_datauri(path, width=320, quality=70):
         return ''
 
 
-def _scan_reviews(rel):
-    """扫描 图文数据/<rel>/*/*/_meta.json → {'items':[最近6篇], 'updated':最大发布日期} 或 None"""
+def _scan_reviews(rel, noimg=''):
+    """扫描 图文数据/<rel>/*/*/_meta.json → {'items':[最近6篇], 'updated':最大发布日期, 'noimg':占位标签} 或 None
+    排序：发布日期 desc，同日按 排序值(如已筹金额) desc（文章无该字段视为0，不影响原序）"""
     rdir = os.path.join(FIX, '图文数据', rel)
     metas = []
     for _fp in glob.glob(os.path.join(rdir, '*', '*', '_meta.json')):
@@ -280,7 +281,8 @@ def _scan_reviews(rel):
         metas.append({'m': _m, 'photos': [p for p in _photos if os.path.exists(p)]})
     if not metas:
         return None
-    metas.sort(key=lambda x: x['m'].get('发布日期') or '', reverse=True)
+    metas.sort(key=lambda x: (x['m'].get('发布日期') or '',
+                              float(x['m'].get('排序值') or 0)), reverse=True)
     items = []
     for _x in metas[:6]:
         _m = _x['m']
@@ -289,12 +291,14 @@ def _scan_reviews(rel):
                       'chips': [str(c) for c in (_m.get('chips') or [])[:6]],
                       'desc': _m.get('摘要', ''), 'url': _m['原文链接'],
                       'img': _img_datauri(_x['photos'][0]) if _x['photos'] else ''})
-    return {'items': items, 'updated': max(x['m'].get('发布日期') or '' for x in metas)}
+    return {'items': items, 'noimg': noimg,
+            'updated': max(x['m'].get('发布日期') or '' for x in metas)}
 
 
 REVIEWS = {}
-for _key, _rel in (('P91', '我爱音频网评测'), ('P90', '充电头网拆解')):
-    _r = _scan_reviews(_rel)
+for _key, _rel, _ni in (('P91', '我爱音频网评测', '52audio'), ('P90', '充电头网拆解', '充电头网'),
+                        ('P93', 'Kickstarter众筹', 'KS'), ('P94', '摩点众筹', '摩点')):
+    _r = _scan_reviews(_rel, _ni)
     if _r:
         REVIEWS[_key] = _r
 

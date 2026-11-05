@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-"""P93 竞对同业-Kickstarter：discover JSON接口(curl_cffi过CF)抓科技类(sort=magic)热门Top12项目快照，
-并写 资讯数据/kickstarter.json(Top8资讯卡片)"""
+"""P93 竞对同业-Kickstarter：discover JSON接口抓科技类(sort=magic)热门Top12项目快照，
+写 资讯数据/kickstarter.json(Top8资讯卡片)；并落盘项目图文（照片+blurb+_meta.json）→
+图文数据/Kickstarter众筹/，供看板P93图文卡（70_review.js渲染，_crowd_common共用）"""
 import os
 import sys
 import time
@@ -9,6 +10,7 @@ import datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 import _news_common
+import _crowd_common
 
 PID = 93
 TITLE = 'Kickstarter科技热门'
@@ -28,21 +30,50 @@ ACC_KW = ['charg', 'power bank', 'battery', 'cable', 'usb',
           'display', 'monitor', 'adapter', 'hub', 'edc']
 
 
+TUWEN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         '图文数据', 'Kickstarter众筹')
+IMPersonates = ('chrome', 'chrome131', 'safari17_0')   # CF盾指纹轮换(2026-11-05验证safari17_0过盾)
+
+
 def kick_get(url):
-    """Kickstarter有Cloudflare：优先curl_cffi模拟chrome；无curl_cffi时降级requests。"""
+    """Kickstarter有Cloudflare：curl_cffi按指纹序列尝试(解析出JSON即成功)；无curl_cffi时降级requests。"""
     try:
+        import json as _json
         from curl_cffi import requests as cr
-        r = cr.get(url, impersonate='chrome', timeout=40, headers={
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Referer': 'https://www.kickstarter.com/discover/categories/technology',
-        })
-        if r.status_code != 200:
-            raise RuntimeError(f'curl_cffi HTTP {r.status_code}(可能被Cloudflare拦截)')
-        return r.text
+        last = '无响应'
+        for imp in IMPersonates:
+            try:
+                r = cr.get(url, impersonate=imp, timeout=40, headers={
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Referer': 'https://www.kickstarter.com/discover/categories/technology',
+                })
+                last = f'{imp} HTTP {r.status_code}'
+                if r.status_code != 200:
+                    continue
+                _json.loads(r.text)               # 盾页是HTML，解析失败换下一指纹
+                return r.text
+            except ValueError:
+                last = f'{imp} 返回非JSON(Cloudflare盾页)'
+        raise RuntimeError(f'curl_cffi全指纹失败(可能被Cloudflare拦截): {last}')
     except ImportError:
         r = common.http_get(url, referer='https://www.kickstarter.com/discover/categories/technology')
         return r
+
+
+def _ks_download(url, fp):
+    """Kickstarter图片下载(curl_cffi chrome指纹，i.kickstarter.com无盾)。"""
+    try:
+        from curl_cffi import requests as cr
+        r = cr.get(url, impersonate='chrome', timeout=40,
+                   headers={'Referer': 'https://www.kickstarter.com/'})
+        if r.status_code == 200 and len(r.content) > 3000:
+            with open(fp, 'wb') as f:
+                f.write(r.content)
+            return True
+    except Exception:  # noqa: BLE001
+        pass
+    return False
 
 
 def _drop_stale_ranks(csv_path, keep_ranks):
@@ -106,9 +137,38 @@ def run():
         _drop_stale_ranks(CSV, [r['排名'] for r in rows])
         n_news = _news_common.save_news('kickstarter.json',
                                         'Kickstarter科技类热门(sort=magic)', news)
+        # —— v18.3 图文落盘：项目照片+blurb+chips(接口数值照录) → 图文数据/Kickstarter众筹/
+        n_new, n_ref, n_noimg = 0, 0, 0
+        for p in live[:TOPN]:
+            usd2 = int(round(float(p.get('usd_pledged')
+                                    or p.get('converted_pledged_amount') or 0)))
+            url2 = (p.get('urls') or {}).get('web', {}).get('project', '')
+            if not url2:
+                continue
+            pct2 = round(float(p['percent_funded']), 1)
+            backers2 = int(p.get('backers_count') or 0)
+            days2 = max(0.0, round((float(p.get('deadline', now)) - now) / 86400, 1))
+            chips = [f'已筹${usd2:,}', f'达成{pct2:.0f}%', f'支持{backers2}人',
+                     '已结束' if days2 <= 0 else f'剩{days2:.0f}天']
+            photo = p.get('photo') or {}
+            img = photo.get('1024x576') or photo.get('med') or photo.get('full') or ''
+            st, _ = _crowd_common.upsert_project(
+                TUWEN_DIR, url2, str(p.get('name', ''))[:80],
+                str((p.get('category') or {}).get('name', '')), chips, usd2,
+                summary=str(p.get('blurb', ''))[:160],
+                img_urls=(img,) if img else (), download=_ks_download)
+            if st == '新':
+                n_new += 1
+                time.sleep(1)                     # 约定: 同站点请求间隔
+            elif st == '刷新':
+                n_ref += 1
+            else:
+                n_noimg += 1
         detail = (f'Top{len(rows)}快照, Top1 "{rows[0]["项目名"]}" '
                   f'已筹${rows[0]["已筹美元"]:,} 达成{rows[0]["达成率%"]}%'
-                  f'({rows[0]["支持者数"]}人); JSON {n_news}条')
+                  f'({rows[0]["支持者数"]}人); JSON {n_news}条; '
+                  f'图文 新增{n_new} 刷新{n_ref}'
+                  + (f' 缺照片{n_noimg}' if n_noimg else ''))
         return '成功', detail
     except Exception as e:  # noqa: BLE001
         return '失败', str(e)
