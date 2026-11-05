@@ -28,6 +28,10 @@ ACC_KW = ['charg', 'power bank', 'battery', 'cable', 'usb',
           'dock', 'stand', 'holder', 'mount', 'magsafe', 'wireless',
           'keychain', 'screwdriv', 'keyboard', 'mouse', 'earbud', 'speaker',
           'display', 'monitor', 'adapter', 'hub', 'edc']
+# v18.3.1 消费电子聚焦：科技类目下仅这些子类算消费电子（Fabrication Tools/3D Printing/
+# Robots/Software 等制造工具与纯软件不入图文卡；CSV快照不足8个消费电子时以泛科技补足并标注）
+CE_CATS = {'Consumer Electronics', 'Hardware', 'Gadgets', 'Sound',
+           'Camera Equipment', 'Wearables'}
 
 
 TUWEN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -111,11 +115,18 @@ def run():
         live = [p for p in projects if p.get('state') == 'live']
         if len(live) < 8:
             raise RuntimeError(f'live项目不足8个: {len(live)}')
+        # v18.3.1 消费电子优先排序：CE子类在前（原magic序），泛科技垫底仅在CSV补足
+        ce = [p for p in live
+              if str((p.get('category') or {}).get('name', '')) in CE_CATS]
+        others = [p for p in live if p not in ce]
+        picked = (ce + others)[:TOPN]
+        if len(ce) < 4:
+            raise RuntimeError(f'消费电子子类项目不足4个: {len(ce)}')
         now = time.time()
         now_local = datetime.datetime.now(
             datetime.timezone(datetime.timedelta(hours=8)))
         rows, news = [], []
-        for rank, p in enumerate(live[:TOPN], 1):
+        for rank, p in enumerate(picked, 1):
             pct = round(float(p['percent_funded']), 1)
             usd = int(round(float(p.get('usd_pledged')
                                 or p.get('converted_pledged_amount') or 0)))
@@ -127,6 +138,8 @@ def run():
                 raise RuntimeError(f'排名{rank}字段异常: {name} usd={usd}')
             cat = (p.get('category') or {}).get('name', '')
             note = ' · '.join(x for x in [cat, acc_note(p)] if x)
+            if p in others:                      # CSV快照里的泛科技补足项
+                note = (note + ' · 泛科技').strip(' ·')
             rows.append({'排名': rank, '项目名': name, '已筹美元': usd,
                          '达成率%': pct, '支持者数': backers, '剩余天数': days,
                          'URL': url, '数据来源': SOURCE, '备注': note})
@@ -138,8 +151,9 @@ def run():
         n_news = _news_common.save_news('kickstarter.json',
                                         'Kickstarter科技类热门(sort=magic)', news)
         # —— v18.3 图文落盘：项目照片+blurb+chips(接口数值照录) → 图文数据/Kickstarter众筹/
+        #    v18.3.1 起仅落消费电子子类（CE_CATS），Fabrication Tools/纯软件等不入图文卡
         n_new, n_ref, n_noimg = 0, 0, 0
-        for p in live[:TOPN]:
+        for p in ce[:TOPN]:
             usd2 = int(round(float(p.get('usd_pledged')
                                     or p.get('converted_pledged_amount') or 0)))
             url2 = (p.get('urls') or {}).get('web', {}).get('project', '')
@@ -164,7 +178,7 @@ def run():
                 n_ref += 1
             else:
                 n_noimg += 1
-        detail = (f'Top{len(rows)}快照, Top1 "{rows[0]["项目名"]}" '
+        detail = (f'Top{len(rows)}快照(消费电子{len(ce)}个优先), Top1 "{rows[0]["项目名"]}" '
                   f'已筹${rows[0]["已筹美元"]:,} 达成{rows[0]["达成率%"]}%'
                   f'({rows[0]["支持者数"]}人); JSON {n_news}条; '
                   f'图文 新增{n_new} 刷新{n_ref}'

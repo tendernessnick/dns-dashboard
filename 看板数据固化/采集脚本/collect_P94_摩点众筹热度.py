@@ -34,6 +34,12 @@ TUWEN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 ACC_KW = ['充电', '数据线', '线材', '支架', '磁吸', '键盘', '鼠标', '耳机', '音响',
           '音箱', '电源', '插线板', '蓝牙', '触控', '摄像头', '屏幕', '指纹',
           '充电宝', '数码', '桌面', 'hub', '扩展坞', '无线充']
+# 纯软件项标记（科技类目里的非硬件项目，不入图文卡口径）
+SOFT_KW = ('小程序', '软件', '公众号')
+
+
+def _is_software(name):
+    return any(k in str(name) for k in SOFT_KW)
 
 
 def _md_download(url, fp):
@@ -112,24 +118,23 @@ def run():
         live = [p for p in pool.values()
                 if p.get('status') == '众筹中' and float(p.get('backer_money_rew') or 0) > 0]
         live.sort(key=lambda p: float(p['backer_money_rew']), reverse=True)
-        # 排名口径: 全站金额Top10在前，11-12名优先科技类目(任务要求关注3C/科技)，不足再以全站补齐
+        # v18.3.1 消费电子聚焦：科技类目榜为主池（金额降序，剔除纯软件项），
+        # 全站榜中3C配件关键词项目补充——摩点全站榜以桌游/游戏为主，与关注域不符
         tech_ids = set(ids_tech)
-        picked = [p for p in live if str(p['id']) not in tech_ids][:10]
-
-        def _pick_tech():
-            return sorted((p for p in live if str(p['id']) in tech_ids),
-                          key=lambda p: float(p['backer_money_rew']), reverse=True)
-        for p in _pick_tech():
-            if len(picked) >= TOPN:
-                break
-            picked.append(p)
-        for p in live:
+        tech_live = sorted((p for p in live if str(p['id']) in tech_ids
+                            and not _is_software(p.get('name', ''))),
+                           key=lambda p: float(p['backer_money_rew']), reverse=True)
+        kw_live = sorted((p for p in live if str(p['id']) not in tech_ids
+                          and acc_note(p.get('name', ''))),
+                         key=lambda p: float(p['backer_money_rew']), reverse=True)
+        picked = []
+        for p in tech_live + kw_live:
             if len(picked) >= TOPN:
                 break
             if p not in picked:
                 picked.append(p)
-        if len(picked) < 8:
-            raise RuntimeError(f'有效项目不足8个: {len(picked)}')
+        if len(picked) < 6:
+            raise RuntimeError(f'科技类目+3C关键词有效项目不足6个: {len(picked)}')
         now_local = datetime.datetime.now(
             datetime.timezone(datetime.timedelta(hours=8)))
         rows, news = [], []
@@ -142,10 +147,11 @@ def run():
             cat = str(p.get('category') or '')
             in_tech = str(p['id']) in tech_ids
             parts = [cat]
-            if in_tech and cat != '科技':
-                parts.append('科技类目')
-            if acc_note(name):
-                parts.append('3C配件相关')
+            if in_tech:
+                if acc_note(name):
+                    parts.append('3C配件相关')
+            else:
+                parts.append('3C配件相关·全站榜')
             note = ' · '.join(x for x in parts if x)
             rows.append({'排名': rank, '项目名': name, '已筹金额元': amount,
                          '达成率%': rate, '支持人数': backers,
