@@ -1,18 +1,36 @@
 {
- "updated": "2026-11-05T12:39:11+00:00",
+ "updated": "2026-11-05T13:20:55+00:00",
  "source": "Kickstarter科技类热门(sort=magic)",
  "items": [
-  {
-   "date": "11-05",
-   "title": "Home Harvest · 已筹$337,004 · 达成5057%",
-   "title_zh": "",
-   "url": "https://www.kickstarter.com/projects/home-harvest/home-harvest"
-  },
   {
    "date": "11-05",
    "title": "COMAN T1 MINI: World’s First One-Click Travel Tripod · 已筹$220,638 · 达成1731%",
    "title_zh": "",
    "url": "https://www.kickstarter.com/projects/coman/coman-t1-mini-worlds-first-one-click-travel-tripod"
+  },
+  {
+   "date": "11-05",
+   "title": "iMicro XL15 - A pocket-sized micro exploration studio. · 已筹$78,743 · 达成787%",
+   "title_zh": "",
+   "url": "https://www.kickstarter.com/projects/uchart/imicro-xl15-a-pocket-sized-micro-exploration-studio"
+  },
+  {
+   "date": "11-05",
+   "title": "XGIMI AURA 3 Series: The Ultimate 4K RGB Laser TV · 已筹$22,039,890 · 达成22040%",
+   "title_zh": "",
+   "url": "https://www.kickstarter.com/projects/xgimititannoir/xgimi-aura-3-series-the-ultimate-laser-tv-for-every-moment"
+  },
+  {
+   "date": "11-05",
+   "title": "Await: Digital Ease, Analog Soul. Camera for what matters. · 已筹$126,074 · 达成554%",
+   "title_zh": "",
+   "url": "https://www.kickstarter.com/projects/rollingsquare/await-digital-retro-camera-film-app-automatic-printing"
+  },
+  {
+   "date": "11-05",
+   "title": "AirCannon GPX: UNLEASH 118MPH POWER. THE MONSTER BLOWER · 已筹$547,737 · 达成10955%",
+   "title_zh": "",
+   "url": "https://www.kickstarter.com/projects/magpietech/aircannon-gpx-unleash-118mph-power-the-monster-blower"
   },
   {
    "date": "11-05",
@@ -22,33 +40,15 @@
   },
   {
    "date": "11-05",
-   "title": "iMicro XL15 - A pocket-sized micro exploration studio. · 已筹$78,677 · 达成786%",
+   "title": "Home Harvest · 已筹$337,941 · 达成5071%",
    "title_zh": "",
-   "url": "https://www.kickstarter.com/projects/uchart/imicro-xl15-a-pocket-sized-micro-exploration-studio"
+   "url": "https://www.kickstarter.com/projects/home-harvest/home-harvest"
   },
   {
    "date": "11-05",
-   "title": "XGIMI AURA 3 Series: The Ultimate 4K RGB Laser TV · 已筹$22,035,192 · 达成22035%",
-   "title_zh": "",
-   "url": "https://www.kickstarter.com/projects/xgimititannoir/xgimi-aura-3-series-the-ultimate-laser-tv-for-every-moment"
-  },
-  {
-   "date": "11-05",
-   "title": "WUBEN G6 | Ultra Slim Multi-Use Keychain Light · 已筹$195,687 · 达成4388%",
-   "title_zh": "",
-   "url": "https://www.kickstarter.com/projects/wubenlight/wuben-g6-ultra-slim-multi-use-keychain-light"
-  },
-  {
-   "date": "11-05",
-   "title": "Fotorgear Campix: Look Down, Good Things Start with One Roll · 已筹$238,723 · 达成4778%",
+   "title": "Fotorgear Campix: Look Down, Good Things Start with One Roll · 已筹$238,892 · 达成4781%",
    "title_zh": "",
    "url": "https://www.kickstarter.com/projects/fotorgear/fotorgear-campix-look-down-good-things-start-with-one-roll"
-  },
-  {
-   "date": "11-05",
-   "title": "SLogic32U3 – The World's First 10Gbps USB3.2 Logic Analyzer · 已筹$314,085 · 达成4930%",
-   "title_zh": "",
-   "url": "https://www.kickstarter.com/projects/sipeed/slogic32u3-the-worlds-first-10gbps-usb32-logic-analyzer"
   }
  ]
 }
