@@ -259,7 +259,7 @@ def card_html(c, slot=None):
     elif t == 'desc':
         inner = b_top(c) + b_val(c) + b_sub(c) + b_chips(c) + b_desc(c) + b_btn(c) + b_foot(c)
     elif t == 'list':
-        inner = b_top(c) + b_tllist(c) + b_feed(c) + b_topsub(c) + b_foot(c)
+        inner = b_top(c) + b_tllist(c) + b_desc(c) + b_chips(c) + b_feed(c) + b_topsub(c) + b_foot(c)  # v18.5：list卡支持说明/链接组（P16/P20议息日历解读入口）
     elif t == 'multi':
         inner = b_top(c) + b_multi(c) + b_foot(c)
     elif t == 'share':
