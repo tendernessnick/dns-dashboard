@@ -26,3 +26,6 @@ _采集状态.json
 
 # aktools日志轮转产物
 aktools_log.log*
+
+# RPA过程帧留档（照片N.png为看板载荷入库；配图N.jpeg仅本地留档，不入库）
+看板数据固化/RPA数据/**/配图*.jpeg

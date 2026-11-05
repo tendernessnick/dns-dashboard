@@ -245,6 +245,53 @@ for _p, _lab in (('P66', '线材榜'), ('P68', '充电榜')):
     if _t:
         TOPS[_p] = _t
 
+# ============ RPA图文数据（v18：P91我爱音频网·拆解）→ REVIEWS ============
+# 落盘契约见 看板数据固化/RPA数据/我爱音频网拆解/执行prompt.md：卡片词条/摘要由采集会话
+# 写入 _meta.json，本脚本只搬运（按发布日期取最近6篇），照片压缩后base64内联保持离线可用。
+REVIEWS = {}
+
+
+def _img_datauri(path, width=320, quality=70):
+    """照片文件 → 宽320px JPEG base64 dataURI（失败返回空串，卡面以占位块渲染）"""
+    try:
+        import base64
+        import io
+        from PIL import Image
+        im = Image.open(path).convert('RGB')
+        if im.width > width:
+            im = im.resize((width, round(im.height * width / im.width)), Image.LANCZOS)
+        buf = io.BytesIO()
+        im.save(buf, 'JPEG', quality=quality, optimize=True)
+        return 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode()
+    except Exception:
+        return ''
+
+
+_rpa_dir = os.path.join(FIX, 'RPA数据', '我爱音频网拆解')
+_metas = []
+for _fp in glob.glob(os.path.join(_rpa_dir, '*', '*', '_meta.json')):
+    try:
+        _m = json.load(open(_fp, encoding='utf-8'))
+    except Exception:
+        continue
+    if not (_m.get('产品名') and _m.get('原文链接')):
+        continue
+    _photos = [os.path.normpath(os.path.join(os.path.dirname(_fp), _ph))
+               for _ph in (_m.get('照片') or [])[:2]]
+    _metas.append({'m': _m, 'photos': [p for p in _photos if os.path.exists(p)]})
+if _metas:
+    _metas.sort(key=lambda x: x['m'].get('发布日期') or '', reverse=True)
+    _items = []
+    for _x in _metas[:6]:
+        _m = _x['m']
+        _items.append({'name': _m['产品名'], 'tag': _m.get('品类tag', ''),
+                       'date': (_m.get('发布日期') or '')[5:10],
+                       'chips': [str(c) for c in (_m.get('chips') or [])[:6]],
+                       'desc': _m.get('摘要', ''), 'url': _m['原文链接'],
+                       'img': _img_datauri(_x['photos'][0]) if _x['photos'] else ''})
+    REVIEWS['P91'] = {'items': _items,
+                      'updated': max(x['m'].get('发布日期') or '' for x in _metas)}
+
 # ============ 写 data.js ============
 def _js(obj):
     return json.dumps(obj, ensure_ascii=False).replace('</', '<\\/')
@@ -255,10 +302,12 @@ js = ('// 由 生成数据.py 自动生成——勿手改；页面壳(index.html
       'var ACCENT={m1:"#0065B0",m2:"#B45309",m3:"#0F766E",m4:"#6D28D9",m5:"#BE123C"};\n'
       'const DDATA=' + _js(DDATA) + ';\n'
       'DDATA._news=' + _js(NEWS) + ';\n'
-      'var TOPS=' + _js(TOPS) + ';\n')
+      'var TOPS=' + _js(TOPS) + ';\n'
+      'var REVIEWS=' + _js(REVIEWS) + ';\n')
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write(js)
 
 print('data.js 已生成:', os.path.getsize(OUT) // 1024, 'KB |',
       '词条', len(DDATA) - 5, '| 数据截至', ASOF, '| 待补录', PEND or '无', '|',
-      '资讯/公告', len(NEWS), '卡 | 榜单', list(TOPS.keys()) or '无')
+      '资讯/公告', len(NEWS), '卡 | 榜单', list(TOPS.keys()) or '无',
+      '| 图文', list(REVIEWS.keys()) or '无')

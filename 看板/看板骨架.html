@@ -11,7 +11,7 @@
 <div class="rule3"></div>
 <header class="mast"><div class="mast-in">
   <div class="m-brand"><span class="mark">DNS</span>
-    <div><div class="m-eyebrow">DNS · 深圳和宏</div><h1>市场与竞对监测数据看板</h1><div class="m-sub">宏观 · 大宗商品 · 行业 · 品类 · 竞对同业（共108项监测源）</div></div>
+    <div><div class="m-eyebrow">DNS · 深圳和宏</div><h1>市场与竞对监测数据看板</h1><div class="m-sub">宏观 · 大宗商品 · 行业 · 品类 · 竞对同业（共112项监测源）</div></div>
   </div>
   <div class="m-right">
     <div class="m-meta"><span class="m-k">数据截至</span><b id="asof">2026-10-23</b></div>
@@ -164,7 +164,16 @@ var FRESH_TODAY=(function(){var t=new Date();return t.getFullYear()+'-'+('0'+(t.
 function freshHTML(pid){
   if(typeof DDATA==='undefined')return '—';
   var d=DDATA[pid];
-  if(!d||!d.rows||!d.rows.length)return '—';
+  if(!d||!d.rows||!d.rows.length){
+    // v18：无CSV的图文词条（P91）回退 REVIEWS 最近文章日期（updated=最大发布日期）
+    if(typeof REVIEWS!=='undefined'&&REVIEWS[pid]&&REVIEWS[pid].items&&REVIEWS[pid].items.length&&REVIEWS[pid].updated){
+      var m=DDATA._meta?DDATA._meta[pid]:null;
+      var lim=m?FRESH_MAX[m.f]:null;
+      var dd=Math.floor((new Date(FRESH_TODAY)-new Date(REVIEWS[pid].updated))/864e5);
+      return (lim&&dd>lim)?(REVIEWS[pid].updated+' <span class="ovd">逾期'+dd+'天</span>'):REVIEWS[pid].updated;
+    }
+    return '—';
+  }
   var last=d.rows[d.rows.length-1][0];
   if(!last)return '—';
   var dd=Math.floor((new Date(FRESH_TODAY)-new Date(last))/864e5);

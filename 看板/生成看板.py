@@ -43,7 +43,7 @@ for fp in sorted(glob.glob(os.path.join(MOD_DIR, '*.json'))):
         raise SystemExit(f'卡片ID重复：{cid}（{fp}）')
     CARDS[cid] = cfg
 
-TYPES = {'kpi', 'desc', 'list', 'strip', 'share', 'ring', 'hlines', 'multi', 'cco'}
+TYPES = {'kpi', 'desc', 'list', 'strip', 'share', 'ring', 'hlines', 'multi', 'cco', 'review'}
 for cid, cfg in CARDS.items():
     if cfg['类型'] not in TYPES:
         raise SystemExit(f'{cid}：未知卡型 {cfg["类型"]}（允许：{sorted(TYPES)}）')
@@ -189,6 +189,11 @@ def b_share(c):
     return f'<div class="sharechart" data-share="{c["份额图"]}"></div>'
 
 
+def b_review(c):
+    # v18：图文拆解卡（P91我爱音频网）——渲染器70_review.js按REVIEWS数据填充
+    return f'<div class="revcards" data-review="{Pn(c["主数据"])}"></div>'
+
+
 def b_ring(c):
     w = c.get('环形文案', {})
     g = c.get('环形图', {})
@@ -259,6 +264,8 @@ def card_html(c, slot=None):
         inner = b_top(c) + b_multi(c) + b_foot(c)
     elif t == 'share':
         inner = b_top(c) + b_share(c) + b_foot(c)
+    elif t == 'review':
+        inner = b_top(c) + b_review(c) + b_foot(c)
     elif t == 'ring':
         inner = b_top(c) + b_ring(c) + b_foot(c)
     else:
