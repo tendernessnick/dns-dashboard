@@ -28,9 +28,6 @@ def num(s):
         return None
 
 
-PRIMARY = {'P2': '同比%', 'P5': '同比%', 'P6': '同比%', 'P79': '营收占比%'}
-
-
 def load_data():
     data = {}
     for f in sorted(glob.glob(os.path.join(CSV_DIR, '*.csv'))):
@@ -70,13 +67,14 @@ def load_data():
     return data
 
 
-DDATA = load_data()
-
 # ============ 元数据：由《词条注册表》驱动（唯一事实源，v12治理） ============
+# v17：主数值列(PRIMARY)/资讯key/资讯文件 并入注册表，NEWS注入与首列选择均注册表驱动
 REG_PATH = os.path.join(FIX, '词条注册表.csv')
+REG_ROWS = []
 BIND, WIN, META = {}, {}, {}
 with open(REG_PATH, encoding='utf-8-sig', newline='') as _f:
     for _r in csv.DictReader(_f):
+        REG_ROWS.append(_r)
         _pid = _r['P号']
         if _r['单位'] or _r['小数位']:
             try:
@@ -91,6 +89,9 @@ with open(REG_PATH, encoding='utf-8-sig', newline='') as _f:
             WIN[_pid] = _win
         if _r['可靠度'] and not _r['可靠度'].startswith('—'):
             META[_pid] = {'r': _r['可靠度'], 'k': _r['口径说明'], 'f': _r['更新频率']}
+PRIMARY = {_r['P号']: _r['主数值列'] for _r in REG_ROWS if _r.get('主数值列')}
+
+DDATA = load_data()
 
 # 数据截至 = 全库最新数据日期（不含未来日期，如换机周期2029预测）
 import datetime as _dt
@@ -114,41 +115,9 @@ DDATA['_pending'] = PEND
 DDATA['_asof'] = ASOF
 # （旧的手写BIND/WIN字典已删除：单位/小数位/显示窗口改由《词条注册表.csv》驱动，改元数据只需改注册表）
 
-# ============ 资讯feed（近7天新闻/众筹/互动，由资讯采集器生成JSON） ============
-NEWS_FILES = {'P14': '财经新闻.json', 'P15': '地缘政治.json',
-              'P41': 'apple新闻.json', 'P42': '手机新品.json',
-              'P93': 'kickstarter.json', 'P94': 'modian.json',
-              'P59': '充电头网早报.json', 'P60': '快充拆解.json',
-              'P61': 'avs资讯.json', 'P90': '同业新闻.json',
-              '安克互动': 'irm-安克创新.json'}
-for _co in ('奥海科技', '佳禾智能', '海能实业', '绿联科技'):
-    NEWS_FILES[_co + '公告'] = '公告-%s.json' % _co
-    NEWS_FILES[_co + '互动'] = 'irm-%s.json' % _co
-
-NEWS = {}
-_news_stat = []
-for pid, fn in NEWS_FILES.items():
-    fp = os.path.join(NEWS_DIR, fn)
-    if not os.path.exists(fp):
-        continue
-    try:
-        items = json.load(open(fp, encoding='utf-8'))['items']
-    except Exception:
-        continue
-    if not items:
-        continue
-    NEWS[pid] = [{'date': it.get('date', ''), 'title': it.get('title', ''),
-                  'title_zh': it.get('title_zh', ''), 'url': it.get('url', '#')}
-                 for it in items]
-    _news_stat.append('%s:%d条' % (pid, len(NEWS[pid])))
-
-# ============ 公司公告（P231-P234/P78/P81 CSV快照 → feed items，PDF链接在备注列） ============
-_GG = {co + '公告': pid for co, pid in
-       (('奥海科技', 'P231'), ('佳禾智能', 'P232'), ('海能实业', 'P233'), ('绿联科技', 'P234'),
-        ('安克', 'P78'))}
-_GG['安克募投'] = 'P81'
-
-
+# ============ 资讯feed（v17注册表驱动）：
+#   资讯文件非空 → 资讯数据/*.json（键=卡配置的资讯键，多键多文件按分号对齐）；
+#   资讯文件为空 → 按本行P号读 CSV公告快照（近10条，PDF链接在链接列/备注列） ============
 def _csvpath(pid):
     for f in glob.glob(os.path.join(CSV_DIR, '*.csv')):
         if re.search(r'-%s-' % pid, os.path.basename(f)):
@@ -156,20 +125,21 @@ def _csvpath(pid):
     return None
 
 
-for key, pid in _GG.items():
+def _ann_items(pid):
+    """公告CSV快照 → feed items（近10条去重）"""
     fp = _csvpath(pid)
     if not fp:
-        continue
+        return []
     try:
         with open(fp, encoding='utf-8-sig', newline='') as fh:
             rows = list(csv.DictReader(fh))
     except Exception:
-        continue
+        return []
     hdr = rows[0].keys() if rows else []
     tcol = next((c for c in hdr if '标题' in c), None)
     ncol = next((c for c in hdr if '序号' in c), None)
     if not tcol:
-        continue
+        return []
     items = []
     seen_t = set()
     for r in sorted(rows, key=lambda r: r.get('数据日期', ''), reverse=True):
@@ -191,9 +161,37 @@ for key, pid in _GG.items():
         items.append({'date': (r.get('数据日期') or '')[5:10],
                       'title': (('[%s] ' % no) if no else '') + (r.get(tcol) or ''),
                       'title_zh': '', 'url': url})
-    if items:
-        NEWS[key] = items
-        _news_stat.append('%s:%d条' % (key, len(items)))
+    return items
+
+
+NEWS = {}
+_news_stat = []
+for _r in REG_ROWS:
+    _keys = [k.strip() for k in (_r.get('资讯key') or '').split(';') if k.strip()]
+    if not _keys:
+        continue
+    _files = [f.strip() for f in (_r.get('资讯文件') or '').split(';') if f.strip()]
+    if _files:
+        for _k, _fn in zip(_keys, _files):
+            fp = os.path.join(NEWS_DIR, _fn)
+            if not os.path.exists(fp):
+                continue
+            try:
+                items = json.load(open(fp, encoding='utf-8'))['items']
+            except Exception:
+                continue
+            if not items:
+                continue
+            NEWS[_k] = [{'date': it.get('date', ''), 'title': it.get('title', ''),
+                         'title_zh': it.get('title_zh', ''), 'url': it.get('url', '#')}
+                        for it in items]
+            _news_stat.append('%s:%d条' % (_k, len(NEWS[_k])))
+    else:
+        for _k in _keys:
+            items = _ann_items(_r['P号'])
+            if items:
+                NEWS[_k] = items
+                _news_stat.append('%s:%d条' % (_k, len(items)))
 
 # ============ 榜单快照（P66线材榜/P68充电榜）→ TOPS：TOP5条目(带图)+Anker席数+均价 ============
 def _tops(pid, label):

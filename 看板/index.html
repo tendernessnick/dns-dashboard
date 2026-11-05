@@ -467,6 +467,10 @@
   #dns-dash .ticker-in::before{left:4px}
 }
 
+/* v17 词条新鲜度：附录「最近数据」列 */
+.ptable .pfresh{white-space:nowrap;font-family:var(--fnnum);font-variant-numeric:tabular-nums;font-size:12px}
+.ptable .ovd{margin-left:4px;padding:1px 5px;border-radius:4px;font:700 10.5px/16px var(--fn);color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4}
+
 </style>
 <div id="dns-dash">
 <div class="rule3"></div>
@@ -748,7 +752,7 @@
       <span class="pcount" id="pfCount"></span>
     </div>
     <div class="twrap"><table class="ptable">
-      <thead><tr><th style="width:52px">序号</th><th style="width:88px">板块</th><th>词条</th><th>来源</th><th>来源URL</th><th style="width:110px">采集方式</th><th style="width:64px">频率</th><th style="width:88px">状态</th></tr></thead>
+      <thead><tr><th style="width:52px">序号</th><th style="width:88px">板块</th><th>词条</th><th>来源</th><th>来源URL</th><th style="width:110px">采集方式</th><th style="width:64px">频率</th><th style="width:110px">最近数据</th><th style="width:88px">状态</th></tr></thead>
       <tbody id="provRows"></tbody>
     </table></div>
   </div>
@@ -1353,6 +1357,21 @@ document.getElementById('provbtn').addEventListener('click',function(){
   var app=document.getElementById('appendix');
   app.setAttribute('data-open','true');renderProv();
 });
+// ===== 词条新鲜度：附录「最近数据」列（v17）——最近数据日期+逾期标注，阈值按注册表更新频率 =====
+var FRESH_MAX={'每日':4,'每周':10,'每月':40,'每季':110,'半年度':200,'每年':380};
+var FRESH_TODAY=(function(){var t=new Date();return t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2)})();
+function freshHTML(pid){
+  if(typeof DDATA==='undefined')return '—';
+  var d=DDATA[pid];
+  if(!d||!d.rows||!d.rows.length)return '—';
+  var last=d.rows[d.rows.length-1][0];
+  if(!last)return '—';
+  var dd=Math.floor((new Date(FRESH_TODAY)-new Date(last))/864e5);
+  var m=DDATA._meta?DDATA._meta[pid]:null;
+  var lim=m?FRESH_MAX[m.f]:null;
+  if(lim&&dd>lim)return last+' <span class="ovd">逾期'+dd+'天</span>';
+  return last;
+}
 // ===== 溯源索引表 =====
 function renderProv(){
   var cat=document.getElementById('pfCat').value,st=document.getElementById('pfStatus').value,q=document.getElementById('pfQ').value.trim().toLowerCase();
@@ -1366,12 +1385,12 @@ function renderProv(){
     var stc=STATMAP[p.status]||['',''];
     var u=esc(p.url);var us=u.replace(/^https?:\/\//,'');
     return '<tr id="prov-P'+p.id+'"><td class="pnum">P'+p.id+'</td><td>'+esc(p.cat)+'</td>'+
-      '<td class="ptitle" data-goto="card-P'+p.id+'" title="回跳看板卡片">'+((window.DDATA&&DDATA._meta&&DDATA._meta['P'+p.id]&&DDATA._meta['P'+p.id].r)?('<span class="rlbadge '+(DDATA._meta['P'+p.id].r==='A'?'a':DDATA._meta['P'+p.id].r==='C'?'c':'b')+'" title="可靠度'+DDATA._meta['P'+p.id].r+'级'+(DDATA._meta['P'+p.id].k?'：'+DDATA._meta['P'+p.id].k:'')+'">'+DDATA._meta['P'+p.id].r+'</span> '):'')+esc(p.title)+'</td>'+
+      '<td class="ptitle" data-goto="card-P'+p.id+'" title="回跳看板卡片">'+((typeof DDATA!=='undefined'&&DDATA._meta&&DDATA._meta['P'+p.id]&&DDATA._meta['P'+p.id].r)?('<span class="rlbadge '+(DDATA._meta['P'+p.id].r==='A'?'a':DDATA._meta['P'+p.id].r==='C'?'c':'b')+'" title="可靠度'+DDATA._meta['P'+p.id].r+'级'+(DDATA._meta['P'+p.id].k?'：'+DDATA._meta['P'+p.id].k:'')+'">'+DDATA._meta['P'+p.id].r+'</span> '):'')+esc(p.title)+'</td>'+
       '<td>'+esc(p.source)+'</td>'+
       '<td><a href="'+u+'" target="_blank" rel="noopener">'+esc(us.length>44?us.slice(0,44)+'…':us)+'</a></td>'+
-      '<td>'+esc(p.method||'—')+'</td><td>'+esc(p.freq||'—')+'</td>'+
+      '<td>'+esc(p.method||'—')+'</td><td>'+esc(p.freq||'—')+'</td><td class="pfresh">'+freshHTML('P'+p.id)+'</td>'+
       '<td><span class="pchip '+stc[0]+'">'+stc[1]+'</span></td></tr>';
-  }).join('')||'<tr><td colspan="8" style="color:var(--n500);padding:18px">无匹配条目</td></tr>';
+  }).join('')||'<tr><td colspan="9" style="color:var(--n500);padding:18px">无匹配条目</td></tr>';
   document.getElementById('pfCount').textContent='显示 '+rows.length+' / '+PROV.length+' 条';
 }
 document.getElementById('provToggle').addEventListener('click',function(){

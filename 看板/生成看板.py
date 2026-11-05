@@ -379,12 +379,24 @@ for sec in sections:
 
 sections_html = '\n'.join(x for x in out if x != '' and not x.startswith('<!--stack:'))
 
+# ============ 溯源注册表（v17：由 看板数据固化/溯源表.csv 注入骨架，替代内嵌PROV） ============
+PROV_CSV = os.path.join(os.path.dirname(BASE), '看板数据固化', '溯源表.csv')
+with open(PROV_CSV, encoding='utf-8-sig', newline='') as f:
+    _prov_rows = sorted(csv.DictReader(f), key=lambda r: int(r['P号'][1:]))
+PROV = [{'id': int(r['P号'][1:]), 'cat': r['板块'], 'sub': r['分组'], 'title': r['词条'],
+         'source': r['来源'], 'url': r['来源URL'], 'desc': r['条目说明'], 'freq': r['频率'],
+         'status': r['状态'], 'sample': r['实测样例'], 'note': r['备注'], 'method': r['采集方式']}
+        for r in _prov_rows]
+
 # ============ 组装输出 ============
 js = ''
 for fp in sorted(glob.glob(os.path.join(REN_DIR, '*.js'))):
     js += open(fp, encoding='utf-8').read().rstrip() + '\n'
 
 html = skeleton
+html = html.replace('var PROV=/*__PROV__*/[];', 'var PROV=' + json.dumps(PROV, ensure_ascii=False) + ';', 1)
+if '/*__PROV__*/' in html:
+    raise SystemExit('骨架占位符未替换：/*__PROV__*/（骨架缺 PROV 占位行？）')
 html = html.replace('<style>/*__CSS__*/</style>', '<style>\n' + css + '\n</style>', 1)
 html = html.replace('<!--__SECTIONS__-->', sections_html, 1)
 html = html.replace('<!--__DATA_JS__-->', '<script src="data.js"></script>', 1)
@@ -399,7 +411,7 @@ with open(OUT, 'w', encoding='utf-8') as f:
 unused = set(CARDS) - {r['引用'] for r in layout if r['类型'] == 'C'}
 print('页面壳已重建:', os.path.basename(OUT), os.path.getsize(OUT) // 1024, 'KB（不含数据）')
 print('卡片', sum(1 for r in layout if r['类型'] == 'C'), '张 / 板块', len(sections),
-      '个 / 渲染器', len(glob.glob(os.path.join(REN_DIR, "*.js"))), '个')
+      '个 / 渲染器', len(glob.glob(os.path.join(REN_DIR, "*.js"))), '个 / 溯源', len(PROV), '条')
 if unused:
     print('警告：以下卡片配置未被布局引用：', sorted(unused))
 print('日常更新数据请运行: python 生成数据.py；发同事用: python 打包单文件.py')

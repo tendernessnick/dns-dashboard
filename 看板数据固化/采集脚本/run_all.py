@@ -48,6 +48,35 @@ def main():
     for r in results:
         if r[2] != '成功':
             print(f'  [{r[2]}] {r[0]} {r[1]}: {r[3][:150]}')
+    write_state(run_id, only, ok, skip, fail, results)
+
+
+def write_state(run_id, only, ok, skip, fail, results):
+    """v17：采集状态快照（_采集状态.json，机器可读）——连续失败计数跨run累加，供新鲜度/告警消费。"""
+    import json
+    state_fp = os.path.join(os.path.dirname(HERE), '_采集状态.json')
+    streaks = {}
+    try:
+        with open(state_fp, encoding='utf-8') as f:
+            for pid, s in (json.load(f).get('词条') or {}).items():
+                streaks[pid] = int(s.get('连续失败', 0))
+    except Exception:
+        pass
+    entries = {}
+    for pid, mod, status, detail, elapsed in results:
+        st = streaks.get(pid, 0)
+        entries[pid] = {'名称': mod, '状态': status, '耗时秒': elapsed,
+                        '连续失败': (st + 1) if status == '失败' else 0,
+                        '详情': detail[:120]}
+    import datetime
+    with open(state_fp, 'w', encoding='utf-8') as f:
+        json.dump({'run_id': run_id,
+                   '结束时间': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                   '范围': '全量' if not only else '指定:' + ','.join(sorted(only)),
+                   '汇总': {'成功': ok, '跳过': skip, '失败': fail},
+                   '词条': entries}, f, ensure_ascii=False, indent=1)
+    print('采集状态已写:', os.path.basename(state_fp),
+          '| 连续失败≥2:', [p for p, e in entries.items() if e['连续失败'] >= 2] or '无')
 
 if __name__ == '__main__':
     main()

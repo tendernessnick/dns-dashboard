@@ -457,3 +457,7 @@
   #dns-dash .ticker-in{padding-left:16px}
   #dns-dash .ticker-in::before{left:4px}
 }
+
+/* v17 词条新鲜度：附录「最近数据」列 */
+.ptable .pfresh{white-space:nowrap;font-family:var(--fnnum);font-variant-numeric:tabular-nums;font-size:12px}
+.ptable .ovd{margin-left:4px;padding:1px 5px;border-radius:4px;font:700 10.5px/16px var(--fn);color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4}
