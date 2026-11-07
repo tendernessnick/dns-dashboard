@@ -149,7 +149,10 @@ def b_chips(c):
 
 
 def b_desc(c):
-    return f'<p class="desc"{st(c.get("说明样式"))}>{c["说明"]}</p>' if c.get('说明') else ''
+    if not c.get('说明'):
+        return ''
+    anchor = f' data-cal-desc="{Pn(c["主数据"])}"' if c.get('动态日历') else ''
+    return f'<p class="desc"{anchor}{st(c.get("说明样式"))}>{c["说明"]}</p>'
 
 
 def b_btn(c):
@@ -182,7 +185,8 @@ def b_tllist(c):
     for it in items:
         cls = ' class="next"' if it.get('下一个') else ''
         parts.append(f'<li{cls}><b>{it["日期"]}</b>{it["文本"]}</li>')
-    return f'<ul class="tl-list">{"".join(parts)}</ul>'
+    anchor = f' data-cal="{Pn(c["主数据"])}"' if c.get('动态日历') else ''
+    return f'<ul class="tl-list"{anchor}>{"".join(parts)}</ul>'
 
 
 def b_share(c):

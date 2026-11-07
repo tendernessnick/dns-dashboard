@@ -302,6 +302,16 @@ for _key, _rel, _ni in (('P91', '我爱音频网评测', '52audio'), ('P90', '�
     if _r:
         REVIEWS[_key] = _r
 
+# ============ 议息日历（v18.6：P16美联储/P20欧洲央行，collect_P16_议息日历.py产出）→ CAL ============
+CAL = {}
+_fp = os.path.join(FIX, '资讯数据', '议息日历.json')
+if os.path.exists(_fp):
+    try:
+        _c = json.load(open(_fp, encoding='utf-8'))
+        CAL = {k: _c[k] for k in ('P16', 'P20') if isinstance(_c.get(k), dict) and _c[k].get('时间线')}
+    except Exception:
+        CAL = {}
+
 # ============ 写 data.js ============
 def _js(obj):
     return json.dumps(obj, ensure_ascii=False).replace('</', '<\\/')
@@ -313,11 +323,12 @@ js = ('// 由 生成数据.py 自动生成——勿手改；页面壳(index.html
       'const DDATA=' + _js(DDATA) + ';\n'
       'DDATA._news=' + _js(NEWS) + ';\n'
       'var TOPS=' + _js(TOPS) + ';\n'
-      'var REVIEWS=' + _js(REVIEWS) + ';\n')
+      'var REVIEWS=' + _js(REVIEWS) + ';\n'
+      'var CAL=' + _js(CAL) + ';\n')
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write(js)
 
 print('data.js 已生成:', os.path.getsize(OUT) // 1024, 'KB |',
       '词条', len(DDATA) - 5, '| 数据截至', ASOF, '| 待补录', PEND or '无', '|',
       '资讯/公告', len(NEWS), '卡 | 榜单', list(TOPS.keys()) or '无',
-      '| 图文', list(REVIEWS.keys()) or '无')
+      '| 图文', list(REVIEWS.keys()) or '无', '| 议息', list(CAL.keys()) or '无')
