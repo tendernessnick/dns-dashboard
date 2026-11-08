@@ -92,10 +92,7 @@ def _drop_stale_ranks(csv_path, keep_ranks):
             or int(r.get('排名') or 0) in keep_ranks]
     if len(kept) == len(rows):
         return
-    with open(csv_path, 'w', encoding='utf-8-sig', newline='') as f:
-        w = _csv.DictWriter(f, fieldnames=COLS)
-        w.writeheader()
-        w.writerows(kept)
+    common.write_csv_atomic(csv_path, COLS, kept)
 
 
 def acc_note(p):

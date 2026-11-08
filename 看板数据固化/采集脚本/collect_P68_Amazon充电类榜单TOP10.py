@@ -99,6 +99,21 @@ def _fetch_best(top_n=TOP_N, tries=3):
     return {}, '', last_err
 
 
+def _drop_stale_ranks(keep_ranks):
+    """同日重跑且榜单解析变短时（反爬降级页常见），清掉当天不在当前排名里的残留行（v18.7，仿P93）。"""
+    import csv as _csv
+    if not os.path.exists(CSV):
+        return
+    with open(CSV, encoding='utf-8-sig', newline='') as f:
+        rows = list(_csv.DictReader(f))
+    kept = [r for r in rows
+            if r.get('数据日期') != common.TODAY
+            or int(r.get('排名') or 0) in keep_ranks]
+    if len(kept) == len(rows):
+        return
+    common.write_csv_atomic(CSV, COLS, kept)
+
+
 def run():
     best, src, err = _fetch_best()
     priced = sum(1 for it in best.values() if it['价格USD'] is not None)
@@ -116,6 +131,7 @@ def run():
             '数据来源': src,
         }, COLS, key_cols=['数据日期', '排名'])
         n += 1
+    _drop_stale_ranks(sorted(best)[:TOP_N])
     top1 = best.get(1, {})
     detail = (f'TOP{n}快照(有价{priced})[{src.split("（")[0]}] '
               f'No.1={top1.get("ASIN", "")} ${top1.get("价格USD", "")}')

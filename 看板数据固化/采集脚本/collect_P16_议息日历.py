@@ -68,11 +68,13 @@ def fed_rate_rows():
     out = []
     for i in range(1, len(secs), 2):
         y = int(secs[i])
-        for mo, chg, dsc, lv in re.findall(
+        for mo, inc, dsc, lv in re.findall(
                 r'<td[^>]*>([A-Za-z]+ \d+)</td>\s*<td[^>]*>\s*(-?\d+)\s*</td>\s*'
                 r'<td[^>]*>\s*(-?\d+)\s*</td>\s*<td[^>]*>\s*([\d.]+(?:\s*-\s*[\d.]+)?)\s*</td>', secs[i + 1]):
             mon, day = mo.split()
-            out.append((y, MONTHS[mon], int(day), int(chg), lv))  # chg=联邦基金目标变动bp（第2列），第3列为贴现率
+            # 官网列序经实抓核验(2026-11-08)：第2列=加息bp(Increase)、第3列=降息bp(Decrease)，
+            # 净变动bp=加息-降息（v18.7修正：旧版取第2列当净变动，降息行会误报"上调0bp"）
+            out.append((y, MONTHS[mon], int(day), int(inc) - int(dsc), lv))
     out.sort()
     return out
 

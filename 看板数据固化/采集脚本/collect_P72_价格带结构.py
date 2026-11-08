@@ -48,10 +48,15 @@ def _latest_batch(path, source_hint):
     if not rows:
         raise RuntimeError(f'{os.path.basename(path)} 无数据行')
     snap = max(str(r.get('数据日期', '')) for r in rows)
-    prices = []
+    seen_rank, prices = set(), []
     for r in rows:
         if str(r.get('数据日期', '')) != snap:
             continue
+        rk = str(r.get('排名', '')).strip()
+        if rk:
+            if rk in seen_rank:
+                continue          # 同排名重复行只计首条（防残留行重复计价，v18.7防御）
+            seen_rank.add(rk)
         v = str(r.get('价格USD', '')).strip()
         if not v:
             continue

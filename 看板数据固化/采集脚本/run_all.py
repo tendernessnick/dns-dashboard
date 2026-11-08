@@ -52,17 +52,20 @@ def main():
 
 
 def write_state(run_id, only, ok, skip, fail, results):
-    """v17：采集状态快照（_采集状态.json，机器可读）——连续失败计数跨run累加，供新鲜度/告警消费。"""
+    """v17：采集状态快照（_采集状态.json，机器可读）——连续失败计数跨run累加，供新鲜度/告警消费。
+    v18.7：先继承旧文件全部条目再覆盖本次涉及的P号——子集运行（如手动跑单个采集器）
+    不再把其余词条的状态与连续失败计数整体抹掉。"""
     import json
     state_fp = os.path.join(os.path.dirname(HERE), '_采集状态.json')
     streaks = {}
+    entries = {}
     try:
         with open(state_fp, encoding='utf-8') as f:
             for pid, s in (json.load(f).get('词条') or {}).items():
                 streaks[pid] = int(s.get('连续失败', 0))
+                entries[pid] = s
     except Exception:
         pass
-    entries = {}
     for pid, mod, status, detail, elapsed in results:
         st = streaks.get(pid, 0)
         entries[pid] = {'名称': mod, '状态': status, '耗时秒': elapsed,

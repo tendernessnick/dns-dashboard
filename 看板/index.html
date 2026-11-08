@@ -616,7 +616,7 @@
   </div>
   <h3 class="grp">展会日历</h3>
   <div class="row">
-    <div class="card c12" style="grid-column:span 12;grid-row:1" data-mid="50_展会横排" data-k="50 51 53"><div class="hlines"><div class="hln next" data-k="50" style="cursor:pointer" onclick="window.open('https://www.ces.tech/','_blank','noopener')" title="打开CES官网"><div class="hd">01-06/09</div><div class="hn">CES 2027 ↗</div><div class="hs">拉斯维加斯 · 报名已开放</div></div><div class="hln" data-k="51" style="cursor:pointer" onclick="window.open('https://www.mwcbarcelona.com/','_blank','noopener')" title="打开MWC官网"><div class="hd">03-01/04</div><div class="hn">MWC Barcelona 2027 ↗</div><div class="hs">巴塞罗那 Fira Gran Via</div></div><div class="hln" data-k="53" style="cursor:pointer" onclick="window.open('https://www.cantonfair.org.cn/','_blank','noopener')" title="打开广交会官网"><div class="hd">春季/秋季</div><div class="hn">广交会 ↗ <span class="warn-tag">官网动态渲染 · 接入中</span></div><div class="hs">广州 · 线下渠道同步跟踪</div></div></div></div>
+    <div class="card c12" style="grid-column:span 12;grid-row:1" data-mid="50_展会横排" data-k="50 51 53"><div class="hlines"><div class="hln next" data-k="50" style="cursor:pointer" data-href="https://www.ces.tech/" title="打开CES官网"><div class="hd">01-06/09</div><div class="hn">CES 2027 ↗</div><div class="hs">拉斯维加斯 · 报名已开放</div></div><div class="hln" data-k="51" style="cursor:pointer" data-href="https://www.mwcbarcelona.com/" title="打开MWC官网"><div class="hd">03-01/04</div><div class="hn">MWC Barcelona 2027 ↗</div><div class="hs">巴塞罗那 Fira Gran Via</div></div><div class="hln" data-k="53" style="cursor:pointer" data-href="https://www.cantonfair.org.cn/" title="打开广交会官网"><div class="hd">春季/秋季</div><div class="hn">广交会 ↗ <span class="warn-tag">官网动态渲染 · 接入中</span></div><div class="hs">广州 · 线下渠道同步跟踪</div></div></div></div>
   </div>
   <h3 class="grp">上游价格 · 结构认证</h3>
   <div class="row">
@@ -1286,6 +1286,11 @@ if('IntersectionObserver' in window && secs.length){
 var btn=root.querySelector('#toTop');
 window.addEventListener('scroll',function(){btn.style.display=window.scrollY>500?'block':'none'},{passive:true});
 btn.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
+// v18.7：外链卡片委托点击——组装器b_hlines不再注入内联onclick，改data-href属性统一在此打开
+root.addEventListener('click',function(ev){
+  var el=ev.target.closest?ev.target.closest('[data-href]'):null;
+  if(el){window.open(el.getAttribute('data-href'),'_blank','noopener')}
+});
 // 70_review.js —— 渲染器：图文拆解卡（data-review 锚点 ← REVIEWS，v18）
 // P91我爱音频网·拆解；卡样移植 模块样板_耳机评测.html v8（缩略图+chips+两行摘要+整卡超链接），
 // 配色改用看板主题变量；数据由 生成数据.py 从 RPA数据/*/*/_meta.json 生成。

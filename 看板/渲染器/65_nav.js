@@ -26,3 +26,8 @@ if('IntersectionObserver' in window && secs.length){
 var btn=root.querySelector('#toTop');
 window.addEventListener('scroll',function(){btn.style.display=window.scrollY>500?'block':'none'},{passive:true});
 btn.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
+// v18.7：外链卡片委托点击——组装器b_hlines不再注入内联onclick，改data-href属性统一在此打开
+root.addEventListener('click',function(ev){
+  var el=ev.target.closest?ev.target.closest('[data-href]'):null;
+  if(el){window.open(el.getAttribute('data-href'),'_blank','noopener')}
+});

@@ -143,9 +143,9 @@ def _ann_items(pid):
     items = []
     seen_t = set()
     for r in sorted(rows, key=lambda r: r.get('数据日期', ''), reverse=True):
-        if r.get('标题') in seen_t:
+        if r.get(tcol) in seen_t:      # v18.7：用探测出的标题列名去重（旧版硬取'标题'，列名含"标题"但不同名时全key=None致feed只剩1条）
             continue
-        seen_t.add(r.get('标题'))
+        seen_t.add(r.get(tcol))
         if len(items) >= 10:
             break
         url = (r.get('链接') or '').strip()  # v12治理：链接专用列优先

@@ -46,9 +46,20 @@ def upsert_project(dst, url, name, tag, chips, sortval, summary='',
             m['排序值'] = sortval
         if summary and not m.get('摘要'):
             m['摘要'] = summary
+        photos = m.get('照片') or []
+        if not photos and img_urls and download:
+            # 缺照重试（v18.7 P0止血）：建档时下载失败的项目不再永久缺照
+            ddir = os.path.dirname(fp)
+            for u in img_urls:
+                ext = '.png' if u.lower().split('?')[0].endswith('.png') else '.jpg'
+                if download(u, os.path.join(ddir, f'照片1{ext}')):
+                    photos = [f'照片1{ext}']
+                    break
+            if photos:
+                m['照片'] = photos
         with open(fp, 'w', encoding='utf-8') as f:
             json.dump(m, f, ensure_ascii=False, indent=1)
-        return '刷新', m.get('产品名') or name
+        return ('刷新' if photos else '照片缺失'), m.get('产品名') or name
     ddir = os.path.join(dst, (fetch_date or datetime.date.today().strftime('%Y%m%d')), name)
     while os.path.isdir(ddir):
         name += '_'

@@ -12,6 +12,7 @@ import json
 import os
 import re
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
@@ -110,12 +111,13 @@ def run():
         if a.isdigit():
             limit = max(1, int(a))
     os.makedirs(DST, exist_ok=True)
-    existing = set()
+    existing = {}                                # url → (meta路径, meta dict)
     for fp in glob.glob(os.path.join(DST, '*', '*', '_meta.json')):
         try:
-            u = json.load(open(fp, encoding='utf-8')).get('原文链接')
+            m = json.load(open(fp, encoding='utf-8'))
+            u = m.get('原文链接')
             if u:
-                existing.add(u)
+                existing[u] = (fp, m)
         except Exception:
             pass
     list_html = _get('https://www.52audio.com' + LIST_PATH)
@@ -171,10 +173,45 @@ def run():
         new.append(name)
         if not photos:
             missing.append(name)
+    # 缺照补拍（v18.7 P0止血）：建档时下载失败的文章重读原文页补下载，成功≤5篇/轮、
+    # 总尝试≤8次；只覆盖当前列表页内的缺照文章（翻页滚出的旧文靠后续列表轮换遇到再补）
+    fixed, still, attempts = [], [], 0
+    for u2, ltitle2 in items:
+        if len(fixed) >= 5 or attempts >= 8:
+            break
+        hit = existing.get(u2)
+        if not hit or hit[1].get('照片'):
+            continue
+        attempts += 1
+        try:
+            art = _get(u2)
+            _, _, _, _, imgs2 = _extract_article(art)
+        except Exception:  # noqa: BLE001
+            still.append(hit[1].get('产品名') or ltitle2)
+            continue
+        ddir = os.path.dirname(hit[0])
+        photos2 = []
+        for iu in imgs2:
+            if len(photos2) >= 2:
+                break
+            n = len(photos2) + 1
+            ext = '.png' if iu.lower().split('?')[0].endswith('.png') else '.jpg'
+            if _download(iu, os.path.join(ddir, f'照片{n}{ext}')):
+                photos2.append(f'照片{n}{ext}')
+        if photos2:
+            hit[1]['照片'] = photos2
+            with open(hit[0], 'w', encoding='utf-8') as f:
+                json.dump(hit[1], f, ensure_ascii=False, indent=1)
+            fixed.append(hit[1].get('产品名') or ltitle2)
+        else:
+            still.append(hit[1].get('产品名') or ltitle2)
+        time.sleep(1)
     detail = (f'我爱音频网评测 · 新增{len(new)}篇{new if new else ""}，'
               f'库存{len(existing) + len(new)}篇'
               + (f'，跳过短稿{skipped}篇' if skipped else '')
-              + (f'，{len(missing)}篇未取到照片{missing}' if missing else ''))
+              + (f'，{len(missing)}篇未取到照片{missing}' if missing else '')
+              + (f'，补照{len(fixed)}篇{fixed if fixed else ""}' if fixed else '')
+              + (f'，补照未果{len(still)}篇' if still else ''))
     return '成功', detail
 
 

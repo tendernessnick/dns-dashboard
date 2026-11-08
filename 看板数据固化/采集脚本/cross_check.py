@@ -20,22 +20,22 @@ THRESHOLD_PCT = 1.0
 
 
 def upsert_rows(rows):
-    """按(验证日期,指标)upsert写入对照CSV（utf-8-sig）。"""
+    """按(验证日期,指标)upsert写入对照CSV（utf-8-sig）。
+    v18.7：表头不符/无表头时拒绝写入（旧行为静默清库重写），改原子落盘。"""
     old = []
     if os.path.exists(CSV):
         with open(CSV, encoding='utf-8-sig', newline='') as f:
             reader = csv.DictReader(f)
-            if reader.fieldnames == COLUMNS:
-                old = list(reader)
+            if not reader.fieldnames or reader.fieldnames != COLUMNS:
+                raise RuntimeError(f'[cross_check]{os.path.basename(CSV)} 表头不符或文件损坏，'
+                                   f'拒绝覆盖(防历史丢失): {reader.fieldnames}')
+            old = list(reader)
     for r in rows:
         key = (r['验证日期'], r['指标'])
         old = [o for o in old if (o.get('验证日期'), o.get('指标')) != key]
         old.append(r)
     old.sort(key=lambda o: (o.get('验证日期', ''), o.get('指标', '')))
-    with open(CSV, 'w', encoding='utf-8-sig', newline='') as f:
-        w = csv.DictWriter(f, fieldnames=COLUMNS)
-        w.writeheader()
-        w.writerows(old)
+    common.write_csv_atomic(CSV, COLUMNS, old)
 
 
 def from_em(secid):

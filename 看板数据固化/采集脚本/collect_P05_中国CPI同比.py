@@ -155,11 +155,13 @@ def run():
             for r in rows:
                 label = str(r['REPORT_DATE'])[:7]
                 seq = r.get('NATIONAL_SEQUENTIAL')
-                common.save_row(CSV_PATH, common.parse_date_label(label), {
-                    '同比%': round(float(r['NATIONAL_SAME']), 2),
-                    '环比%': '' if seq is None else round(float(seq), 2),
-                    '数据来源': '东方财富数据中心RPT_ECONOMY_CPI',
-                    '备注': f'{r.get("TIME", "")}全国居民消费价格当月同比/环比'}, COLUMNS)
+                values = {'同比%': round(float(r['NATIONAL_SAME']), 2),
+                          '数据来源': '东方财富数据中心RPT_ECONOMY_CPI',
+                          '备注': f'{r.get("TIME", "")}全国居民消费价格当月同比/环比'}
+                if seq is not None:
+                    # 东财无环比时不带'环比%'键→save_row保留既有值（官方稿/一手回填的环比不被清空，仿P06）
+                    values['环比%'] = round(float(seq), 2)
+                common.save_row(CSV_PATH, common.parse_date_label(label), values, COLUMNS)
                 n += 1
             latest = rows[0]
             latest_label = str(latest['REPORT_DATE'])[:7]

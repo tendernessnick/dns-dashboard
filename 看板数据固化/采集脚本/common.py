@@ -79,10 +79,22 @@ def http_post(url, data=None, referer=None, encoding=None, retries=2, timeout=25
     raise RuntimeError(f'POST失败 {url}: {last}')
 
 
+def write_csv_atomic(csv_path, fieldnames, rows):
+    """CSV原子落盘（v18.7 P0止血）：先写同目录.tmp再os.replace——写入中途崩溃/断电
+    不会截断原文件（旧行为是直接open('w')全量重写，坏过半截风险）。调用方自行持锁。"""
+    tmp = csv_path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8-sig', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        w.writerows(rows)
+    os.replace(tmp, csv_path)
+
+
 def save_row(csv_path, date_str, values: dict, columns: list, key_cols=None):
     """按日期upsert一行。values为{列名:值}，columns为表头（第一列须为'数据日期'）。
     key_cols：联合主键列名列表（默认['数据日期']），多行快照型CSV（如榜单）可用多键。
-    schema保护（v12治理）：现存文件表头与请求不一致时拒绝写入（防历史清空），需走迁移流程。"""
+    schema保护（v12治理）：现存文件表头与请求不一致时拒绝写入（防历史清空），需走迁移流程。
+    v18.7：文件存在但无表头（0字节/截断）同样拒绝写入（旧行为会静默当空表重建只剩1行）。"""
     if columns[0] != '数据日期':
         raise ValueError('columns第一列必须为 数据日期')
     values = dict(values)
@@ -93,7 +105,11 @@ def save_row(csv_path, date_str, values: dict, columns: list, key_cols=None):
         with open(csv_path, encoding='utf-8-sig', newline='') as f:
             reader = csv.DictReader(f)
             rows = list(reader)
-            if reader.fieldnames and reader.fieldnames != columns:
+            if not reader.fieldnames:
+                raise RuntimeError(
+                    f'[save_row]{os.path.basename(csv_path)} 无表头(0字节或截断损坏)，'
+                    f'已拒绝写入(防历史丢失)——请先从git历史/归档恢复该CSV再采集')
+            if reader.fieldnames != columns:
                 raise RuntimeError(
                     f'[save_row]表头不一致，已拒绝写入(防历史丢失): {os.path.basename(csv_path)}\n'
                     f'  现存: {reader.fieldnames}\n  请求: {columns}\n'
@@ -111,10 +127,7 @@ def save_row(csv_path, date_str, values: dict, columns: list, key_cols=None):
         out.append({c: values.get(c, '') for c in columns})
     out.sort(key=lambda r: str(r.get(columns[0], '')))
     with _lock:
-        with open(csv_path, 'w', encoding='utf-8-sig', newline='') as f:
-            w = csv.DictWriter(f, fieldnames=columns)
-            w.writeheader()
-            w.writerows(out)
+        write_csv_atomic(csv_path, columns, out)
 
 
 _RUN = {'run_id': ''}
@@ -197,9 +210,8 @@ def report_pending(pid, title, quarters):
                          '发现时间': datetime.date.today().isoformat(), '状态': '待考证补录'})
     if rows:
         cols = ['P号', '词条', '缺失季度', '发现时间', '状态']
-        with open(PENDING_FILE, 'w', encoding='utf-8-sig', newline='') as f:
-            w = csv.DictWriter(f, fieldnames=cols)
-            w.writeheader(); w.writerows(rows)
+        with _lock:
+            write_csv_atomic(PENDING_FILE, cols, rows)
     elif os.path.exists(PENDING_FILE):
         os.remove(PENDING_FILE)   # 缺口已补齐则清空
     return quarters
@@ -226,8 +238,8 @@ def _ensure_log():
 def log_result(p_id, title, status, detail='', elapsed=None, backfill=None):
     """追加采集日志：状态 ∈ 成功/失败/跳过。日志文件被占用（如Excel打开）时跳过，不影响采集本身。
     v12结构化列：run_id(批次自动带出)/耗时秒/回填策略 可选传入。"""
-    _ensure_log()
     try:
+        _ensure_log()   # v18.7：纳入try——日志被Excel占用时不再让PermissionError上抛把成功采集记成失败
         with _lock:
             with open(LOG_FILE, 'a', encoding='utf-8-sig', newline='') as f:
                 w = csv.writer(f)
@@ -342,10 +354,7 @@ def bulk_backfill(csv_path, klines, column, unit='元/吨', source='东方财富
             r['备注'] = note
     out = [{c: rows[d].get(c, '') for c in cols} for d in sorted(rows)]
     with _lock:
-        with open(csv_path, 'w', encoding='utf-8-sig', newline='') as f:
-            w = csv.DictWriter(f, fieldnames=cols)
-            w.writeheader()
-            w.writerows(out)
+        write_csv_atomic(csv_path, cols, out)
 
 
 # ---------------- 新浪 ----------------

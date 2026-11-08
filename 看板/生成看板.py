@@ -224,8 +224,10 @@ def b_hlines(c):
     parts = []
     for it in c.get('横排', []):
         cls = 'hln next' if it.get('置顶') else 'hln'
+        # v18.7：不再注入内联onclick（URL含单引号会破坏HTML/JS），改data-href属性
+        # 由渲染器统一委托监听打开（与65_nav事件委托一致），链接经atattr转义
         parts.append(f'<div class="{cls}" data-k="{Pn(it["P"])}" style="cursor:pointer"'
-                     f' onclick="window.open(\'{it["链接"]}\',\'_blank\',\'noopener\')"{ti(it.get("点击提示"))}>'
+                     f' data-href="{atattr(it["链接"])}"{ti(it.get("点击提示"))}>'
                      f'<div class="hd">{it["日期"]}</div><div class="hn">{it["名称"]}</div>'
                      f'<div class="hs">{it["说明"]}</div></div>')
     return f'<div class="hlines">{"".join(parts)}</div>'
