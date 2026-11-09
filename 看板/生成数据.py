@@ -113,6 +113,21 @@ DDATA['_win'] = WIN
 DDATA['_meta'] = META
 DDATA['_pending'] = PEND
 DDATA['_asof'] = ASOF
+
+# ============ 核验状态（v19）：cross_check对照 + 区间/突变存疑 → 附录「最近数据」列徽标 ============
+# 核验状态.json 由 cross_check.run_checks（对照段）与 run_all.write_state（存疑段，恢复自动清除）维护。
+VERIFY = {}
+try:
+    _vst = json.load(open(os.path.join(FIX, '核验状态.json'), encoding='utf-8'))
+    for _pid, _p in (_vst.get('对照') or {}).items():
+        _ok = _p.get('结果') == '通过'
+        VERIFY[_pid] = {'s': 'ok' if _ok else 'warn', 'd': (_p.get('时间') or '')[5:10],
+                        'x': ('对照通过' if _ok else ('偏差%s%%' % _p.get('偏差%') if _p.get('偏差%') is not None else '取数失败'))}
+    for _pid, _e in (_vst.get('存疑') or {}).items():
+        VERIFY[_pid] = {'s': 'sus', 'd': (_e.get('最近') or '')[5:10], 'x': (_e.get('说明') or '数值存疑')}
+except Exception:
+    VERIFY = {}
+DDATA['_verify'] = VERIFY
 # （旧的手写BIND/WIN字典已删除：单位/小数位/显示窗口改由《词条注册表.csv》驱动，改元数据只需改注册表）
 
 # ============ 资讯feed（v17注册表驱动）：

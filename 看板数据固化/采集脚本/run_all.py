@@ -126,6 +126,14 @@ def main():
         if r[2] != '成功':
             print(f'  [{r[2]}] {r[0]} {r[1]}: {r[3][:150]}')
     write_state(run_id, only, ok, skip, fail, results)
+    if not only:
+        # v19：全量批次尾部自动跑双源对照（12对，逐对阈值），结果入 核验状态.json（对照段）
+        try:
+            import cross_check
+            vstatus, vdetail, _summary = cross_check.run_checks()
+            print(f'[核验对照] {vstatus}: {vdetail}')
+        except Exception as e:  # noqa: BLE001
+            print(f'[核验对照] 失败(不影响采集结果): {e}')
     try:
         os.remove(lock)
     except OSError:
@@ -161,6 +169,25 @@ def write_state(run_id, only, ok, skip, fail, results):
                    '词条': entries}, f, ensure_ascii=False, indent=1)
     print('采集状态已写:', os.path.basename(state_fp),
           '| 连续失败≥2:', [p for p, e in entries.items() if e['连续失败'] >= 2] or '无')
+    # v19：存疑事件并入 核验状态.json（看板附录「最近核验」徽标消费）；已恢复的词条清除旧记录
+    vfp = os.path.join(os.path.dirname(HERE), '核验状态.json')
+    try:
+        with open(vfp, encoding='utf-8') as f:
+            vst = json.load(f)
+    except Exception:
+        vst = {}
+    sus = [(pid, e.get('详情', '')) for pid, e in entries.items() if '⚠存疑' in e.get('详情', '')]
+    vst.setdefault('存疑', {})
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+    for pid, d in sus:
+        vst['存疑'][pid] = {'最近': now, '说明': d.split('⚠存疑:')[-1][:160]}
+    for pid in {p for p, *_ in results} - {p for p, _ in sus}:
+        vst['存疑'].pop(pid, None)          # 本次运行无存疑→清除历史告警（恢复即消警）
+    if sus:
+        print('存疑告警已并入 核验状态.json:', [p for p, _ in sus])
+    vst['更新时间'] = now
+    with open(vfp, 'w', encoding='utf-8') as f:
+        json.dump(vst, f, ensure_ascii=False, indent=1)
 
 
 if __name__ == '__main__':

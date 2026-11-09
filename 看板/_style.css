@@ -480,3 +480,9 @@
 /* v17 词条新鲜度：附录「最近数据」列 */
 .ptable .pfresh{white-space:nowrap;font-family:var(--fnnum);font-variant-numeric:tabular-nums;font-size:12px}
 .ptable .ovd{margin-left:4px;padding:1px 5px;border-radius:4px;font:700 10.5px/16px var(--fn);color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4}
+
+/* v19 附录「最近核验」徽标：对照通过(ok)/偏差或取数失败(warn)/区间或突变存疑(sus) */
+.ptable .vrf{margin-left:4px;padding:1px 5px;border-radius:4px;font:700 10.5px/16px var(--fn);white-space:nowrap}
+.ptable .vrf.ok{color:var(--ok);background:#E9F2F9;border:1px solid #BBD6EA}
+.ptable .vrf.warn{color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4}
+.ptable .vrf.sus{color:#BE123C;background:#FBE9EB;border:1px solid #F2C6CE}

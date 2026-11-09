@@ -24,6 +24,7 @@ import requests
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # 看板数据固化/
 CSV_DIR = os.path.join(BASE, 'CSV数据')
 LOG_FILE = os.path.join(BASE, '采集日志.csv')
+RANGES_FILE = os.path.join(BASE, '词条注册表.csv')
 UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36')
 TODAY = datetime.date.today().isoformat()
@@ -91,6 +92,124 @@ def write_csv_atomic(csv_path, fieldnames, rows):
     os.replace(tmp, csv_path)
 
 
+# ---------------- 数值核验（v19）：合理区间(硬拒绝) + 突变检测(软存疑) ----------------
+# 区间规格来自 词条注册表.csv「合理区间」列，段式：'[拒]min~max' / '[疑]列名=min~max' / 'min~max'
+# （默认级别=疑、适用全部数值列），多段';'分隔；显式列名段优先于'*'段，同级中'拒'优先于'疑'。
+# 未配置区间的词条不做数值校验（资讯/图文类不经过此层）。存疑不拦截落库，由 run_collector
+# 汇入 detail（采集日志/采集状态JSON可见）；拒写直接抛错放弃本次写入，保护台账。
+SKIP_CHECK_COLS = {'数据日期', '单位', '数据来源', '备注', '标题', '链接', '图片URL', 'ASIN',
+                   '验证日期', '指标', '来源A', '来源B', '差异', '差异%', '结论', '缺失季度', '序号'}
+MUT_SKIP_COLS = {'排名'}          # 排名跳变属正常，不做突变检测
+_MUT_BY_FREQ = {'每日': 0.25, '每周': 0.5, '每月': 0.8, '每季': 1.2, '半年度': 1.5, '每年': 2.0}
+_RANGE_CACHE = None
+SUSPECTS = []                     # 本次run()累计的存疑告警，run_collector收尾取走汇入detail
+
+
+def _pid_from_csv(csv_path):
+    """从CSV文件名取注册表P号（大宗商品-P22-xxx.csv → P22；-P201- → P201）。"""
+    m = re.search(r'-P(\d+)-', os.path.basename(csv_path))
+    return ('P' + m.group(1).lstrip('0')) if m else None
+
+
+def _load_ranges():
+    """惰性加载注册表「合理区间」列 → {P号: (更新频率, [(mode, col, lo, hi), ...])}。"""
+    global _RANGE_CACHE
+    if _RANGE_CACHE is None:
+        _RANGE_CACHE = {}
+        try:
+            with open(RANGES_FILE, encoding='utf-8-sig', newline='') as f:
+                for r in csv.DictReader(f):
+                    spec = (r.get('合理区间') or '').strip()
+                    if not spec:
+                        continue
+                    segs = []
+                    for part in spec.split(';'):
+                        part = part.strip()
+                        if not part:
+                            continue
+                        mode = '疑'
+                        m = re.match(r'^\[(拒|疑)\](.*)$', part)
+                        if m:
+                            mode, part = m.group(1), m.group(2).strip()
+                        col = '*'
+                        if '=' in part:
+                            col, part = part.split('=', 1)
+                            col, part = col.strip(), part.strip()
+                        lohi = part.split('~')
+                        lo = float(lohi[0]) if lohi and lohi[0].strip() != '' else None
+                        hi = float(lohi[1]) if len(lohi) > 1 and lohi[1].strip() != '' else None
+                        segs.append((mode, col, lo, hi))
+                    if segs:
+                        _RANGE_CACHE[str(r.get('P号', ''))] = ((r.get('更新频率') or '').strip(), segs)
+        except Exception as e:  # noqa: BLE001
+            print(f'[warn] 合理区间加载失败（本次运行不做区间校验，不影响采集）: {e}')
+            _RANGE_CACHE = {}
+    return _RANGE_CACHE
+
+
+def verify_row(csv_path, values, existing_rows, date_str, mutation=True):
+    """对一行待写数值做两级校验，返回[(level, msg)]，level ∈ REJECT/SUSPECT。
+    突变检测：与同列、日期早于本行的最近历史值中位数比（≥5个历史点才启用），
+    阈值按更新频率：每日25%/每周50%/每月80%/每季120%/半年150%/每年200%，其余60%。
+    mutation=False 用于横截面快照类CSV（联合主键，如Amazon榜单）——列构成逐日变化，
+    中位数突变无统计意义，只保留区间校验。"""
+    pid = _pid_from_csv(csv_path)
+    cache = _load_ranges()
+    if not pid or pid not in cache:
+        return []
+    freq, segs = cache[pid]
+    mut_lim = _MUT_BY_FREQ.get(freq, 0.6)
+    out = []
+    for col, raw in values.items():
+        if col in SKIP_CHECK_COLS or col == '数据日期':
+            continue
+        try:
+            v = float(str(raw).replace(',', '').strip())
+        except (TypeError, ValueError):
+            continue
+        hit_rej = hit_sus = None
+        has_col_specific = any(s_col == col for _, s_col, _, _ in segs)
+        for s_mode, s_col, lo, hi in segs:
+            if s_col != col and not (s_col == '*' and not has_col_specific):
+                continue
+            if (lo is not None and v < lo) or (hi is not None and v > hi):
+                msg = f'{col}={v} 超出{s_mode}写区间[{lo},{hi}]'
+                if s_mode == '拒':
+                    hit_rej = hit_rej or msg
+                else:
+                    hit_sus = hit_sus or msg
+        if hit_rej:
+            out.append(('REJECT', hit_rej))
+        elif hit_sus:
+            out.append(('SUSPECT', hit_sus))
+        if not mutation or col in MUT_SKIP_COLS or not existing_rows:
+            continue
+        hist = []
+        for r in existing_rows:
+            d = str(r.get('数据日期', ''))
+            if d and d < str(date_str):
+                try:
+                    hist.append(float(str(r.get(col, '')).replace(',', '').strip()))
+                except (TypeError, ValueError):
+                    continue
+        if len(hist) >= 5:
+            hist.sort()
+            n = len(hist)
+            med = hist[n // 2] if n % 2 else (hist[n // 2 - 1] + hist[n // 2]) / 2
+            if med and abs(v - med) / abs(med) > mut_lim:
+                pct = round(abs(v - med) / abs(med) * 100, 1)
+                out.append(('SUSPECT', f'{col}={v} 较近期中位数{round(med, 4)}突变({pct}%>'
+                                        f'{int(mut_lim * 100)}%)'))
+    return out
+
+
+def pop_suspects():
+    """取走本次run()累计的存疑告警（run_collector收尾汇入detail后清空）。"""
+    global SUSPECTS
+    s, SUSPECTS = SUSPECTS, []
+    return s
+
+
 def http_bin(url, referer=None, timeout=(8, 25), min_bytes=0, retries=1):
     """GET并返回bytes（图片下载用，v18.8）：trust_env=False会话+连接级超时元组。
     返回 None 表示失败（HTTP非200不重试——换候选图比等重试划算），调用方自行兜底。"""
@@ -134,6 +253,14 @@ def save_row(csv_path, date_str, values: dict, columns: list, key_cols=None):
                     f'[save_row]表头不一致，已拒绝写入(防历史丢失): {os.path.basename(csv_path)}\n'
                     f'  现存: {reader.fieldnames}\n  请求: {columns}\n'
                     f'  → 请按 docs/数据治理/11_固化数据存储规范.md §5 执行迁移，或核对采集器COLUMNS')
+    # 数值核验（v19）：[拒]区间越界=放弃写入；[疑]越界/突变=告警汇入采集详情
+    # 横截面快照类（联合主键）跳过突变检测——列构成逐日变化，中位数无统计意义
+    for lvl, msg in verify_row(csv_path, values, rows, date_str,
+                               mutation=(key_cols == ['数据日期'])):
+        if lvl == 'REJECT':
+            raise RuntimeError(f'[save_row]数值核验拒绝写入: {msg}（数据未落库；'
+                               f'如确属真实值请核对采集器/注册表合理区间配置）')
+        SUSPECTS.append(msg)
     keyvals = [str(values.get(k, '')) for k in key_cols]
     replaced = False
     out = []
@@ -194,6 +321,9 @@ def run_collector(mod, timeout=180):
         kind, payload = q.get(timeout=timeout)
         if kind == 'ok':
             status, detail = payload
+            susp = pop_suspects()
+            if susp:
+                detail = (str(detail) + ' | ⚠存疑:' + '; '.join(susp[:4]))[:380]
         else:
             status, detail = '失败', f'异常: {payload}'
     except queue.Empty:
@@ -389,12 +519,29 @@ def bulk_backfill(csv_path, klines, column, unit='元/吨', source='东方财富
     cutoff = ''
     if rework_days > 0:
         cutoff = (datetime.date.today() - datetime.timedelta(days=rework_days - 1)).isoformat()
+    recent = (datetime.date.today() - datetime.timedelta(days=7)).isoformat()
+    known = [d for d, r in rows.items() if str(r.get(column, '')).strip()]
+    first_known = min(known) if known else None
+    rejects = []
     n_new = n_rework = 0
     for date, close in klines:
         r = rows.setdefault(date, {c: '' for c in cols})
         had = str(r.get(column, '')).strip()
         if fill_empty_only and had and (not cutoff or date < cutoff):
             continue
+        # 数值核验（v19）：全部写入值过[拒]/[疑]区间；近7日写入值另做突变检测。
+        # 早于既有台账最早日期的历史延伸：仅做[拒]物理界校验（疑区间基于现有包络，
+        # 对历史延伸必然误报，如回填到更早的价格峰值）。
+        if first_known and date < first_known:
+            for lvl, msg in verify_row(csv_path, {column: close}, [], date):
+                if lvl == 'REJECT':
+                    rejects.append(f'{date} {msg}')
+        else:
+            for lvl, msg in verify_row(csv_path, {column: close}, list(rows.values()) if date >= recent else [], date):
+                if lvl == 'REJECT':
+                    rejects.append(f'{date} {msg}')
+                else:
+                    SUSPECTS.append(f'{date} {msg}')
         if had:
             n_rework += 1
         else:
@@ -406,6 +553,9 @@ def bulk_backfill(csv_path, klines, column, unit='元/吨', source='东方财富
         if not had or (cutoff and date >= cutoff):
             r['数据来源'] = source
             r['备注'] = note
+    if rejects:
+        raise RuntimeError('[bulk_backfill]数值核验拒绝写入(数据未落库): ' + '; '.join(rejects[:5])
+                           + (f' 等共{len(rejects)}条' if len(rejects) > 5 else ''))
     out = [{c: rows[d].get(c, '') for c in cols} for d in sorted(rows)]
     with _lock:
         write_csv_atomic(csv_path, cols, out)

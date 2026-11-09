@@ -161,6 +161,14 @@ document.getElementById('provbtn').addEventListener('click',function(){
 // ===== 词条新鲜度：附录「最近数据」列（v17）——最近数据日期+逾期标注，阈值按注册表更新频率 =====
 var FRESH_MAX={'每日':4,'每周':10,'每月':40,'每季':110,'半年度':200,'每年':380};
 var FRESH_TODAY=(function(){var t=new Date();return t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2)})();
+// 核验徽标（v19）：DDATA._verify 由 cross_check 对照（ok/warn）与采集侧区间/突变存疑（sus）驱动
+function vrfHTML(pid){
+  if(typeof DDATA==='undefined'||!DDATA._verify)return '';
+  var v=DDATA._verify[pid];if(!v)return '';
+  var cls=v.s==='ok'?'vrf ok':(v.s==='sus'?'vrf sus':'vrf warn');
+  var txt=v.s==='sus'?'⚠存疑':(v.s==='warn'?'⚠核验':'✓核验');
+  return ' <span class="'+cls+'" title="'+escH((v.x||'')+' · '+v.d)+'">'+txt+' '+escH(v.d)+'</span>';
+}
 function freshHTML(pid){
   if(typeof DDATA==='undefined')return '—';
   var d=DDATA[pid];
@@ -179,8 +187,9 @@ function freshHTML(pid){
   var dd=Math.floor((new Date(FRESH_TODAY)-new Date(last))/864e5);
   var m=DDATA._meta?DDATA._meta[pid]:null;
   var lim=m?FRESH_MAX[m.f]:null;
-  if(lim&&dd>lim)return last+' <span class="ovd">逾期'+dd+'天</span>';
-  return last;
+  var out=last;
+  if(lim&&dd>lim)out+=' <span class="ovd">逾期'+dd+'天</span>';
+  return out+vrfHTML(pid);
 }
 // ===== 溯源索引表 =====
 function renderProv(){

@@ -24,6 +24,9 @@ Thumbs.db
 # 运行态快照（本地连续失败计数，不入库）
 _采集状态.json
 
+# 核验状态（运行态，不入库）
+核验状态.json
+
 # aktools日志轮转产物
 aktools_log.log*
 
