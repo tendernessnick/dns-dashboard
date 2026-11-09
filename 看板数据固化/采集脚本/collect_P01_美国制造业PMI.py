@@ -3,6 +3,7 @@
 历史：首选FRED NAPM(fredgraph.csv，ISM官方序列)；FRED间歇性拦截(超时)时改用
 东财数据中心 RPT_ECONOMICVALUE_USANEW(INDICATOR_ID=EMG00002790，美国:供应管理协会(ISM):PMI:季调)。
 最新：保留TradingEconomics页面快读(S&P Global口径，当月先于ISM发布，备注已标明口径差异)。"""
+import csv
 import os
 import re
 import time
@@ -92,6 +93,16 @@ def _fetch_te_latest():
         return None
 
 
+def _load_ledger():
+    """读台账 {数据日期: row}（v18.8覆写语义：同值不覆写保留原来源，防备用通道改标固化历史）。"""
+    existing = {}
+    if os.path.exists(CSV_PATH):
+        with open(CSV_PATH, encoding='utf-8-sig', newline='') as f:
+            for r in csv.DictReader(f):
+                existing[r.get('数据日期', '')] = r
+    return existing
+
+
 def run():
     try:
         try:
@@ -102,25 +113,39 @@ def run():
         else:
             src_note = src
         rows.sort(key=lambda x: x[0], reverse=True)  # 统一为新在前（FRED序列为旧在前）
+        existing = _load_ledger()
+        wrote = 0
         for label, v in rows:
             if not (20 <= v <= 80):
                 raise RuntimeError(f'ISM量级异常: {label}={v}')
-            common.save_row(CSV_PATH, common.parse_date_label(label), {
+            d = common.parse_date_label(label)
+            cur = existing.get(d)
+            if cur is not None and str(cur.get('数值', '')).strip() == str(round(v, 2)):
+                continue  # 同值不覆写（v18.8：FRED固化历史不被东财备用整列改标）
+            common.save_row(CSV_PATH, d, {
                 '数值': round(v, 2), '单位': '指数',
                 '数据来源': src,
                 '备注': f'{label}读数，荣枯线50'}, COLUMNS)
+            wrote += 1
         last_label, last_v = rows[0]
-        # 最新月快读（S&P Global口径，当月先于ISM发布；upsert不覆盖已有行）
+        # 最新月快读（S&P Global口径，当月先于ISM发布；仅当该月缺失/为空时写入，
+        # 已有ISM官方值的月份不再被S&P preliminary覆盖——旧注释"upsert不覆盖已有行"与
+        # save_row实际行为不符，v18.8落实为真不覆盖）
         te = _fetch_te_latest()
         te_note = ''
         if te:
             label, v = te
-            common.save_row(CSV_PATH, common.parse_date_label(label), {
-                '数值': round(v, 2), '单位': '指数',
-                '数据来源': 'TradingEconomics(S&P Global)',
-                '备注': f'{label}读数，荣枯线50（S&P Global口径，非ISM）'}, COLUMNS)
-            te_note = f'；TE快读{label}={v}(S&P Global)'
-        detail = (f'历史回填{len(rows)}个月（{src_note}），ISM最新{last_label}={last_v}{te_note}')
+            d = common.parse_date_label(label)
+            cur = existing.get(d)
+            if cur is None or not str(cur.get('数值', '')).strip():
+                common.save_row(CSV_PATH, d, {
+                    '数值': round(v, 2), '单位': '指数',
+                    '数据来源': 'TradingEconomics(S&P Global)',
+                    '备注': f'{label}读数，荣枯线50（S&P Global口径，非ISM）'}, COLUMNS)
+                te_note = f'；TE快读{label}={v}(S&P Global)'
+            else:
+                te_note = f'；TE快读{label}已有ISM值不覆盖'
+        detail = (f'历史回填{wrote}/{len(rows)}个月（{src_note}），ISM最新{last_label}={last_v}{te_note}')
         return '成功', detail
     except Exception as e:  # noqa: BLE001
         return '失败', str(e)

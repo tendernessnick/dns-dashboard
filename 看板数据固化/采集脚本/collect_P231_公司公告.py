@@ -92,6 +92,22 @@ def run_one(pid, short, pred=None):
             '序号': i, '标题': title, '类型': classify(title), '链接': pdf,
             '数据来源': SOURCE, '备注': '',
         }, cols, key_cols=['数据日期', '序号'])
+    # v18.8：快照型清理——公告撤回/减少时，本次写过日期里序号不在当前集合的旧行清掉
+    import csv as _csv
+    w_keys = set()
+    w_dates = set()
+    for i, a in enumerate(anns[:10], 1):
+        dstr = datetime.datetime.fromtimestamp(a['announcementTime'] / 1000).strftime('%Y-%m-%d')
+        w_keys.add((dstr, i))
+        w_dates.add(dstr)
+    if os.path.exists(csv):
+        with open(csv, encoding='utf-8-sig', newline='') as f:
+            allrows = list(_csv.DictReader(f))
+        kept = [r for r in allrows
+                if r.get('数据日期') not in w_dates
+                or (r.get('数据日期'), int(r.get('序号') or 0)) in w_keys]
+        if len(kept) != len(allrows):
+            common.write_csv_atomic(csv, cols, kept)
     latest = anns[0]
     latest_title = re.sub(r'<[^>]+>', '', latest.get('announcementTitle', ''))[:30]
     detail = f'最新{datetime.datetime.fromtimestamp(latest["announcementTime"]/1000).strftime("%Y-%m-%d")} {latest_title} (共{min(len(anns),10)}条)'

@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 """批量运行采集器：python run_all.py [P01 P26 ...]（不传参数则运行全部 collect_P*.py）
+v18.8改子进程调度：每个采集器独立python进程，超时真正kill（旧线程池超时后僵尸线程
+卡在socket里、非daemon线程在解释器退出时被join，整批收尾无限期挂死——Kickstarter慢拦截
+549s案例的结构性根源）。子进程内采集器仍走run_collector包装器自行记录采集日志；
+超时/异常退出的条目由本调度器补记。批次run_id经环境变量透传给子进程日志。
 每个采集器须暴露 run() -> (状态, 详情)，状态 ∈ 成功/失败/跳过"""
-import importlib
+import ast
+import datetime
 import os
 import re
+import subprocess
 import sys
 import time
-import traceback
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -15,15 +20,70 @@ import common
 
 # 东财push2行情族（来源归一期P-C4）：单IP渐进式限流，组内采集器间保持≥8s间隔
 EM_HEAVY = {'22', '23', '27', '30', '31', '32', '39', '40', '52'}
+# 每P号子进程超时秒数（v18.8；未列出的用默认）。93=Kickstarter CF慢拦截合法长跑
+# （2026-11-05实测549s最终成功）；95=证监局多指纹重试；69=FRED三通道兜底
+TIMEOUTS = {'93': 620, '95': 300, '69': 300}
+DEFAULT_TIMEOUT = 180
+LOCK_STALE_SEC = 7200   # 陈旧锁判定（上次异常退出残留）
+
+
+def _lock_acquire():
+    """跨进程单例锁：bat双开/手动与计划任务并跑时防CSV互踩（v18.8）。返回锁路径或None(退出)。"""
+    fp = os.path.join(HERE, '_run_all.lock')
+    if os.path.exists(fp):
+        try:
+            age = time.time() - os.path.getmtime(fp)
+            if age < LOCK_STALE_SEC:
+                old = ''
+                try:
+                    with open(fp, encoding='utf-8') as f:
+                        old = f.read().strip()
+                except OSError:
+                    pass
+                print(f'已有run_all在运行(pid={old or "?"}，{int(age)}s前启动)，本次退出防CSV互踩')
+                return None
+        except OSError:
+            pass
+        try:
+            os.remove(fp)   # 陈旧锁自动失效
+        except OSError:
+            pass
+    with open(fp, 'w', encoding='utf-8') as f:
+        f.write(str(os.getpid()))
+    return fp
+
+
+def _parse_child_output(out, returncode):
+    """子进程stdout末行的 ('状态','详情') 元组解析；解析不出按退出码兜底。"""
+    text = (out or '').strip()
+    if text:
+        last = text.splitlines()[-1].strip()
+        if last.startswith('('):
+            try:
+                t = ast.literal_eval(last)
+                if isinstance(t, tuple) and len(t) == 3:
+                    return t[0], str(t[1])
+                if isinstance(t, tuple) and len(t) == 2:
+                    return t[0], str(t[1])
+            except Exception:  # noqa: BLE001
+                pass
+        return ('成功' if returncode == 0 else '失败'), text[-150:]
+    return ('成功' if returncode == 0 else '失败'), f'无输出, 退出码{returncode}'
+
 
 def main():
+    lock = _lock_acquire()
+    if lock is None:
+        return
     only = {str(int(a.upper().lstrip('P'))) for a in sys.argv[1:]} if len(sys.argv) > 1 else None
     run_id = common.begin_run()
+    os.environ[common.RUN_ID_ENV] = run_id
     print(f'==== run_id={run_id} ====')
     files = sorted(f for f in os.listdir(HERE)
                    if f.startswith('collect_P') and f.endswith('.py'))
     if not files:
         print('未发现任何 collect_P*.py 采集器')
+        os.remove(lock)
         return
     results = []
     for f in files:
@@ -31,15 +91,32 @@ def main():
         pid = m.group(1) if m else f[len('collect_P'):].split('_')[0]
         if only and pid.lstrip('0') not in only:
             continue
-        mod_name = f[:-3]
         t0 = time.time()
+        timeout = TIMEOUTS.get(pid.lstrip('0'), DEFAULT_TIMEOUT)
+        status = detail = None
         try:
-            mod = importlib.import_module(mod_name)
-            status, detail, _elapsed = common.run_collector(mod)
+            proc = subprocess.Popen(
+                [sys.executable, os.path.join(HERE, f)],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                cwd=HERE, text=True, encoding='utf-8', errors='replace')
+            try:
+                out, _ = proc.communicate(timeout=timeout)
+                status, detail = _parse_child_output(out, proc.returncode)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                try:
+                    out, _ = proc.communicate(timeout=10)
+                except Exception:  # noqa: BLE001
+                    out = ''
+                status, detail = '失败', f'超时(>{timeout}s)已终止(子进程)'
+                common.log_result(pid.lstrip('0'), f, status, detail,
+                                  elapsed=round(time.time() - t0, 1), backfill='latest')
         except Exception as e:  # noqa: BLE001
-            status, detail = '失败', f'异常: {e}'
-        results.append((f'P{pid}', mod_name, status, detail, round(time.time() - t0, 1)))
-        print(f'[{status}] {mod_name}  {detail[:80]}  ({results[-1][4]}s)')
+            status, detail = '失败', f'调度异常: {e}'
+            common.log_result(pid.lstrip('0'), f, status, detail,
+                              elapsed=round(time.time() - t0, 1), backfill='latest')
+        results.append((f'P{pid}', f[:-3], status, detail, round(time.time() - t0, 1)))
+        print(f'[{status}] {f[:-3]}  {detail[:80]}  ({results[-1][4]}s)')
         time.sleep(8 if pid in EM_HEAVY else 1)
     ok = sum(1 for r in results if r[2] == '成功')
     skip = sum(1 for r in results if r[2] == '跳过')
@@ -49,6 +126,10 @@ def main():
         if r[2] != '成功':
             print(f'  [{r[2]}] {r[0]} {r[1]}: {r[3][:150]}')
     write_state(run_id, only, ok, skip, fail, results)
+    try:
+        os.remove(lock)
+    except OSError:
+        pass
 
 
 def write_state(run_id, only, ok, skip, fail, results):
@@ -80,6 +161,7 @@ def write_state(run_id, only, ok, skip, fail, results):
                    '词条': entries}, f, ensure_ascii=False, indent=1)
     print('采集状态已写:', os.path.basename(state_fp),
           '| 连续失败≥2:', [p for p, e in entries.items() if e['连续失败'] >= 2] or '无')
+
 
 if __name__ == '__main__':
     main()

@@ -31,21 +31,33 @@ def run():
                 if re.sub(r'\s+', '', str(x.get('ITEM_NAME', ''))).startswith('充电储能')]
         if not rows:
             raise RuntimeError('zygcfx年报期未找到"充电储能*"行，疑似分类名变更')
+        # v18.8：两段式——先解析+校验全部期次再落库（旧逻辑任一历史期字段空即整次失败，
+        # 且此前行已写入属半提交）。只强校验最新期量级；历史期字段缺失/越界则跳过不计失败。
+        parsed, skipped = [], []
         for x in rows:
             inc, share, gross = (x.get('MAIN_BUSINESS_INCOME'), x.get('MBI_RATIO'),
                                  x.get('GROSS_RPOFIT_RATIO'))
             if inc is None or share is None or gross is None:
-                raise RuntimeError(f'{x["REPORT_DATE"][:10]} 字段缺失')
+                skipped.append(str(x['REPORT_DATE'])[:10])
+                continue
             inc_yi, share, gross = round(inc / 1e8, 2), round(share * 100, 2), round(gross * 100, 2)
-            if not (10 < inc_yi < 500 and 20 < share < 80 and 10 < gross < 70):
-                raise RuntimeError(f'数值超出合理量级: {inc_yi}亿/{share}%/{gross}%')
+            parsed.append((x, inc_yi, share, gross))
+        if not parsed:
+            raise RuntimeError('充电储能行全部字段缺失')
+        parsed.sort(key=lambda t: t[0]['REPORT_DATE'], reverse=True)
+        _, l_inc, l_share, l_gross = parsed[0]
+        if not (10 < l_inc < 500 and 20 < l_share < 80 and 10 < l_gross < 70):
+            raise RuntimeError(f'最新期量级异常: {l_inc}亿/{l_share}%/{l_gross}%')
+        for x, inc_yi, share, gross in parsed:
             common.save_row(CSV, str(x['REPORT_DATE'])[:10], {
                 '充电储能收入(亿元)': inc_yi, '营收占比%': share, '毛利率%': gross,
                 '单位': '%', '数据来源': SOURCE,
                 '备注': f'年报口径(东财F10分产品)，科目名[{re.sub(chr(92)+"s+", "", str(x.get("ITEM_NAME", "")))}]',
             }, COLS)
         latest = max(rows, key=lambda x: str(x['REPORT_DATE']))
-        detail = (f'{len(rows)}期年报; 最新{latest["REPORT_DATE"][:10]} '
+        detail = (f'{len(parsed)}/{len(rows)}期年报'
+                  + (f'(跳过缺失{skipped})' if skipped else '')
+                  + f'; 最新{latest["REPORT_DATE"][:10]} '
                   f'充电储能收入{latest["MAIN_BUSINESS_INCOME"] / 1e8:.2f}亿, '
                   f'占比{latest["MBI_RATIO"] * 100:.2f}%, '
                   f'毛利率{latest["GROSS_RPOFIT_RATIO"] * 100:.2f}%')

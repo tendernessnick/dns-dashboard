@@ -43,17 +43,14 @@ def _is_software(name):
 
 
 def _md_download(url, fp):
-    """摩点图片下载(moimg.net直链无反爬，requests直连)。"""
-    import requests
-    try:
-        r = requests.get(url, headers={'User-Agent': common.UA,
-                                       'Referer': 'https://zhongchou.modian.com/'}, timeout=40)
-        if r.status_code == 200 and len(r.content) > 3000:
-            with open(fp, 'wb') as f:
-                f.write(r.content)
-            return True
-    except Exception:  # noqa: BLE001
-        pass
+    """摩点图片下载(moimg.net直链无反爬)。v18.8：统一走common.http_bin+原子写，裸requests退役。"""
+    data = common.http_bin(url, referer='https://zhongchou.modian.com/', min_bytes=3000)
+    if data:
+        tmp = fp + '.part'
+        with open(tmp, 'wb') as f:
+            f.write(data)
+        os.replace(tmp, fp)
+        return True
     return False
 
 

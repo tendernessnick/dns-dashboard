@@ -41,7 +41,7 @@ def _extract_article(html):
     t = re.search(r'class="post-title[^"]*">([^<]+)</h1>', html)
     title = H.unescape(t.group(1)).strip() if t else ''
     dm = (re.search(r'text-xs text-muted"><div>(20\d\d-\d\d-\d\d)</div>', html)
-          or re.search(r'(20\d\d-\d\d-\d\d)', html))
+          or re.search(r'(20\d\d-\d\d-\d\d)', html[:2500]))   # v18.8：兜底限定页头区，正文首个日期不再冒充发布日
     date = dm.group(1) if dm else ''
     tag = ''                                            # 分类只认 post-meta 块（全页扫会撞侧栏"城市"链接）
     mm = re.search(r'text-xs text-muted">(.*?)</div></div>', html, re.S)
@@ -75,8 +75,10 @@ def _download(url, fp):
     try:
         r = cr.get(url, impersonate='chrome', timeout=40, headers={'Referer': 'https://www.chongdiantou.com/'})
         if r.status_code == 200 and len(r.content) > 3000:
-            with open(fp, 'wb') as f:
+            tmp = fp + '.part'
+            with open(tmp, 'wb') as f:
                 f.write(r.content)
+            os.replace(tmp, fp)   # v18.8：原子写——进程被超时kill不再留半张损坏图
             return True
     except Exception:
         pass
@@ -99,6 +101,9 @@ def run():
         except Exception:
             pass
     items = parse_ctw(fetch_ctw('/archives/category/teardowns'))
+    if not items:
+        # v18.8：列表解析0条时报失败而非静默"成功 新增0"（选择器腐坏不可感知是图文卡最大风险）
+        return '失败', '充电头网列表页解析0条，选择器疑似变更'
     today = datetime.date.today().strftime('%Y%m%d')
     new, missing, skip_video = [], [], 0
     for dt, title, url in items:

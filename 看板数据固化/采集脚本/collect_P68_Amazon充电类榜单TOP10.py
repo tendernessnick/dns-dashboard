@@ -56,7 +56,7 @@ def _parse_cards(html, top_n=TOP_N):
         mt = re.search(r'<img[^>]*alt="([^"]{5,300})"', seg)
         if not (ma and mt):
             continue
-        mi = re.search(r'https://images-na\.ssl-images-amazon\.com/images/I/[A-Za-z0-9%,\-._]+\.jpg', seg)
+        mi = IMG_RE.search(seg)
         img = re.sub(r'\._[^/]*?_\.', '._AC_UL160_.', mi.group(0)) if mi else ''
         price = None
         mp = PRICE_RE.search(seg)
@@ -74,6 +74,10 @@ def _parse_cards(html, top_n=TOP_N):
     return items
 
 
+# v18.8：图床双域都收（Amazon切换m.media-amazon.com时旧正则整列静默置空）
+IMG_RE = re.compile(r'(?:https://images-na\.ssl-images-amazon\.com|https://m\.media-amazon\.com)/images/I/[A-Za-z0-9%,\-._]+\.jpg')
+
+
 def _fetch_best(top_n=TOP_N, tries=3):
     """按节点优先级逐节点试tries次，取该节点内"有价样本最多"的一批；
     节点可用(条目>=10且有价>=5)即采纳，不再回退下一节点。返回(items, 来源名, 最后错误)。"""
@@ -82,7 +86,7 @@ def _fetch_best(top_n=TOP_N, tries=3):
         best, best_priced = {}, -1
         for _ in range(tries):
             try:
-                r = SESSION.get(BASE + node, timeout=30)
+                r = SESSION.get(BASE + node, timeout=(8, 25))   # v18.8：连接/读取分离超时
                 if r.status_code != 200:
                     raise RuntimeError(f'HTTP {r.status_code}')
                 items = _parse_cards(r.text)

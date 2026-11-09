@@ -1030,10 +1030,15 @@ function drawShare(el){
   svg+='</svg>';el.innerHTML=svg;
 }
 root.querySelectorAll('.sharechart').forEach(function(el){drawShare(el);shareEls.push(el)});
-// 25_resize.js —— 全局：窗口变化后重绘所有图表（依赖 15_chart/20_share 的 charts/shareEls）
+// 25_resize.js —— 全局：窗口变化后重绘图表（依赖 15_chart/20_share 的 charts/shareEls）
 // v14：折线重绘传 redraw=true，不重播入场动画
+// v18.8：隐藏co-panel内图表clientWidth=0会按300px兜底画错尺寸——只重绘可见图（切tab时40_copanel自会重绘）
+function vis(el){var p=el.closest('[data-copanel]');return (!p||!p.hidden)&&el.clientWidth>0}
 var rT;window.addEventListener('resize',function(){clearTimeout(rT);
-  rT=setTimeout(function(){charts.forEach(function(el){drawChart(el,true)});shareEls.forEach(drawShare)},150)});
+  rT=setTimeout(function(){
+    charts.forEach(function(el){if(vis(el))drawChart(el,true)});
+    shareEls.forEach(function(el){if(vis(el))drawShare(el)});
+  },150)});
 // 30_multi.js —— 渲染器：多品类/多SKU（data-multi：ul渲染li，strip容器渲染.sc）
 root.querySelectorAll('[data-multi]').forEach(function(el){
   var pid=el.getAttribute('data-multi');var d=DDATA[pid];
@@ -1166,7 +1171,11 @@ var pbtns=[].slice.call(root.querySelectorAll('.pctl b'));
 pbtns.forEach(function(b){
   b.addEventListener('click',function(){
     pbtns.forEach(function(x){x.classList.toggle('on',x===b)});
-    PSEL=b.hasAttribute('data-all')?'all':{months:parseInt(b.getAttribute('data-m'),10)};
+    PSEL=(function(){ // v18.8：缺data-m时显式null（旧parseInt得NaN，靠wind()兜底才不炸）
+      if(b.hasAttribute('data-all'))return 'all';
+      var m=parseInt(b.getAttribute('data-m'),10);
+      return isNaN(m)?null:{months:m};
+    })();
     root.querySelectorAll('.chart').forEach(function(el){
       var p=el.closest('[data-copanel]');
       if(!p||!p.hidden)drawChart(el);});
@@ -1336,7 +1345,8 @@ root.addEventListener('click',function(ev){
       var cls=it.下一个?' class="next"':'';
       return '<li'+cls+'><b>'+escH(it.日期)+'</b>'+escH(it.文本||'')+'</li>';
     }).join('');
-    var desc=document.querySelector('[data-cal-desc="'+id+'"]');  // desc锚点与data-cal同用数字P号
+    var card=el.closest('.card');   // v18.8：desc在所在卡内找（旧全局querySelector多面板同号时只刷第一个）
+    var desc=card&&card.querySelector('[data-cal-desc="'+id+'"]');
     if(desc&&d.说明)desc.textContent=d.说明;
   });
 })();
@@ -1379,7 +1389,7 @@ root.querySelectorAll('[data-k]').forEach(function(el){
 var tip=document.createElement('div');tip.className='prov-tip';tip.setAttribute('role','tooltip');root.appendChild(tip);
 var tipTimer=null,hideTimer=null;
 function provById(pid){for(var i=0;i<PROV.length;i++){if('P'+PROV[i].id===pid)return PROV[i]}return null}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}   // v18.8：转义引号——esc同时用于拼href属性，URL含"可破属性边界
 function tipHTML(p){
   var st=STATMAP[p.status]||['',''];
   var h='<div class="pt-t">'+esc(p.title)+' · P'+p.id+'</div>';

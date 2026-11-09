@@ -141,6 +141,10 @@ def run():
         note += '；fredgraph超时，经FRED官方API获取同一序列'
     elif how != '直连':
         note += f'；本机直连FRED超时，经{how}获取原CSV'
+    # v18.8：量级校验提前到落库之前（旧顺序先写24行再验，异常值已固化才报失败）
+    last_d, last_v = rows[-1]
+    if not (5000 <= last_v <= 20000):
+        return '失败', f'最新值量级异常: {last_v}（未写库）'
     for d, v in rows:
         ym = d[:7]  # 月度数据日期=当月期末
         common.save_row(CSV, common.parse_date_label(ym), {
@@ -149,9 +153,6 @@ def run():
             '数据来源': 'FRED (St. Louis Fed) RSEAS',
             '备注': note,
         }, COLUMNS)
-    last_d, last_v = rows[-1]
-    if not (5000 <= last_v <= 20000):
-        return '失败', f'最新值量级异常: {last_v}'
     detail = f'回填{len(rows)}个月，最新{last_d[:7]}={last_v:g}百万美元（{how}）'
     return '成功', detail
 

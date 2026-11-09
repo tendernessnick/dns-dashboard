@@ -53,9 +53,10 @@ def _existing_cells():
 
 
 def backfill_news(pages=BACKFILL_PAGES):
-    """逐品种爬"商品报价动态"文章回填历史基准价，返回新增行数。"""
+    """逐品种爬"商品报价动态"文章回填历史基准价，返回(新增行数, 解析失败数)。
+    v18.8：单篇解析失败不再静默吞掉，计数进详情。"""
     have = _existing_cells()
-    added = 0
+    added = failed = 0
     for name, (pid, (lo, hi)) in PRODUCTS.items():
         for page in range(1, pages + 1):
             try:
@@ -84,9 +85,9 @@ def backfill_news(pages=BACKFILL_PAGES):
                         '备注': f'{name}基准价（报价动态文章考证）'}, COLUMNS)
                     added += 1
                 except Exception:  # noqa: BLE001
-                    pass
+                    failed += 1
                 time.sleep(0.15)
-    return added
+    return added, failed
 
 
 def run():
@@ -109,13 +110,14 @@ def run():
             'PC': vals['PC'], 'PA6': vals['PA6'], 'PA66': vals['PA66'],
             '数据来源': '生意社 100ppi.com', '备注': remark},
             COLUMNS)
-        n = backfill_news()
+        n, nfail = backfill_news()
         detail = (f'{date_str} PC={vals["PC"]} PA6={vals["PA6"]} PA66={vals["PA66"]} 元/吨'
-                  + (f'；历史新增{n}天' if n else ''))
+                  + (f'；历史新增{n}天' if n else '')
+                  + (f'；回填解析失败{nfail}篇' if nfail else ''))
         return '成功', detail
     except Exception as e:  # noqa: BLE001
         return '失败', repr(e)
 
 
 if __name__ == '__main__':
-    print('P33', TITLE, run())
+    print(common.run_collector(globals()))   # v18.8：统一走包装器（计时/日志/超时兜底）

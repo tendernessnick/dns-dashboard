@@ -28,19 +28,20 @@ def run():
             'Referer': f'https://www.csrc.gov.cn/shenzhen/c105618/common_list.shtml?channelid={CHANNEL_ID}',
             'X-Requested-With': 'XMLHttpRequest',
         }
-        # 官网站时不稳定：多指纹多轮重试
+        # 官网站时不稳定：多指纹多轮重试（v18.8：HTTP非200也计失败换指纹重试，不再首轮403即出局）
         r, last_err = None, None
         for imp, wait in (('chrome', 5), ('chrome124', 5), ('chrome', 8), ('safari1841', 8), ('chrome', 10)):
             try:
-                r = cr.get(URL, impersonate=imp, timeout=40, params=params, headers=headers)
-                break
+                resp = cr.get(URL, impersonate=imp, timeout=40, params=params, headers=headers)
+                if resp.status_code == 200:
+                    r = resp
+                    break
+                last_err = RuntimeError(f'{imp} HTTP {resp.status_code}')
             except Exception as e:  # noqa: BLE001
                 last_err = e
-                time.sleep(wait)
+            time.sleep(wait)
         if r is None:
-            raise RuntimeError(f'证监局接口连接失败(重试5次): {last_err}')
-        if r.status_code != 200:
-            raise RuntimeError(f'HTTP {r.status_code}')
+            raise RuntimeError(f'证监局接口失败(重试5次): {last_err}')
         d = r.json()
         data = d.get('data') or {}
         total = data.get('total')

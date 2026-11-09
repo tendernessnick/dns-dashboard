@@ -13,7 +13,8 @@
       var cls=it.下一个?' class="next"':'';
       return '<li'+cls+'><b>'+escH(it.日期)+'</b>'+escH(it.文本||'')+'</li>';
     }).join('');
-    var desc=document.querySelector('[data-cal-desc="'+id+'"]');  // desc锚点与data-cal同用数字P号
+    var card=el.closest('.card');   // v18.8：desc在所在卡内找（旧全局querySelector多面板同号时只刷第一个）
+    var desc=card&&card.querySelector('[data-cal-desc="'+id+'"]');
     if(desc&&d.说明)desc.textContent=d.说明;
   });
 })();

@@ -9,7 +9,7 @@ import re
 import datetime
 from email.utils import parsedate_to_datetime
 
-import requests
+import common
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NEWS_DIR = os.path.join(BASE, '资讯数据')
@@ -27,12 +27,8 @@ def _clean(s):
 
 
 def fetch_rss(url, referer=None):
-    headers = {'User-Agent': UA}
-    if referer:
-        headers['Referer'] = referer
-    r = requests.get(url, headers=headers, timeout=25)
-    r.raise_for_status()
-    return r.text
+    # v18.8：统一走common.http_get（trust_env=False防代理劫持+重试+超时元组），裸requests退役
+    return common.http_get(url, referer=referer)
 
 
 def parse_items(xml, keywords=None, exclude=None):
@@ -59,6 +55,9 @@ def parse_items(xml, keywords=None, exclude=None):
                 dt = parsedate_to_datetime(_clean(dm.group(1)))
             except Exception:
                 dt = None
+        if dt is not None and dt.tzinfo is None:
+            # pubDate无时区时parsedate返回naive，与aware now相减会TypeError打死整次采集（v18.8）——按UTC补齐
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
         out.append((dt, title, url))
     return out
 
@@ -122,17 +121,19 @@ def translate_title(title, cache):
         return cache[title]
     zh = ''
     try:
-        r = requests.get('https://translate.googleapis.com/translate_a/single',
-                         params={'client': 'gtx', 'sl': 'auto', 'tl': 'zh-CN', 'dt': 't',
-                                 'q': title[:450]},
-                         headers={'User-Agent': UA}, timeout=15)
+        r = common._SESSION.get('https://translate.googleapis.com/translate_a/single',
+                                params={'client': 'gtx', 'sl': 'auto', 'tl': 'zh-CN', 'dt': 't',
+                                        'q': title[:450]},
+                                headers={'User-Agent': UA}, timeout=(6, 15))
         arr = r.json()
         zh = ''.join(seg[0] for seg in (arr[0] or []) if seg and seg[0]).strip()
         if not _is_cjk(zh):
             zh = ''
     except Exception:
         zh = ''
-    cache[title] = zh
+    if zh:
+        # v18.8：只缓存成功翻译——空值入缓存会让该标题永远不再重译
+        cache[title] = zh
     return zh
 
 

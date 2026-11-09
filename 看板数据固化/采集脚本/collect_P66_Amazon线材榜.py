@@ -65,7 +65,8 @@ def _parse_items(html, top_n=TOP_N):
             price = float((whole.replace(',', '') + '.' + frac) if whole
                           else (p1 or p2 or p3).replace(',', ''))
         title = re.sub(r'\s+', ' ', mt.group(1)).strip()[:80]
-        mi = re.search(r'https://images-na\.ssl-images-amazon\.com/images/I/[A-Za-z0-9%,\-._]+\.jpg', blk)
+        # v18.8：图床双域都收（Amazon切换m.media-amazon.com时旧正则整列静默置空）
+        mi = re.search(r'(?:https://images-na\.ssl-images-amazon\.com|https://m\.media-amazon\.com)/images/I/[A-Za-z0-9%,\-._]+\.jpg', blk)
         img = re.sub(r'\._[^/]*?_\.', '._AC_UL160_.', mi.group(0)) if mi else ''
         out[rank] = {'ASIN': ma.group(1), '标题': title, '价格USD': price, '图片URL': img}
     return out
@@ -79,7 +80,7 @@ def _fetch_best(top_n=TOP_N, tries=3):
         best, best_priced = {}, -1
         for _ in range(tries):
             try:
-                r = SESSION.get(BASE + node, timeout=30)
+                r = SESSION.get(BASE + node, timeout=(8, 25))   # v18.8：连接/读取分离超时
                 if r.status_code != 200:
                     raise RuntimeError(f'HTTP {r.status_code}')
                 items = _parse_items(r.text)

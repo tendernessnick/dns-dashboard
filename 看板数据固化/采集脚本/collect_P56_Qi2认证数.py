@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """P56 产品品类-Qi2认证数：WPC无线充电联盟官方认证库API(/ajax/products/qi)全量拉取，统计Qi2(MPP功率档或2.x版本)数量"""
+import csv
 import datetime
 import json
 import os
@@ -28,6 +29,19 @@ def run():
             ver = str(it[7]) if len(it) > 7 else ''
             if power.startswith('MPP') or ver.startswith('2.'):
                 qi2 += 1
+        # v18.8漂移护栏：位置索引取字段，列序变更会静默错数。Qi2认证只增不减，
+        # 且单日增量有限——与上期相比减少或暴增即判列序变更，拒写防污染
+        prev = None
+        try:
+            if os.path.exists(CSV):
+                with open(CSV, encoding='utf-8-sig', newline='') as f:
+                    rows_p = list(csv.DictReader(f))
+                if rows_p and str(rows_p[-1].get('Qi2认证数', '')).strip():
+                    prev = int(rows_p[-1]['Qi2认证数'])
+        except Exception:  # noqa: BLE001
+            prev = None
+        if prev is not None and (qi2 < prev or qi2 > prev + 1000):
+            raise RuntimeError(f'Qi2计数漂移异常(上期{prev}→本期{qi2})，疑似API列序变更，拒写')
         # 本月新增（认证日期在本自然月）
         month_start = datetime.date.today().replace(day=1).isoformat()
         new_month = sum(1 for it in arr if len(it) > 8 and str(it[8])[:10] >= month_start)

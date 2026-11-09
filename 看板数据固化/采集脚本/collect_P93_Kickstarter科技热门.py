@@ -72,8 +72,10 @@ def _ks_download(url, fp):
         r = cr.get(url, impersonate='chrome', timeout=40,
                    headers={'Referer': 'https://www.kickstarter.com/'})
         if r.status_code == 200 and len(r.content) > 3000:
-            with open(fp, 'wb') as f:
+            tmp = fp + '.part'
+            with open(tmp, 'wb') as f:
                 f.write(r.content)
+            os.replace(tmp, fp)   # v18.8：原子写——进程被超时kill不再留半张损坏图
             return True
     except Exception:  # noqa: BLE001
         pass

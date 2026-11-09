@@ -37,7 +37,10 @@ with open(LAYOUT, encoding='utf-8-sig', newline='') as f:
 
 CARDS = {}
 for fp in sorted(glob.glob(os.path.join(MOD_DIR, '*.json'))):
-    cfg = json.load(open(fp, encoding='utf-8'))
+    try:
+        cfg = json.load(open(fp, encoding='utf-8'))
+    except Exception as e:
+        raise SystemExit(f'模块JSON解析失败: {os.path.basename(fp)}: {e}')   # v18.8：报错带文件名
     cid = cfg.get('ID') or os.path.basename(fp)[:-5]
     if cid in CARDS:
         raise SystemExit(f'卡片ID重复：{cid}（{fp}）')
@@ -76,17 +79,23 @@ def b_top(c):
     return f'<div class="card-top"><span class="t"{ti(c.get("标题提示"))}>{c["卡名"]}</span>{dot}</div>'
 
 
+_FOOT_TAGS = {'a', 'span', 'i', 'b', 'em', 'strong'}   # v18.8：脚注标签白名单，防坏配置产出任意标签
+
+
 def b_foot(c):
     items = c.get('脚注') or []
     if not items:
         return ''
     parts = []
     for it in items:
+        tag = str(it.get('标签') or 'span').lower()
+        if tag not in _FOOT_TAGS:
+            raise SystemExit(f'{c.get("ID", "?")}：脚注标签 {tag!r} 不在白名单 {sorted(_FOOT_TAGS)}')
         a = f' href="{atattr(it["href"])}"' if it.get('href') else ''
         a += f' target="{it["target"]}"' if it.get('target') else ''
         a += f' rel="{it["rel"]}"' if it.get('rel') else ''
         a += st(it.get('style'))
-        parts.append(f'<{it["标签"]}{a}>{it["文本"]}</{it["标签"]}>')
+        parts.append(f'<{tag}{a}>{it["文本"]}</{tag}>')
     return f'<div class="foot">{"".join(parts)}</div>'
 
 
@@ -285,8 +294,11 @@ sections = []
 for r in layout:
     if r['类型'] == 'S':
         sections.append({'meta': r, 'body': []})
-    elif sections is not None and sections:
+    elif sections:
         sections[-1]['body'].append(r)
+    else:
+        # v18.8：首个S板块行之前的布局行旧行为是静默丢弃——直接报错防改表踩坑
+        raise SystemExit(f'布局第{r.get("序号")}行（{r["类型"]} {r["引用"]}）位于第一个S板块行之前，无处挂载')
 
 out = []
 for sec in sections:

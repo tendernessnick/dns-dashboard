@@ -36,8 +36,9 @@ _SESSION.trust_env = False
 os.makedirs(CSV_DIR, exist_ok=True)
 
 
-def http_get(url, referer=None, encoding=None, retries=2, timeout=25, extra_headers=None):
-    """GET并返回文本。encoding指定强制编码；否则requests自行判断。失败重试。"""
+def http_get(url, referer=None, encoding=None, retries=2, timeout=(6, 20), extra_headers=None):
+    """GET并返回文本。encoding指定强制编码；否则requests自行判断。失败重试。
+    v18.8：timeout默认改(连接,读取)元组——标量timeout挡不住"慢滴流"挂死。"""
     headers = {'User-Agent': UA}
     if referer:
         headers['Referer'] = referer
@@ -59,7 +60,7 @@ def http_get(url, referer=None, encoding=None, retries=2, timeout=25, extra_head
     raise RuntimeError(f'GET失败 {url}: {last}')
 
 
-def http_post(url, data=None, referer=None, encoding=None, retries=2, timeout=25, as_json=False):
+def http_post(url, data=None, referer=None, encoding=None, retries=2, timeout=(6, 20), as_json=False):
     headers = {'User-Agent': UA, 'X-Requested-With': 'XMLHttpRequest'}
     if referer:
         headers['Referer'] = referer
@@ -88,6 +89,25 @@ def write_csv_atomic(csv_path, fieldnames, rows):
         w.writeheader()
         w.writerows(rows)
     os.replace(tmp, csv_path)
+
+
+def http_bin(url, referer=None, timeout=(8, 25), min_bytes=0, retries=1):
+    """GET并返回bytes（图片下载用，v18.8）：trust_env=False会话+连接级超时元组。
+    返回 None 表示失败（HTTP非200不重试——换候选图比等重试划算），调用方自行兜底。"""
+    headers = {'User-Agent': UA}
+    if referer:
+        headers['Referer'] = referer
+    for i in range(retries + 1):
+        try:
+            r = _SESSION.get(url, headers=headers, timeout=timeout)
+            if r.status_code == 200 and len(r.content) > min_bytes:
+                return r.content
+            if r.status_code != 200:
+                return None
+        except Exception:  # noqa: BLE001
+            if i < retries:
+                time.sleep(1)
+    return None
 
 
 def save_row(csv_path, date_str, values: dict, columns: list, key_cols=None):
@@ -130,7 +150,8 @@ def save_row(csv_path, date_str, values: dict, columns: list, key_cols=None):
         write_csv_atomic(csv_path, columns, out)
 
 
-_RUN = {'run_id': ''}
+RUN_ID_ENV = 'DNS_RUN_ID'   # run_all子进程调度时经环境变量透传批次run_id（v18.8）
+_RUN = {'run_id': os.environ.get(RUN_ID_ENV, '')}
 
 
 def begin_run(run_id=None):
@@ -140,10 +161,13 @@ def begin_run(run_id=None):
 
 
 def run_collector(mod, timeout=180):
-    """统一包装器（v12治理）：计时/异常捕获/超时/结构化日志，采集器run()只管返回(状态,详情)。
-    mod 为采集器模块、其globals()字典（__main__场景）均可；须暴露 PID/TITLE/run()，可选 BACKFILL。"""
-    from concurrent.futures import ThreadPoolExecutor
-    from concurrent.futures import TimeoutError as FutTimeout
+    """统一包装器（v12治理，v18.8改造）：计时/异常捕获/超时/结构化日志，采集器run()只管返回(状态,详情)。
+    mod 为采集器模块、其globals()字典（__main__场景）均可；须暴露 PID/TITLE/run()，可选 BACKFILL。
+    超时改守护线程+队列：旧ThreadPoolExecutor的工作线程卡在socket里且非daemon、解释器退出时
+    被atexit join，把整个run_all批次收尾无限期挂死（Kickstarter慢拦截549s案例的放大器）。
+    daemon线程不阻塞退出；迟到结果经容量1队列丢弃。run_all已改子进程硬超时，本包装器兜底直接调用。"""
+    import queue
+    import threading
 
     def _get(name, default=None):
         if isinstance(mod, dict):
@@ -154,16 +178,28 @@ def run_collector(mod, timeout=180):
     title = _get('TITLE') or str(_get('__name__', mod))
     backfill = _get('BACKFILL', 'latest')
     t0 = time.time()
-    ex = ThreadPoolExecutor(max_workers=1)
+    q = queue.Queue(maxsize=1)
+
+    def _worker():
+        try:
+            q.put(('ok', _get('run')()))
+        except Exception as e:  # noqa: BLE001
+            try:
+                q.put(('err', e))
+            except Exception:  # noqa: BLE001
+                pass
+
+    threading.Thread(target=_worker, daemon=True).start()
     try:
-        status, detail = ex.submit(_get('run')).result(timeout=timeout)
-    except FutTimeout:
-        status, detail = '失败', f'超时(>{timeout}s)，放弃等待'
-    except Exception as e:  # noqa: BLE001
-        status, detail = '失败', f'异常: {e}'
+        kind, payload = q.get(timeout=timeout)
+        if kind == 'ok':
+            status, detail = payload
+        else:
+            status, detail = '失败', f'异常: {payload}'
+    except queue.Empty:
+        status, detail = '失败', f'超时(>{timeout}s)，放弃等待(daemon线程已托管)'
     elapsed = time.time() - t0
     log_result(pid, title, status, detail, elapsed=elapsed, backfill=backfill)
-    ex.shutdown(wait=False)
     return status, detail, elapsed
 
 
@@ -281,15 +317,22 @@ def hw_check_get(url):
 
 
 # ---------------- 东方财富 ----------------
+class FatalError(RuntimeError):
+    """不可重试错误（如接口明确返回空数据）——_backoff立即上抛，不再空耗5/15/30s退避
+    （v18.8：周末跑EM_HEAVY九采集器曾各白烧约52s）。"""
+
+
 def _backoff(fn, waits=(5, 15, 30)):
     """指数退避重试（来源归一期P-C1）：push2系对单IP渐进式限流，短间隔重试会自我供给限流池，
-    故首试后按5/15/30s+抖动退避，共4次机会。"""
+    故首试后按5/15/30s+抖动退避，共4次机会。FatalError（空数据等确定性失败）立即上抛。"""
     last = None
     for w in (0,) + waits:
         if w:
             time.sleep(w + random.uniform(0, 2))
         try:
             return fn()
+        except FatalError:
+            raise
         except Exception as e:  # noqa: BLE001
             last = e
     raise last
@@ -303,7 +346,7 @@ def em_get(secid, fields='f43,f57,f58,f60,f86,f169,f170', fltt=2):
         d = json.loads(http_get(f'https://push2.eastmoney.com/api/qt/stock/get?secid={secid}'
                                 f'&fields={fields}&fltt={fltt}&invt=2', retries=0))
         if not d.get('data'):
-            raise RuntimeError(f'东财无数据 {secid}')
+            raise FatalError(f'东财无数据 {secid}')
         return d['data']
     return _backoff(_one)
 
@@ -319,16 +362,19 @@ def em_kline(secid, klt=101, fqt=1, lmt=120):
         d = json.loads(txt)
         kl = (d.get('data') or {}).get('klines') or []
         if not kl:
-            raise RuntimeError(f'东财日K为空 {secid}')
+            raise FatalError(f'东财日K为空 {secid}')
         return [(line.split(',')[0], float(line.split(',')[1])) for line in kl]
     return _backoff(_one)
 
 
-def bulk_backfill(csv_path, klines, column, unit='元/吨', source='东方财富', note='', fill_empty_only=False):
-    """期货日K批量回填（一次读改写，供P31/P32/P39/P40复用）。
+def bulk_backfill(csv_path, klines, column, unit='元/吨', source='东方财富', note='',
+                  fill_empty_only=False, rework_days=0):
+    """期货日K批量回填（一次读改写，供P22/P23/P27/P31/P32/P39/P40复用）。
     klines: [(date, close)]；column如'期货主力元/吨'。
     已有行仅更新column列并保留原数据来源/备注（不覆盖现货口径）；仅当字段为空时补unit/source/note。
-    fill_empty_only=True时只补空缺单元格，不回写已有值（2026-11-04通道切换起用：固化历史不回写）。"""
+    fill_empty_only=True时只补空缺单元格，不回写已有值（2026-11-04通道切换起用：固化历史不回写）。
+    rework_days=N（v18.8）：近N日内已有值也覆写并刷新来源/备注——盘中采集的当日/昨日未收盘价
+    允许随后续运行修正；0=保持只补缺失语义。返回(新增行数, 勘误行数)。"""
     rows = {}
     cols = None
     if os.path.exists(csv_path):
@@ -340,21 +386,30 @@ def bulk_backfill(csv_path, klines, column, unit='元/吨', source='东方财富
                     rows[str(r.get(cols[0], ''))] = r
     if not cols:
         raise RuntimeError(f'{csv_path} 无表头，须先由采集器建表')
+    cutoff = ''
+    if rework_days > 0:
+        cutoff = (datetime.date.today() - datetime.timedelta(days=rework_days - 1)).isoformat()
+    n_new = n_rework = 0
     for date, close in klines:
         r = rows.setdefault(date, {c: '' for c in cols})
-        if fill_empty_only and str(r.get(column, '')).strip():
+        had = str(r.get(column, '')).strip()
+        if fill_empty_only and had and (not cutoff or date < cutoff):
             continue
+        if had:
+            n_rework += 1
+        else:
+            n_new += 1
         r[cols[0]] = date
         r[column] = close
         if not r.get('单位'):
             r['单位'] = unit
-        if not r.get('数据来源'):
+        if not had or (cutoff and date >= cutoff):
             r['数据来源'] = source
-        if not r.get('备注'):
             r['备注'] = note
     out = [{c: rows[d].get(c, '') for c in cols} for d in sorted(rows)]
     with _lock:
         write_csv_atomic(csv_path, cols, out)
+    return n_new, n_rework
 
 
 # ---------------- 新浪 ----------------

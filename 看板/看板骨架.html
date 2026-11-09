@@ -110,7 +110,7 @@ root.querySelectorAll('[data-k]').forEach(function(el){
 var tip=document.createElement('div');tip.className='prov-tip';tip.setAttribute('role','tooltip');root.appendChild(tip);
 var tipTimer=null,hideTimer=null;
 function provById(pid){for(var i=0;i<PROV.length;i++){if('P'+PROV[i].id===pid)return PROV[i]}return null}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}   // v18.8：转义引号——esc同时用于拼href属性，URL含"可破属性边界
 function tipHTML(p){
   var st=STATMAP[p.status]||['',''];
   var h='<div class="pt-t">'+esc(p.title)+' · P'+p.id+'</div>';

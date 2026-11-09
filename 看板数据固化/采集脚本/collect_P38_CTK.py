@@ -70,4 +70,4 @@ def run():
 
 
 if __name__ == '__main__':
-    print('P38', TITLE, run())
+    print(common.run_collector(globals()))   # v18.8：统一走包装器（计时/日志/超时兜底）

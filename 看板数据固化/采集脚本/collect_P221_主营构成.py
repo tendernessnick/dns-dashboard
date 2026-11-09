@@ -38,7 +38,20 @@ def run_one(pid, short):
     if not (1 <= len(latest) <= 15):
         raise RuntimeError(f'{short} {date} 分产品行数异常: {len(latest)}')
     names = [re.sub(r'\s+', '', str(x['ITEM_NAME'])) for x in latest]
-    cols = ['数据日期'] + [f'{n}%' for n in names] + ['单位', '数据来源', '备注']
+    # v18.8：表头动态扩展——换期产品增删/改名不再触发save_row schema拒写。
+    # 新期产品列在前，旧期产品列保留在后（历史行原值不动、新行留空=当期无此项，语义正确）
+    prod_new = [f'{n}%' for n in names]
+    old_cols = None
+    if os.path.exists(csv):
+        import csv as _csv   # 注意：run_one里局部变量csv=路径字符串，须用别名取模块
+        with open(csv, encoding='utf-8-sig', newline='') as f:
+            old_cols = _csv.DictReader(f).fieldnames
+    if old_cols:
+        prod_old = [c for c in old_cols
+                    if c.endswith('%') and c not in prod_new and c != '数据日期']
+        cols = ['数据日期'] + prod_new + prod_old + ['单位', '数据来源', '备注']
+    else:
+        cols = ['数据日期'] + prod_new + ['单位', '数据来源', '备注']
     values = {f'{n}%': round(float(x['MBI_RATIO']) * 100, 2)
               for n, x in zip(names, latest)}
     total = sum(values.values())

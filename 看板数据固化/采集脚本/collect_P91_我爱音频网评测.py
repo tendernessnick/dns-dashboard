@@ -45,17 +45,16 @@ def _sanitize(name):
 
 
 def _get(url):
-    import requests
-    r = requests.get(url, headers={'User-Agent': UA, 'Referer': 'https://www.52audio.com/'}, timeout=25)
-    r.raise_for_status()
-    return r.text
+    # v18.8：统一走common.http_get（trust_env=False+重试+超时元组），裸requests退役
+    return common.http_get(url, referer='https://www.52audio.com/')
 
 
 def _extract_article(html):
     """→ (标题, 发布日期, 子分类tag, 段落列表, 内容图URL列表[OSS优先])"""
     t = re.search(r'<title>([^<]+)</title>', html)
     title = _cl(t.group(1).split(' - ')[0]) if t else ''
-    dm = (re.search(r'(20\d\d-\d\d-\d\d)', html) or re.search(r'(20\d\d年\d+月\d+日)', html))
+    dm = (re.search(r'(20\d\d-\d\d-\d\d)', html[:2500])
+          or re.search(r'(20\d\d年\d+月\d+日)', html[:2500]))   # v18.8：限定页头区，正文首个日期不再冒充发布日
     date = dm.group(1) if dm else ''
     if '年' in date and '月' in date:
         m = re.search(r'(20\d\d)年(\d+)月(\d+)日', date)
@@ -93,15 +92,13 @@ def _extract_article(html):
 
 
 def _download(url, fp):
-    import requests
-    try:
-        r = requests.get(url, headers={'User-Agent': UA, 'Referer': 'https://www.52audio.com/'}, timeout=40)
-        if r.status_code == 200 and len(r.content) > 3000:
-            with open(fp, 'wb') as f:
-                f.write(r.content)
-            return True
-    except Exception:
-        pass
+    data = common.http_bin(url, referer='https://www.52audio.com/', min_bytes=3000)
+    if data:
+        tmp = fp + '.part'
+        with open(tmp, 'wb') as f:
+            f.write(data)
+        os.replace(tmp, fp)   # v18.8：原子写
+        return True
     return False
 
 
@@ -128,6 +125,9 @@ def run():
             seen.add(u)
             items.append((u, H.unescape(t).strip()))
     today = datetime.date.today().strftime('%Y%m%d')
+    if not items:
+        # v18.8：列表解析0条时报失败而非静默"成功 新增0"
+        return '失败', '我爱音频网列表页解析0条，选择器疑似变更'
     new, missing, skipped = [], [], 0
     for url, ltitle in items:
         if len(new) >= limit:

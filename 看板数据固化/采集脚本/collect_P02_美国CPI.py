@@ -45,6 +45,7 @@ def run():
             date = common.parse_date_label(period)
             common.save_row(CSV_PATH, date, {
                 'CPI指数': f'{series[period]:.4f}', '同比%': yoy,
+                '单位': '指数(2015=100)',
                 '数据来源': 'OECD SDMX(美国CPI总指数)',
                 '备注': f'{period}月度，2015=100'}, COLUMNS)
             out += 1

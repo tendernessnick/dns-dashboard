@@ -26,12 +26,23 @@ def run():
         rows = (d.get('result') or {}).get('data') or []
         if not rows:
             raise RuntimeError('东财年报期数据为空')
+        # v18.8：两段式——先解析+校验再落库。只强校验最新期量级；历史期字段缺失/越界跳过不失败
+        parsed, skipped = [], []
         for r in rows:
             inv, ar = r.get('CHZZL'), r.get('YSZKZZL')
             if inv is None or ar is None:
-                raise RuntimeError(f'{r["REPORT_DATE"][:10]} 周转率字段为空')
+                skipped.append(str(r['REPORT_DATE'])[:10])
+                continue
+            parsed.append((r, float(inv), float(ar)))
+        if not parsed:
+            raise RuntimeError('年报期周转率字段全缺失')
+        _, l_inv, l_ar = parsed[0]   # rows按REPORT_DATE desc(sortTypes=-1)
+        if not (0.5 < l_inv < 20 and 1 < l_ar < 100):
+            raise RuntimeError(f'最新期量级异常: 存货周转{l_inv}, 应收周转{l_ar}')
+        for r, inv, ar in parsed:
             if not (0.5 < inv < 20 and 1 < ar < 100):
-                raise RuntimeError(f'数值超出合理量级: 存货周转{inv}, 应收周转{ar}')
+                skipped.append(str(r['REPORT_DATE'])[:10])
+                continue
             common.save_row(CSV, str(r['REPORT_DATE'])[:10], {
                 '存货周转率': round(inv, 4),
                 '应收账款周转率': round(ar, 4),
@@ -40,7 +51,9 @@ def run():
                 '备注': '年报期(12-31)口径，周转率年内累计可与季报期不可直接比较',
             }, COLS)
         latest = rows[0]
-        detail = (f'{len(rows)}期年报; 最新{latest["REPORT_DATE"][:10]} '
+        detail = (f'{len(parsed)}/{len(rows)}期年报'
+                  + (f'(跳过异常{skipped})' if skipped else '')
+                  + f'; 最新{latest["REPORT_DATE"][:10]} '
                   f'存货周转{latest["CHZZL"]:.4f}, 应收周转{latest["YSZKZZL"]:.4f}')
         return '成功', detail
     except Exception as e:  # noqa: BLE001

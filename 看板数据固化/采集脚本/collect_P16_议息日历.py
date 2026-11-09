@@ -30,12 +30,16 @@ TODAY = datetime.date.today()
 def _get(url, **kw):
     try:
         from curl_cffi import requests as cr
+    except ImportError:
+        return common.http_get(url, referer='https://www.federalreserve.gov/')
+    try:
         r = cr.get(url, impersonate='safari17_0', timeout=40,
                    headers={'User-Agent': UA, 'Accept-Language': 'en'})
         if r.status_code != 200:
             raise RuntimeError(f'HTTP {r.status_code}')
         return r.text
-    except ImportError:
+    except Exception:  # noqa: BLE001
+        # v18.8：被拒/超时也降级requests直连（旧版仅ImportError才降级，白丢一条命）
         return common.http_get(url, referer='https://www.federalreserve.gov/')
 
 
