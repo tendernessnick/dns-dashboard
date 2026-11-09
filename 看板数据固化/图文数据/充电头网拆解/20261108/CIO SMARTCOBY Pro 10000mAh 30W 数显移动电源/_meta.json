@@ -3,11 +3,17 @@
  "品类tag": "移动电源",
  "发布日期": "2026-10-21",
  "原文链接": "https://www.chongdiantou.com/archives/1792545696467.html",
- "chips": [],
- "摘要": "",
+ "chips": [
+  "10000mAh双21700并联",
+  "30W PD快充",
+  "LED数显屏",
+  "PD3.0/PPS/QC4+多协议",
+  "USB-A QC3.0",
+  "附USB-C充电线"
+ ],
+ "摘要": "日本CIO旗下SMARTCOBY系列数显移动电源，双21700电芯（INR21700M50T单节5000mAh）并联10000mAh；USB-C口30W支持PD3.0/PPS/QC4+/SCP/AFC/FCP，USB-A口QC3.0。",
  "照片": [
   "照片1.jpg",
   "照片2.jpg"
- ],
- "待提炼": true
+ ]
 }

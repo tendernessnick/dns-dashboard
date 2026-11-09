@@ -1,13 +1,19 @@
 {
- "产品名": "Noble FoKus Prestige Encore 细节体验全面升级，音质有新突破",
- "品类tag": "耳机",
+ "产品名": "Noble FoKus Prestige Encore",
+ "品类tag": "真无线降噪",
  "发布日期": "2026-08-17",
  "原文链接": "https://www.52audio.com/archives/286173.html",
- "chips": [],
- "摘要": "",
+ "chips": [
+  "四单元混合架构",
+  "深蓝稳定木外壳",
+  "LDAC·aptX Lossless",
+  "ANC主动降噪",
+  "单次续航10h",
+  "蓝牙5.4"
+ ],
+ "摘要": "高端品牌Noble旗舰真无线，深蓝稳定木外壳配1动圈+2楼氏动铁+1平板四单元混合架构，全新加入ANC主动降噪；支持LDAC与aptX Lossless，单次续航可达10小时并支持无线充电。",
  "照片": [
   "照片1.jpg",
   "照片2.jpg"
- ],
- "待提炼": true
+ ]
 }
