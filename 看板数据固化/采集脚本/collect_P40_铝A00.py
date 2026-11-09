@@ -44,12 +44,8 @@ def _migrate():
 
 
 def _futures_kline():
-    """期货主力日K：主=新浪(AL0)，备=东财(113.alM)。返回[(date, close), 来源, 备注]。"""
-    try:
-        return common.sina_kline('hf_' + FUT_SINA, y=1), '新浪财经', '沪铝主连收盘(新浪日K)'
-    except Exception:  # noqa: BLE001
-        time.sleep(2)
-        return common.em_kline(FUT_SECID, lmt=250), '东方财富', FUT_NOTE_EM
+    """期货主力日K：主=新浪(AL0)，备=东财(113.alM)。v18.9通道逻辑收敛至 common.fut_dual_kline。"""
+    return common.fut_dual_kline(FUT_SINA, FUT_SECID, '沪铝主连')
 
 
 def run():

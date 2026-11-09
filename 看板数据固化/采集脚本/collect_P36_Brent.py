@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-"""P36 大宗商品-布伦特原油：新浪hf_OIL实时行情取最新价，GlobalFutures日K接口回填近一年收盘"""
-import datetime
-import json
+"""P36 大宗商品-布伦特原油：新浪hf_OIL实时行情取最新价，GlobalFutures日K回填近一年收盘。
+v18.9：日K取数收敛至 common.sina_global_kline，落库改bulk_backfill一次读写。"""
 import os
 import re
+import sys
 import time
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 import common
 
 PID = 36
@@ -13,8 +15,6 @@ TITLE = '布伦特原油'
 BACKFILL = 'latest'
 CSV_PATH = os.path.join(common.CSV_DIR, '大宗商品-P36-布伦特原油.csv')
 COLUMNS = ['数据日期', '数值', '单位', '数据来源', '备注']
-KLINE_URL = ('https://stock2.finance.sina.com.cn/futures/api/jsonp.php/x/'
-             'GlobalFuturesService.getGlobalFuturesDailyKLine?symbol=OIL')
 
 
 def run():
@@ -35,22 +35,13 @@ def run():
         detail = f'{date_str} 最新价={price} 美元/桶'
         # 2) 日K回填近一年（仅早于实时行日期的交易日）
         time.sleep(1)
-        txt = common.http_get(KLINE_URL, referer='https://finance.sina.com.cn/')
-        m = re.search(r'\((\[.*\])\)', txt, re.S)
-        if not m:
-            return '失败', '新浪日K解析失败'
-        arr = json.loads(m.group(1))
-        cut = (datetime.date.today() - datetime.timedelta(days=365)).isoformat()
-        n = 0
-        for a in arr:
-            d, c = a['date'], a['close']
-            if d >= cut and d < date_str and 20 <= float(c) <= 200:
-                common.save_row(CSV_PATH, d, {
-                    '数值': str(c), '单位': '美元/桶',
-                    '数据来源': '新浪财经 GlobalFutures日K', '备注': '布伦特原油日K收盘(回填)'},
-                    COLUMNS)
-                n += 1
-        detail += f'；日K回填{n}行'
+        kl = common.sina_global_kline('OIL', 365)
+        kl = [(d, c) for d, c in kl if d < date_str and 20 <= c <= 200]
+        if kl:
+            n, _ = common.bulk_backfill(CSV_PATH, kl, '数值', unit='美元/桶',
+                                        source='新浪财经', note='布伦特原油日K收盘',
+                                        fill_empty_only=False)
+            detail += f'；日K回填{n}行'
         return '成功', detail
     except Exception as e:  # noqa: BLE001
         return '失败', repr(e)

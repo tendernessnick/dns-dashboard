@@ -4,24 +4,21 @@
 通道：requests 直连（52audio 无反爬，2026-11-05 验证，可行性验证结论归档于目录 索引.md）；
 文章URL为去重主键；图片优先 OSS 原图（52audio-images.oss-cn-shenzhen.aliyuncs.com）。
 chips/摘要由每日21:15定时任务AI提炼，提炼后删除"待提炼"字段。
+v18.9：存量扫描/落盘/缺照补拍收敛至 _article_common，HTTP统一common会话，本文件仅保留站点钩子。
 用法：python collect_P91_我爱音频网评测.py [本次最多采集篇数，默认3]"""
 import datetime
-import glob
 import html as H
-import json
 import os
 import re
 import sys
-import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
+import _article_common as art
 
 PID, TITLE = 91, '我爱音频网·耳机评测图文'
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))          # 看板数据固化
 DST = os.path.join(BASE, '图文数据', '我爱音频网评测')
-UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-      '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36')
 LIST_PATH = '/archives/category/reviews/earphone'
 _PREFIX = re.compile(r'^(评测|拆解报告|视频拆解|拆解)[：:｜]\s*')
 _OSS = 'oss-cn-shenzhen'
@@ -38,15 +35,6 @@ def _product(title):
         if t2 == t:
             return t or _cl(title)
         t = t2
-
-
-def _sanitize(name):
-    return re.sub(r'[\\/:*?"<>|#]+', '', name).strip()[:50] or '未命名'
-
-
-def _get(url):
-    # v18.8：统一走common.http_get（trust_env=False+重试+超时元组），裸requests退役
-    return common.http_get(url, referer='https://www.52audio.com/')
 
 
 def _extract_article(html):
@@ -108,23 +96,15 @@ def run():
         if a.isdigit():
             limit = max(1, int(a))
     os.makedirs(DST, exist_ok=True)
-    existing = {}                                # url → (meta路径, meta dict)
-    for fp in glob.glob(os.path.join(DST, '*', '*', '_meta.json')):
-        try:
-            m = json.load(open(fp, encoding='utf-8'))
-            u = m.get('原文链接')
-            if u:
-                existing[u] = (fp, m)
-        except Exception:
-            pass
-    list_html = _get('https://www.52audio.com' + LIST_PATH)
+    existing = art.scan_existing(DST)
+    list_html = common.http_get('https://www.52audio.com' + LIST_PATH,
+                                referer='https://www.52audio.com/')
     items = []
     seen = set()
     for u, t in re.findall(r'href="(https://www\.52audio\.com/archives/\d+\.html)"[^>]*>([^<]{6,80})<', list_html):
         if u not in seen:
             seen.add(u)
             items.append((u, H.unescape(t).strip()))
-    today = datetime.date.today().strftime('%Y%m%d')
     if not items:
         # v18.8：列表解析0条时报失败而非静默"成功 新增0"
         return '失败', '我爱音频网列表页解析0条，选择器疑似变更'
@@ -134,78 +114,26 @@ def run():
             break
         if url in existing:
             continue
-        art = _get(url)
-        t2, pdate, tag, paras, imgs = _extract_article(art)
+        t2, pdate, tag, paras, imgs = _extract_article(
+            common.http_get(url, referer='https://www.52audio.com/'))
         if len(paras) < 6:
             skipped += 1
             continue
-        name = _sanitize(_product(t2 or ltitle))
-        ddir = os.path.join(DST, today, name)
-        while os.path.isdir(ddir):
-            name += '_'
-            ddir = os.path.join(DST, today, name)
-        os.makedirs(ddir, exist_ok=True)
-        photos = []
-        for u in imgs:                               # 依次尝试候选图，直到成功2张
-            if len(photos) >= 2:
-                break
-            n = len(photos) + 1
-            ext = '.png' if u.lower().split('?')[0].endswith('.png') else '.jpg'
-            if _download(u, os.path.join(ddir, f'照片{n}{ext}')):
-                photos.append(f'照片{n}{ext}')
-        meta = {'产品名': _product(t2 or ltitle), '品类tag': tag,
-                '发布日期': pdate or datetime.date.today().isoformat(), '原文链接': url,
-                'chips': [], '摘要': '', '照片': photos, '待提炼': True}
-        with open(os.path.join(ddir, '_meta.json'), 'w', encoding='utf-8') as f:
-            json.dump(meta, f, ensure_ascii=False, indent=1)
-        lines = ['# 评测｜' + (t2 or ltitle), '',
-                 '> 来源：我爱音频网 · 耳机评测栏目 ｜ 原文：' + url, '',
-                 '> 采集说明：collect_P91_我爱音频网评测.py（requests直连）正文段落照录，未改动表述；'
-                 'chips/摘要由每日定时任务提炼。', '']
-        lines += paras
-        lines += ['', '---', '', '## 文末信息', '',
-                  '- 配图：' + ('、'.join(photos) if photos else '未下载到'),
-                  '- 发布日期：' + meta['发布日期'],
-                  '- 原文链接：' + url,
-                  '- 采集日期：' + datetime.date.today().isoformat()]
-        with open(os.path.join(ddir, name + '_正文.md'), 'w', encoding='utf-8') as f:
-            f.write('\n'.join(lines))
+        name, photos = art.save_article(
+            DST, url=url, prod_name=_product(t2 or ltitle), md_title='评测｜' + (t2 or ltitle),
+            pdate=pdate or datetime.date.today().isoformat(), tag=tag, paras=paras,
+            img_urls=imgs, download=_download,
+            source_line='来源：我爱音频网 · 耳机评测栏目 ｜ 原文：' + url,
+            note_line='采集说明：collect_P91_我爱音频网评测.py（requests直连）正文段落照录，未改动表述；'
+                      'chips/摘要由每日定时任务提炼。')
         new.append(name)
         if not photos:
             missing.append(name)
-    # 缺照补拍（v18.7 P0止血）：建档时下载失败的文章重读原文页补下载，成功≤5篇/轮、
-    # 总尝试≤8次；只覆盖当前列表页内的缺照文章（翻页滚出的旧文靠后续列表轮换遇到再补）
-    fixed, still, attempts = [], [], 0
-    for u2, ltitle2 in items:
-        if len(fixed) >= 5 or attempts >= 8:
-            break
-        hit = existing.get(u2)
-        if not hit or hit[1].get('照片'):
-            continue
-        attempts += 1
-        try:
-            art = _get(u2)
-            _, _, _, _, imgs2 = _extract_article(art)
-        except Exception:  # noqa: BLE001
-            still.append(hit[1].get('产品名') or ltitle2)
-            continue
-        ddir = os.path.dirname(hit[0])
-        photos2 = []
-        for iu in imgs2:
-            if len(photos2) >= 2:
-                break
-            n = len(photos2) + 1
-            ext = '.png' if iu.lower().split('?')[0].endswith('.png') else '.jpg'
-            if _download(iu, os.path.join(ddir, f'照片{n}{ext}')):
-                photos2.append(f'照片{n}{ext}')
-        if photos2:
-            hit[1]['照片'] = photos2
-            with open(hit[0], 'w', encoding='utf-8') as f:
-                json.dump(hit[1], f, ensure_ascii=False, indent=1)
-            fixed.append(hit[1].get('产品名') or ltitle2)
-        else:
-            still.append(hit[1].get('产品名') or ltitle2)
-        time.sleep(1)
+    # 缺照补拍（v18.8语义收敛至 _article_common）：只覆盖当前列表页内的缺照文章
+    fixed, still = art.retry_missing_photos(
+        existing, items,
+        fetch=lambda u: common.http_get(u, referer='https://www.52audio.com/'),
+        extract=_extract_article, download=_download)
     detail = (f'我爱音频网评测 · 新增{len(new)}篇{new if new else ""}，'
               f'库存{len(existing) + len(new)}篇'
               + (f'，跳过短稿{skipped}篇' if skipped else '')

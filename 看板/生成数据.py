@@ -240,33 +240,51 @@ def _tops(pid, label):
 
 
 TOPS = {}
-for _p, _lab in (('P66', '线材榜'), ('P68', '充电榜')):
-    _t = _tops(_p, _lab)
-    if _t:
-        TOPS[_p] = _t
+for _r in REG_ROWS:                      # v18.9注册表化：榜单标签列驱动（原硬编码P66/P68元组退役）
+    _lab = (_r.get('榜单标签') or '').strip()
+    if _lab:
+        _t = _tops(_r['P号'], _lab)
+        if _t:
+            TOPS[_r['P号']] = _t
 
 # ============ 图文数据（v18：P91评测；v18.2：P90拆解；v18.3：P93/P94众筹项目图文）→ REVIEWS ============
 # 数据契约：图文数据/<任务目录>/*/*/_meta.json（产品名/品类tag/发布日期/原文链接/chips/摘要/照片），
 # 本脚本只搬运（按发布日期取最近6篇，同日按排序值），照片压缩后base64内联保持离线可用。
-def _img_datauri(path, width=320, quality=70):
-    """照片文件 → 宽320px JPEG base64 dataURI（失败返回空串，卡面以占位块渲染）"""
+def _img_media(path, pid, width=240, quality=60, max_bytes=18000):
+    """照片文件 → 看板/媒体/<pid>/ 下压缩JPEG，返回相对路径（失败返回空串，卡面以占位块渲染）。
+    v18.9照片外置：data.js不再base64内联（照片曾占约47%体积且随图文增长无界）；
+    媒体目录由本脚本每次重建，打包单文件.py 发同事时把 媒体/ 引用内联回dataURI，离线能力不损失。
+    超 max_bytes 逐级降质兜底。"""
     try:
-        import base64
         import io
         from PIL import Image
         im = Image.open(path).convert('RGB')
         if im.width > width:
             im = im.resize((width, round(im.height * width / im.width)), Image.LANCZOS)
-        buf = io.BytesIO()
-        im.save(buf, 'JPEG', quality=quality, optimize=True)
-        return 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode()
+        out_dir = os.path.join(BASE, '媒体', pid)
+        os.makedirs(out_dir, exist_ok=True)
+        base = os.path.splitext(os.path.basename(path))[0]
+        parent = os.path.basename(os.path.dirname(path))   # 文章/项目夹名——源图都叫照片1.jpg，不带夹名会互相覆盖
+        out_fp = os.path.join(out_dir, f'{parent}_{base}.jpg')
+        q = quality
+        while True:
+            buf = io.BytesIO()
+            im.save(buf, 'JPEG', quality=q, optimize=True)
+            data = buf.getvalue()
+            if len(data) <= max_bytes or q <= 30:
+                break
+            q -= 10
+        with open(out_fp, 'wb') as f:
+            f.write(data)
+        return f'媒体/{pid}/{parent}_{base}.jpg'
     except Exception:
         return ''
 
 
-def _scan_reviews(rel, noimg=''):
+def _scan_reviews(rel, noimg='', pid=''):
     """扫描 图文数据/<rel>/*/*/_meta.json → {'items':[最近6篇], 'updated':最大发布日期, 'noimg':占位标签} 或 None
-    排序：发布日期 desc，同日按 排序值(如已筹金额) desc（文章无该字段视为0，不影响原序）"""
+    排序：发布日期 desc，同日按 排序值(如已筹金额) desc（文章无该字段视为0，不影响原序）
+    照片经 _img_media 外置到 看板/媒体/<pid>/（v18.9）。"""
     rdir = os.path.join(FIX, '图文数据', rel)
     metas = []
     for _fp in glob.glob(os.path.join(rdir, '*', '*', '_meta.json')):
@@ -290,27 +308,40 @@ def _scan_reviews(rel, noimg=''):
                       'date': (_m.get('发布日期') or '')[5:10],
                       'chips': [str(c) for c in (_m.get('chips') or [])[:6]],
                       'desc': _m.get('摘要', ''), 'url': _m['原文链接'],
-                      'img': _img_datauri(_x['photos'][0]) if _x['photos'] else ''})
+                      'img': _img_media(_x['photos'][0], pid) if _x['photos'] else ''})
     return {'items': items, 'noimg': noimg,
             'updated': max(x['m'].get('发布日期') or '' for x in metas)}
 
 
-REVIEWS = {}
-for _key, _rel, _ni in (('P91', '我爱音频网评测', '52audio'), ('P90', '充电头网拆解', '充电头网'),
-                        ('P93', 'Kickstarter众筹', 'KS'), ('P94', '摩点众筹', '摩点')):
-    _r = _scan_reviews(_rel, _ni)
-    if _r:
-        REVIEWS[_key] = _r
+import shutil
+MEDIA_ROOT = os.path.join(BASE, '媒体')
+shutil.rmtree(MEDIA_ROOT, ignore_errors=True)      # 每次重建（只保留当前引用的照片）
+os.makedirs(MEDIA_ROOT, exist_ok=True)
 
-# ============ 议息日历（v18.6：P16美联储/P20欧洲央行，collect_P16_议息日历.py产出）→ CAL ============
+REVIEWS = {}
+for _r in REG_ROWS:                      # v18.9注册表化：图文目录/图文占位列驱动（原硬编码四元组退役）
+    _rel = (_r.get('图文目录') or '').strip()
+    if _rel:
+        _scan = _scan_reviews(_rel, (_r.get('图文占位') or '').strip(), _r['P号'])
+        if _scan:
+            REVIEWS[_r['P号']] = _scan
+
+# ============ 议息日历（v18.6 collect_P16产出）→ CAL（v18.9注册表化：日历键列驱动） ============
 CAL = {}
-_fp = os.path.join(FIX, '资讯数据', '议息日历.json')
-if os.path.exists(_fp):
+for _r in REG_ROWS:
+    _cfile = (_r.get('日历键') or '').strip()
+    if not _cfile:
+        continue
+    _fp = os.path.join(FIX, '资讯数据', _cfile)
+    if not os.path.exists(_fp):
+        continue
     try:
         _c = json.load(open(_fp, encoding='utf-8'))
-        CAL = {k: _c[k] for k in ('P16', 'P20') if isinstance(_c.get(k), dict) and _c[k].get('时间线')}
+        _v = _c.get(_r['P号'])
+        if isinstance(_v, dict) and _v.get('时间线'):
+            CAL[_r['P号']] = _v
     except Exception:
-        CAL = {}
+        pass
 
 # ============ 写 data.js ============
 def _js(obj):
@@ -328,7 +359,12 @@ js = ('// 由 生成数据.py 自动生成——勿手改；页面壳(index.html
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write(js)
 
-print('data.js 已生成:', os.path.getsize(OUT) // 1024, 'KB |',
+_size = os.path.getsize(OUT)
+print('data.js 已生成:', _size // 1024, 'KB |',
       '词条', len(DDATA) - 5, '| 数据截至', ASOF, '| 待补录', PEND or '无', '|',
       '资讯/公告', len(NEWS), '卡 | 榜单', list(TOPS.keys()) or '无',
       '| 图文', list(REVIEWS.keys()) or '无', '| 议息', list(CAL.keys()) or '无')
+if _size > 500 * 1024:
+    # v18.9体积熔断：照片已外置，data.js超500KB即告警（防无感膨胀回归）
+    print(f'⚠ 警告：data.js 已达 {_size // 1024}KB（>500KB阈值），'
+          f'请检查是否新增了大体量数据或照片内联回归')

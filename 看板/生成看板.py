@@ -160,7 +160,7 @@ def b_chips(c):
 def b_desc(c):
     if not c.get('说明'):
         return ''
-    anchor = f' data-cal-desc="{Pn(c["主数据"])}"' if c.get('动态日历') else ''
+    anchor = f' data-cal-desc="{atattr(c["主数据"])}"' if c.get('动态日历') else ''   # v18.9：锚点统一存完整P号(P16)，与CAL键同名免拼接
     return f'<p class="desc"{anchor}{st(c.get("说明样式"))}>{c["说明"]}</p>'
 
 
@@ -194,7 +194,7 @@ def b_tllist(c):
     for it in items:
         cls = ' class="next"' if it.get('下一个') else ''
         parts.append(f'<li{cls}><b>{it["日期"]}</b>{it["文本"]}</li>')
-    anchor = f' data-cal="{Pn(c["主数据"])}"' if c.get('动态日历') else ''
+    anchor = f' data-cal="{atattr(c["主数据"])}"' if c.get('动态日历') else ''   # v18.9：锚点统一存完整P号(P16)
     return f'<ul class="tl-list"{anchor}>{"".join(parts)}</ul>'
 
 

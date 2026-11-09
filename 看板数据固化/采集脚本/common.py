@@ -463,6 +463,96 @@ def sina_forex_kline(symbol, y=1):
     return out
 
 
+def sina_global_kline(symbol, days=365):
+    """新浪全球期货日K（hf_*国内InnerFutures不适用，如LME铜CAD、布伦特OIL）。返回[(date, close)]。"""
+    import json
+    txt = http_get('https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20t=/'
+                   f'GlobalFuturesService.getGlobalFuturesDailyKLine?symbol={symbol}',
+                   referer='https://finance.sina.com.cn/')
+    m = re.search(r'\((\[.*\])\)', txt, re.S)
+    if not m:
+        raise RuntimeError('新浪全球日K解析失败')
+    cut = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+    return [(a['date'], float(a['close'])) for a in json.loads(m.group(1))
+            if a.get('date', '') >= cut and a.get('close')]
+
+
+def collect_series(csv_path, *, primary='sina', kind='fx', sina_sym='', em_secid='',
+                   column='数值', unit='', note='', fill_empty_only=True, rework_days=2):
+    """行情日K五件套（v18.9样板收敛）：主通道取日K→备用通道自动降级→bulk_backfill一次落库→
+    实时快照核验。采集器run()直接 `return common.collect_series(...)` 即可。
+    primary='sina'：新浪主（kind='fx'走sina_forex_kline、'fut'走sina_kline('hf_'+sym)），
+                    东财em_kline(secid)自动降级——P22/P23/P27形态；
+    primary='em'：东财主em_kline，新浪自动降级，另取东财快照f43核验（跨源/快照失败如实标注）——
+                  P30/P52形态（该形态fill_empty_only=False沿用整表覆写语义）。
+    核验：新浪hq取最新价与日K尾值比（fx取字段1、fut取字段0），2%阈值。"""
+    time.sleep(1)
+    snap = snap_note = None
+    src_note_sina = '新浪财经'
+    src_note_em = '东方财富'
+    sina = (sina_forex_kline if kind == 'fx' else
+            (lambda s, y=1: sina_kline('hf_' + s, y=y)))
+    hq_code = sina_sym if kind == 'fx' else 'hf_' + sina_sym
+    hq_idx = 1 if kind == 'fx' else 0
+    try:
+        if primary == 'sina':
+            kl = sina(sina_sym, y=1)
+            src = src_note_sina
+        else:
+            try:
+                snap = em_get(em_secid)
+                snap_note = None
+            except Exception as se:  # noqa: BLE001
+                snap, snap_note = None, f'快照失败降级({str(se)[:40]})'
+            time.sleep(1)
+            try:
+                kl = em_kline(em_secid, lmt=120)
+                src = src_note_em
+            except Exception:  # noqa: BLE001
+                time.sleep(2)
+                kl = sina(sina_sym, y=1)
+                src = src_note_sina
+    except Exception as e:  # noqa: BLE001
+        return '失败', f'双通道均失败: {e}'
+    if not kl:
+        return '失败', '日K为空'
+    n_new, n_rw = bulk_backfill(csv_path, kl, column, unit=unit,
+                                source=src, note=note,
+                                fill_empty_only=fill_empty_only, rework_days=rework_days)
+    last_d, last_v = kl[-1]
+    parts = [f'新增{n_new}天' + (f'/勘误{n_rw}天' if fill_empty_only and n_rw else ''),
+             f'最新{last_d}={last_v}({src})']
+    if primary == 'em':
+        tag = f'回填{len(kl)}天' + ('' if src == src_note_em else '(新浪降级)')
+        if snap is None:
+            parts = [tag, f'最新{last_d}={last_v}', snap_note or '']
+        elif src != src_note_em:
+            parts = [tag, f'最新{last_d}={last_v}', '快照核验跳过(跨源)']
+        else:
+            snap_v = float(snap.get('f43'))
+            chk = '一致' if abs(snap_v - last_v) / max(snap_v, 1e-9) < 0.02 else '偏差'
+            parts = [tag, f'最新{last_d}={last_v}', f'快照{snap_v}({chk})']
+    else:
+        try:
+            spot = sina_hq([hq_code])[hq_code]
+            chk = '一致' if abs(float(spot[hq_idx]) - last_v) / max(float(spot[hq_idx]), 1e-9) < 0.02 else '偏差'
+            parts.append(f'实时核验{chk}')
+        except Exception:  # noqa: BLE001
+            parts.append('实时核验跳过')
+    return '成功', ', '.join(p for p in parts if p)
+
+
+def fut_dual_kline(sina_sym, secid, name_cn, lmt=250):
+    """生意社双列卡的期货主力日K（v18.9收敛，P31/P32/P39/P40共用）：
+    主=新浪(hf_符号)，东财(secid)自动降级。返回([(date, close), 来源, 备注])。
+    现货半边页面形态不同（vane/rawmex），由各采集器自留解析。"""
+    try:
+        return sina_kline('hf_' + sina_sym, y=1), '新浪财经', f'{name_cn}收盘(新浪日K)'
+    except Exception:  # noqa: BLE001
+        time.sleep(2)
+        return em_kline(secid, lmt=lmt), '东方财富', f'{name_cn}收盘(东财回填)'
+
+
 def parse_date_label(label):
     """把'2026-09'/'2026-09-30'/'2026Q3'/'2025'规范化为期末日期YYYY-MM-DD；解析失败返回抓取日。"""
     s = str(label).strip()
