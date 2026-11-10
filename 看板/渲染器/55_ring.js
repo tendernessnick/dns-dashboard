@@ -27,6 +27,8 @@
       }
     }
     var rv=el.querySelector('.rv');if(rv)rv.textContent=fmtN(qi2,0)+' / '+fmtN(tot,0)+' 条';
-    var rs=el.querySelector('.rs');if(rs)rs.textContent='Qi2（MPP）认证累计 · 最新'+String(last[0]).slice(5)+' · 每周增长';
+    var sub='Qi2（MPP）认证累计 · 最新'+String(last[0]).slice(5)+' · 每周增长';
+    if(last[3]!=null)sub+=' · 其中Qi2.2(25W) '+fmtN(last[3],0)+'条';   // v19：Qi2.2认证数(25W)列
+    var rs=el.querySelector('.rs');if(rs)rs.textContent=sub;
   });
 })();

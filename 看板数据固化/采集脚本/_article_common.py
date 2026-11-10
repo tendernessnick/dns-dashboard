@@ -30,9 +30,10 @@ def scan_existing(dst):
 
 
 def save_article(dst, *, url, prod_name, md_title, pdate, tag, paras,
-                 img_urls, download, source_line, note_line):
-    """新文章落盘：建夹(重名加_后缀)→依次尝试候选图至2张(原子写)→写_meta.json[待提炼]→写正文md。
-    返回(文章夹名, 照片列表)。"""
+                 img_urls, download, source_line, note_line, await_ai=True, summary=''):
+    """新文章落盘：建夹(重名加_后缀)→依次尝试候选图至2张(原子写)→写_meta.json→写正文md。
+    await_ai=True写'待提炼'标记（chips/摘要由21:15任务AI提炼）；False表示meta已自足
+    （chips机械提取/摘要照录，summary传首段）。返回(文章夹名, 照片列表)。"""
     today = datetime.date.today().strftime('%Y%m%d')
     name = sanitize(prod_name)
     ddir = os.path.join(dst, today, name)
@@ -49,7 +50,9 @@ def save_article(dst, *, url, prod_name, md_title, pdate, tag, paras,
         if download(u, os.path.join(ddir, f'照片{n}{ext}')):
             photos.append(f'照片{n}{ext}')
     meta = {'产品名': prod_name, '品类tag': tag, '发布日期': pdate, '原文链接': url,
-            'chips': [], '摘要': '', '照片': photos, '待提炼': True}
+            'chips': [], '摘要': summary, '照片': photos}
+    if await_ai:
+        meta['待提炼'] = True
     with open(os.path.join(ddir, '_meta.json'), 'w', encoding='utf-8') as f:
         json.dump(meta, f, ensure_ascii=False, indent=1)
     lines = ['# ' + md_title, '', '> ' + source_line, '', '> ' + note_line, '']

@@ -114,23 +114,36 @@ def _is_cjk(s):
 
 
 def translate_title(title, cache):
-    """英文标题→中文；中文原文/翻译失败返回''（看板回退英文）。缓存避免重复请求。"""
+    """英文标题→中文；中文原文/翻译失败返回''（看板回退英文）。缓存避免重复请求。
+    v19通道修复（2026-11-10实抓核验）：Google gtx在当前网络不可达（P14/P15一直显示英文的根因），
+    主通道换 MyMemory 免费API（免key、每日匿名额度足够标题量），gtx降为备用。"""
     if not title or _is_cjk(title):
         return ''
     if title in cache:
         return cache[title]
     zh = ''
     try:
-        r = common._SESSION.get('https://translate.googleapis.com/translate_a/single',
-                                params={'client': 'gtx', 'sl': 'auto', 'tl': 'zh-CN', 'dt': 't',
-                                        'q': title[:450]},
+        r = common._SESSION.get('https://api.mymemory.translated.net/get',
+                                params={'q': title[:450], 'langpair': 'en|zh-CN'},
                                 headers={'User-Agent': UA}, timeout=(6, 15))
-        arr = r.json()
-        zh = ''.join(seg[0] for seg in (arr[0] or []) if seg and seg[0]).strip()
+        d = r.json()
+        zh = str((d.get('responseData') or {}).get('translatedText') or '').strip()
         if not _is_cjk(zh):
             zh = ''
     except Exception:
         zh = ''
+    if not zh:
+        try:   # 备用：Google gtx（网络可达时优先质量更好）
+            r = common._SESSION.get('https://translate.googleapis.com/translate_a/single',
+                                    params={'client': 'gtx', 'sl': 'auto', 'tl': 'zh-CN', 'dt': 't',
+                                            'q': title[:450]},
+                                    headers={'User-Agent': UA}, timeout=(6, 15))
+            arr = r.json()
+            zh = ''.join(seg[0] for seg in (arr[0] or []) if seg and seg[0]).strip()
+            if not _is_cjk(zh):
+                zh = ''
+        except Exception:
+            zh = ''
     if zh:
         # v18.8：只缓存成功翻译——空值入缓存会让该标题永远不再重译
         cache[title] = zh
@@ -145,6 +158,81 @@ def fetch_ctw(path='/'):
     if r.status_code != 200:
         raise RuntimeError(f'HTTP {r.status_code}')
     return r.text
+
+
+def extract_ctw_article(html, maincats=('拆解', '评测', '新闻', '方案', '专题')):
+    """充电头网文章页结构化提取（v19从P90上收公共，P90拆解/P61资讯共用）：
+    → (标题, 发布日期YYYY-MM-DD, 子分类tag, 段落列表, 内容图URL列表[≤6])
+    分类只认 post-meta 块（全页扫会撞侧栏"城市"链接）；图片只留近400天图床图（更早是站方固定素材）。"""
+    import html as _h
+    import datetime as _dt
+
+    def _cl(s):
+        return re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', _h.unescape(s or ''))).strip()
+
+    t = re.search(r'class="post-title[^"]*">([^<]+)</h1>', html)
+    title = _h.unescape(t.group(1)).strip() if t else ''
+    dm = (re.search(r'text-xs text-muted"><div>(20\d\d-\d\d-\d\d)</div>', html)
+          or re.search(r'(20\d\d-\d\d-\d\d)', html[:2500]))   # 兜底限定页头区，正文首个日期不冒充发布日
+    date = dm.group(1) if dm else ''
+    tag = ''
+    mm = re.search(r'text-xs text-muted">(.*?)</div></div>', html, re.S)
+    if mm:
+        for c in re.findall(r'category/[a-z_0-9]+"[^>]*>([^<]{1,12})</a>', mm.group(1)):
+            c = c.strip()
+            if c and c not in maincats:
+                tag = c
+                break
+    seg = re.search(r'class="content-wrapper[^"]*"(.*)', html, re.S)
+    body = seg.group(1) if seg else html
+    paras = [_cl(p) for p in re.findall(r'<p[^>]*>(.*?)</p>', body, re.S)]
+    paras = [p for p in paras if len(p) > 4]
+    for i, p in enumerate(paras):                     # 截掉文末版权/推广噪声
+        if i > len(paras) * 0.5 and re.search(r'转载|版权声明|免责声明|广告', p):
+            paras = paras[:i]
+            break
+    imgs = []
+    floor = (_dt.date.today() - _dt.timedelta(days=400)).strftime('%Y/%m')
+    for u in re.findall(r'<img[^>]+src="(https?://[^"]+/(?:uploads|images)/[^"]+)"', body):
+        mu = re.search(r'/uploads/(\d{4}/\d{2})/', u)
+        if mu and mu.group(1) < floor:
+            continue
+        if u not in imgs:
+            imgs.append(u)
+    return title, date, tag, paras, imgs[:6]
+
+
+# ---------------- IT之家（文章页提取，v19图文卡用） ----------------
+def fetch_ithome_article(url):
+    """IT之家文章页 → (标题[剥站名后缀], 首图URL[''=无图], 段落列表[纯文本≥12字])。
+    实测2026-11-10：文章页均有图（img.ithome.com），段落9~21段。"""
+    html = common.http_get(url, referer='https://www.ithome.com/')
+    t = re.search(r'<title>([^<]+)</title>', html)
+    title = _clean(t.group(1)) if t else ''
+    title = re.sub(r'\s*[-–—]\s*IT之家.*$', '', title).strip()
+    img = ''
+    m = re.search(r'<img[^>]+(?:data-original|src)="(https?://img\.ithome\.com[^"]+)"', html)
+    if m:
+        img = m.group(1)
+    paras = []
+    for p in re.findall(r'<p[^>]*>(.*?)</p>', html, re.S):
+        p = _clean(p)
+        if len(p) > 12 and p not in paras:
+            paras.append(p)
+    return title, img, paras
+
+
+def chips_from_title(title, brands=()):
+    """从标题机械提取chips（免AI）：价格（X元/X美元）+首个命中品牌。"""
+    chips = []
+    m = re.search(r'(\d+(?:\.\d+)?)\s*(?:元|美元|块钱)', title)
+    if m:
+        chips.append(re.sub(r'\s+', '', m.group(0)))
+    for b in brands:
+        if b.lower() in title.lower():
+            chips.append(b)
+            break
+    return chips[:2]
 
 
 def parse_ctw(html):

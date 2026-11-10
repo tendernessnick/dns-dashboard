@@ -7,7 +7,7 @@
     var pid='P'+el.getAttribute('data-review');
     var d=REVIEWS[pid];
     if(!d||!d.items||!d.items.length){
-      el.innerHTML='<div class="rev-empty">暂无已采集拆解 · RPA任务每日自动更新</div>';
+      el.innerHTML='<div class="rev-empty">暂无图文数据 · 采集器每日自动更新（低频主题近期可能无新稿）</div>';
       return;
     }
     el.innerHTML=d.items.map(function(it){

@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 import _article_common as art
-from _news_common import fetch_ctw, parse_ctw
+from _news_common import fetch_ctw, parse_ctw, extract_ctw_article
 
 PID, TITLE = 90, '充电头网·拆解图文'
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))          # 看板数据固化
@@ -32,38 +32,12 @@ def _product(title):
     return _PREFIX.sub('', _cl(title)).strip() or _cl(title)
 
 
+# v19：文章页结构化提取上收 _news_common.extract_ctw_article（P90拆解/P61资讯共用）
+
+
 def _extract_article(html):
-    """→ (标题, 发布日期, 子分类tag, 段落列表, 内容图URL列表)"""
-    t = re.search(r'class="post-title[^"]*">([^<]+)</h1>', html)
-    title = H.unescape(t.group(1)).strip() if t else ''
-    dm = (re.search(r'text-xs text-muted"><div>(20\d\d-\d\d-\d\d)</div>', html)
-          or re.search(r'(20\d\d-\d\d-\d\d)', html[:2500]))   # v18.8：兜底限定页头区，正文首个日期不再冒充发布日
-    date = dm.group(1) if dm else ''
-    tag = ''                                            # 分类只认 post-meta 块（全页扫会撞侧栏"城市"链接）
-    mm = re.search(r'text-xs text-muted">(.*?)</div></div>', html, re.S)
-    if mm:
-        for c in re.findall(r'category/[a-z_0-9]+"[^>]*>([^<]{1,12})</a>', mm.group(1)):
-            c = c.strip()
-            if c and c not in _MAINCAT:
-                tag = c
-                break
-    seg = re.search(r'class="content-wrapper[^"]*"(.*)', html, re.S)
-    body = seg.group(1) if seg else html
-    paras = [_cl(p) for p in re.findall(r'<p[^>]*>(.*?)</p>', body, re.S)]
-    paras = [p for p in paras if len(p) > 4]
-    for i, p in enumerate(paras):                     # 截掉文末版权/推广噪声
-        if i > len(paras) * 0.5 and re.search(r'转载|版权声明|免责声明|广告', p):
-            paras = paras[:i]
-            break
-    imgs = []                                          # 只留发布日期前后1个月内的图床图（更早的是站方头像等固定素材）
-    floor = (datetime.date.today() - datetime.timedelta(days=400)).strftime('%Y/%m')
-    for u in re.findall(r'<img[^>]+src="(https?://[^"]+/(?:uploads|images)/[^\"]+)"', body):
-        mu = re.search(r'/uploads/(\d{4}/\d{2})/', u)
-        if mu and mu.group(1) < floor:
-            continue
-        if u not in imgs:
-            imgs.append(u)
-    return title, date, tag, paras, imgs[:6]
+    """兼容壳（v19）：结构化提取已上收 _news_common.extract_ctw_article。"""
+    return extract_ctw_article(html, maincats=_MAINCAT)
 
 
 def _download(url, fp):
