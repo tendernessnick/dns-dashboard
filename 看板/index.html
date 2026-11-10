@@ -496,6 +496,17 @@
 .ptable .vrf.warn{color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4}
 .ptable .vrf.sus{color:#BE123C;background:#FBE9EB;border:1px solid #F2C6CE}
 
+/* ==== P41/P42 全宽放大（2026-11-10 用户反馈）：仅作用于这两张 review 卡，不影响其他图文卡 ==== */
+[data-review="41"].revcards,[data-review="42"].revcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-content:start;overflow-y:auto}
+[data-review="41"] .revcard,[data-review="42"] .revcard{height:150px;padding:14px 16px;gap:14px;border-radius:11px}
+[data-review="41"] .rthumb,[data-review="42"] .rthumb{width:132px;height:122px;border-radius:8px}
+[data-review="41"] .rname,[data-review="42"] .rname{font-size:15px;line-height:22px}
+[data-review="41"] .rtag,[data-review="42"] .rtag{font-size:11px;padding:3px 8px}
+[data-review="41"] .rdate,[data-review="42"] .rdate{font-size:11.5px}
+[data-review="41"] .rchips,[data-review="42"] .rchips{margin-top:8px;gap:6px}
+[data-review="41"] .rchip,[data-review="42"] .rchip{font-size:11.5px;line-height:22px;padding:0 9px;border-radius:5px}
+[data-review="41"] .rdesc,[data-review="42"] .rdesc{margin-top:7px;font-size:12.5px;line-height:1.65;-webkit-line-clamp:3}
+
 </style>
 <div id="dns-dash">
 <div class="rule3"></div>
@@ -603,8 +614,8 @@
   <div class="sec-head"><div class="sec-no">03</div><div><h2>行业数据</h2><p>厂商动态 / 出货量与格局 / 展会日历 / 上游价格</p></div><div class="sec-meta"><span class="ok">12项已接入</span> · 2项静态维护（CES/MWC展会）</div></div>
   <h3 class="grp">厂商动态</h3>
   <div class="row">
-    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-mid="41_APPLE相关新闻近7天" data-k="41"><div class="card-top"><span class="t" title="IT之家苹果生态资讯，图文速览（关键词过滤）">Apple 生态 · 新闻速览</span><span class="dot g" title="已接入：IT之家（苹果生态关键词）"></span></div><div class="revcards" data-review="41"></div><div class="foot"><a href="https://www.ithome.com/" target="_blank" rel="noopener">IT之家 ↗</a><span>每日</span></div></div>
-    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-mid="42_手机厂家新品发布近7天" data-k="42"><div class="card-top"><span class="t" title="IT之家手机/快充/新品资讯，图文速览（关键词过滤）">手机厂商 · 新品动态</span><span class="dot g" title="已接入：IT之家（新品关键词）"></span></div><div class="revcards" data-review="42"></div><div class="foot"><a href="https://www.ithome.com/" target="_blank" rel="noopener">IT之家手机 ↗</a><span>每日</span></div></div>
+    <div class="card list c12" style="height:500px;grid-column:span 12;grid-row:1" data-mid="41_APPLE相关新闻近7天" data-k="41"><div class="card-top"><span class="t" title="IT之家苹果生态资讯，图文速览（关键词过滤）">Apple 生态 · 新闻速览</span><span class="dot g" title="已接入：IT之家（苹果生态关键词）"></span></div><div class="revcards" data-review="41"></div><div class="foot"><a href="https://www.ithome.com/" target="_blank" rel="noopener">IT之家 ↗</a><span>每日</span></div></div>
+    <div class="card list c12" style="height:500px;grid-column:span 12;grid-row:2" data-mid="42_手机厂家新品发布近7天" data-k="42"><div class="card-top"><span class="t" title="IT之家手机/快充/新品资讯，图文速览（关键词过滤）">手机厂商 · 新品动态</span><span class="dot g" title="已接入：IT之家（新品关键词）"></span></div><div class="revcards" data-review="42"></div><div class="foot"><a href="https://www.ithome.com/" target="_blank" rel="noopener">IT之家手机 ↗</a><span>每日</span></div></div>
   </div>
   <h3 class="grp">出货量与格局</h3>
   <div class="row">
