@@ -509,3 +509,10 @@
 .spark .sguide{position:absolute;top:0;bottom:0;width:1px;background:var(--n300);pointer-events:none;display:none}
 .spark .sdot{position:absolute;width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid var(--brand);transform:translate(-50%,-50%);pointer-events:none;display:none;z-index:2}
 .spark .ctool{z-index:6}
+
+/* ==== P81/P83 全宽放大（2026-11-10用户反馈）：公告列表条目与招聘监测说明/按钮适度放大 ==== */
+[data-mid^="81_"] .feed .fi{font-size:13px;line-height:19px}
+[data-mid^="81_"] .feed .fi .fd{font-size:11px}
+[data-mid^="83_"]{justify-content:center}
+[data-mid^="83_"] .desc{margin:0;font-size:14px;line-height:25px;color:var(--n700);display:flex;align-items:center}
+[data-mid^="83_"] .btn-ext{font-size:13.5px;padding:10px 22px}

@@ -519,6 +519,13 @@
 .spark .sdot{position:absolute;width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid var(--brand);transform:translate(-50%,-50%);pointer-events:none;display:none;z-index:2}
 .spark .ctool{z-index:6}
 
+/* ==== P81/P83 全宽放大（2026-11-10用户反馈）：公告列表条目与招聘监测说明/按钮适度放大 ==== */
+[data-mid^="81_"] .feed .fi{font-size:13px;line-height:19px}
+[data-mid^="81_"] .feed .fi .fd{font-size:11px}
+[data-mid^="83_"]{justify-content:center}
+[data-mid^="83_"] .desc{margin:0;font-size:14px;line-height:25px;color:var(--n700);display:flex;align-items:center}
+[data-mid^="83_"] .btn-ext{font-size:13.5px;padding:10px 22px}
+
 </style>
 <div id="dns-dash">
 <div class="rule3"></div>
@@ -696,8 +703,8 @@
     <div class="card kpi c12" style="grid-column:span 12;grid-row:1" data-mid="80_大客户集中度" data-k="80"><div class="card-top"><span class="t">大客户集中度</span><span class="dot g" title="已接入：巨潮年报解析"></span></div><div class="val">8.59<span class="unit">%</span></div><div class="sub">前五大客户合计26.20亿元<br>客户结构分散、议价健康</div><div class="foot"><span>巨潮资讯网</span><span>每年</span></div></div>
   </div>
   <div class="row">
-    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="81_产能扩产募投公告" data-k="81" data-news="安克募投"><div class="card-top"><span class="t">产能/扩产/募投公告</span><span class="dot g" title="已接入：巨潮检索"></span></div><ul class="feed"></ul><div class="foot"><span>巨潮（检索"募集资金"40条）</span><span>每周</span></div></div>
-    <div class="card c6" style="grid-column:span 6;grid-row:1" data-mid="83_招聘职位量监测" data-k="83"><div class="card-top"><span class="t">招聘职位量监测</span><span class="dot y" title="接入中：职位明细由飞书平台动态加载"></span></div><p class="desc">安克招聘站社招5大职能分类可抓（研发/供应链/市场/销售/职能），具体职位数量明细接入中；后续扩展至奥海/佳禾/海能/绿联招聘监控。</p><a class="btn-ext" href="https://career.anker.com.cn" target="_blank" rel="noopener">安克招聘站 ↗</a><div class="foot"><span>安克创新官方招聘站</span><span>每周</span></div></div>
+    <div class="card list c12" style="height:460px;grid-column:span 12;grid-row:1" data-mid="81_产能扩产募投公告" data-k="81" data-news="安克募投"><div class="card-top"><span class="t">产能/扩产/募投公告</span><span class="dot g" title="已接入：巨潮检索"></span></div><ul class="feed"></ul><div class="foot"><span>巨潮（检索"募集资金"40条）</span><span>每周</span></div></div>
+    <div class="card c12" style="height:340px;justify-content:center;grid-column:span 12;grid-row:2" data-mid="83_招聘职位量监测" data-k="83"><div class="card-top"><span class="t">招聘职位量监测</span><span class="dot y" title="接入中：职位明细由飞书平台动态加载"></span></div><p class="desc">安克招聘站社招5大职能分类可抓（研发/供应链/市场/销售/职能），具体职位数量明细接入中；后续扩展至奥海/佳禾/海能/绿联招聘监控。</p><a class="btn-ext" href="https://career.anker.com.cn" target="_blank" rel="noopener">安克招聘站 ↗</a><div class="foot"><span>安克创新官方招聘站</span><span>每周</span></div></div>
   </div>
   </div>
   <div class="co-panel" data-copanel="奥海科技" hidden>
