@@ -497,3 +497,9 @@
 [data-review="41"] .rchips,[data-review="42"] .rchips{margin-top:8px;gap:6px}
 [data-review="41"] .rchip,[data-review="42"] .rchip{font-size:11.5px;line-height:22px;padding:0 9px;border-radius:5px}
 [data-review="41"] .rdesc,[data-review="42"] .rdesc{margin-top:7px;font-size:12.5px;line-height:1.65;-webkit-line-clamp:3}
+
+/* ==== P56 双环对比（2026-11-10用户反馈）：第二环琥珀色，仅review外卡型ring卡双环布局 ==== */
+.rings2{display:flex;gap:16px;flex:none}
+.ringu{display:flex;flex-direction:column;align-items:center;gap:5px}
+.ringu .rc{font:600 10px/13px var(--fn);color:var(--n500);white-space:nowrap}
+.ring .rf.ralt{stroke:var(--warn)}

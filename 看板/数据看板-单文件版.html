@@ -1,4 +1,4 @@
-<!-- 数据看板·单文件快照 ｜ 打包时间: 2026-11-10 14:07 ｜ 数据截至见看板页内治理标注 -->
+<!-- 数据看板·单文件快照 ｜ 打包时间: 2026-11-10 14:45 ｜ 数据截至见看板页内治理标注 -->
 <!doctype html>
 <html lang="zh-CN">
 <head>
@@ -508,6 +508,12 @@
 [data-review="41"] .rchip,[data-review="42"] .rchip{font-size:11.5px;line-height:22px;padding:0 9px;border-radius:5px}
 [data-review="41"] .rdesc,[data-review="42"] .rdesc{margin-top:7px;font-size:12.5px;line-height:1.65;-webkit-line-clamp:3}
 
+/* ==== P56 双环对比（2026-11-10用户反馈）：第二环琥珀色，仅review外卡型ring卡双环布局 ==== */
+.rings2{display:flex;gap:16px;flex:none}
+.ringu{display:flex;flex-direction:column;align-items:center;gap:5px}
+.ringu .rc{font:600 10px/13px var(--fn);color:var(--n500);white-space:nowrap}
+.ring .rf.ralt{stroke:var(--warn)}
+
 </style>
 <div id="dns-dash">
 <div class="rule3"></div>
@@ -638,7 +644,7 @@
   </div>
   <h3 class="grp">上游价格 · 结构认证</h3>
   <div class="row">
-    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="56_Qi2磁吸认证占比" data-k="56"><div class="card-top"><span class="t" title="WPC无线充电认证库中Qi2（MPP）认证产品占比，反映磁吸快充生态成熟度">Qi2磁吸认证占比</span><span class="dot g" title="已接入：WPC认证产品库"></span></div><div class="ringwrap" data-ring="P56"><div class="ring"><svg viewBox="0 0 72 72" role="img" aria-label="Qi2占认证库34%"><circle class="rb" cx="36" cy="36" r="30"/><circle class="rf" cx="36" cy="36" r="30" stroke-dasharray="64.1 188.5"/></svg><span class="rt">34%</span></div><div class="ringinfo"><div class="rv">加载中</div><div class="rs">Qi2（MPP）认证累计 · 其中含Qi2.2(25W)档</div></div></div><div class="foot"><a href="https://www.wirelesspowerconsortium.com/products/" target="_blank" rel="noopener">WPC产品库 ↗</a><span>每周</span></div></div>
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="56_Qi2磁吸认证占比" data-k="56"><div class="card-top"><span class="t" title="WPC无线充电认证库中Qi2（MPP）认证产品占比，反映磁吸快充生态成熟度">Qi2磁吸认证占比</span><span class="dot g" title="已接入：WPC认证产品库"></span></div><div class="ringwrap" data-ring="P56"><div class="rings2"><div class="ringu"><div class="ring"><svg viewBox="0 0 72 72" role="img" aria-label="Qi2占认证库34%"><circle class="rb" cx="36" cy="36" r="30"/><circle class="rf" cx="36" cy="36" r="30" stroke-dasharray="64.1 188.5"/></svg><span class="rt">34%</span></div><span class="rc">Qi2（MPP）</span></div><div class="ringu"><div class="ring"><svg viewBox="0 0 72 72" role="img" aria-label="其中Qi2.2(25W)占认证库12%"><circle class="rb" cx="36" cy="36" r="30"/><circle class="rf ralt" cx="36" cy="36" r="30" stroke-dasharray="22.6 188.5"/></svg><span class="rt">12%</span></div><span class="rc">其中 Qi2.2(25W)</span></div></div><div class="ringinfo"><div class="rv">加载中</div><div class="rs">Qi2（MPP）认证累计 · 其中含Qi2.2(25W)档</div></div></div><div class="foot"><a href="https://www.wirelesspowerconsortium.com/products/" target="_blank" rel="noopener">WPC产品库 ↗</a><span>每周</span></div></div>
     <div class="card c8" style="grid-column:span 8;grid-row:1" data-mid="58_存储芯片现货价多品类" data-k="58"><div class="card-top"><span class="t" title="TrendForce现货官方页五品类现货均价；合约价需订阅">存储芯片现货价（多品类）</span><span class="dot g" title="已接入：TrendForce现货官方页"></span></div><div style="display:flex;align-items:stretch;flex:1;margin:4px 0 2px" data-multi="P58"><span data-multi-note style="display:none"></span></div><div class="foot"><span>TrendForce · 现货均价（美元）</span><span>监测口径：现货价免费 · 合约价需订阅</span></div></div>
   </div>
 </section>
@@ -1236,37 +1242,43 @@ pbtns.forEach(function(b){
     }
   });
 })();
-// 55_ring.js —— 渲染器：Qi2环形图（[data-ring]：col1=Qi2数 col2=全库总数）
+// 55_ring.js —— 渲染器：Qi2环形图（[data-ring]：col1=Qi2数 col2=全库总数 col3=Qi2.2(25W)数）
 // v14：圆弧生长动画 + 占比滚动（REDUCE降级为直出）；结构色定妆品牌蓝
+// v19.1：双环对比——存在第二组 .rf/.rt 时，col3(Qi2.2)/全库 画第二环（琥珀色，类 ralt）
 (function(){
   var REDUCE=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   root.querySelectorAll('[data-ring]').forEach(function(el){
     var d=DDATA[el.getAttribute('data-ring')];
     if(!d||!d.rows||!d.rows.length||d.cols.length<2)return;
-    var last=d.rows[d.rows.length-1],qi2=last[1],tot=last[2];
+    var last=d.rows[d.rows.length-1],qi2=last[1],tot=last[2],qi22=last[3];
     if(qi2==null||!tot)return;
     var pct=Math.round(qi2/tot*100),C=188.5;
-    var rf=el.querySelector('.rf');
-    if(rf){
-      if(REDUCE){rf.setAttribute('stroke-dasharray',(C*pct/100).toFixed(1)+' '+C);}
-      else{
-        rf.setAttribute('stroke-dasharray','0 '+C);
-        setTimeout(function(){rf.setAttribute('stroke-dasharray',(C*pct/100).toFixed(1)+' '+C)},60);
-      }
+    var pcts=[pct];
+    if(qi22!=null&&el.querySelector('.rf.ralt'))pcts.push(Math.round(qi22/tot*100));   // v19.1：第二环=Qi2.2占全库
+    var rfs=el.querySelectorAll('.rf'),rts=el.querySelectorAll('.rt');
+    for(var i=0;i<rfs.length&&i<pcts.length;i++){
+      (function(rf,p){
+        if(REDUCE){rf.setAttribute('stroke-dasharray',(C*p/100).toFixed(1)+' '+C);}
+        else{
+          rf.setAttribute('stroke-dasharray','0 '+C);
+          setTimeout(function(){rf.setAttribute('stroke-dasharray',(C*p/100).toFixed(1)+' '+C)},60);
+        }
+      })(rfs[i],pcts[i]);
     }
-    var rt=el.querySelector('.rt');
-    if(rt){
-      if(REDUCE){rt.textContent=pct+'%';}
-      else{var t0=null;
-        function step(t){if(!t0)t0=t;var p=Math.min(1,(t-t0)/900);
-          rt.textContent=Math.round(pct*(1-Math.pow(1-p,3)))+'%';
-          if(p<1)requestAnimationFrame(step)}
-        requestAnimationFrame(step);
-      }
+    for(var j=0;j<rts.length&&j<pcts.length;j++){
+      (function(rt,p){
+        if(REDUCE){rt.textContent=p+'%';}
+        else{var t0=null;
+          function step(t){if(!t0)t0=t;var q=Math.min(1,(t-t0)/900);
+            rt.textContent=Math.round(p*(1-Math.pow(1-q,3)))+'%';
+            if(q<1)requestAnimationFrame(step)}
+          requestAnimationFrame(step);
+        }
+      })(rts[j],pcts[j]);
     }
     var rv=el.querySelector('.rv');if(rv)rv.textContent=fmtN(qi2,0)+' / '+fmtN(tot,0)+' 条';
     var sub='Qi2（MPP）认证累计 · 最新'+String(last[0]).slice(5)+' · 每周增长';
-    if(last[3]!=null)sub+=' · 其中Qi2.2(25W) '+fmtN(last[3],0)+'条';   // v19：Qi2.2认证数(25W)列
+    if(qi22!=null)sub+=' · 其中Qi2.2(25W) '+fmtN(qi22,0)+'条';   // v19：Qi2.2认证数(25W)列
     var rs=el.querySelector('.rs');if(rs)rs.textContent=sub;
   });
 })();

@@ -210,6 +210,23 @@ def b_review(c):
 def b_ring(c):
     w = c.get('环形文案', {})
     g = c.get('环形图', {})
+    g2 = c.get('环形图2') or {}   # v19.1：可选第二环（对比环，琥珀色，P56 Qi2.2）
+    w2 = c.get('环形文案2') or {}
+
+    def _ring(gi, wi, alt):
+        altcls = ' ralt' if alt else ''
+        cap = f'<span class="rc">{atattr(gi.get("图注", ""))}</span>' if gi.get('图注') else ''
+        return (f'<div class="ringu"><div class="ring">'
+                f'<svg viewBox="0 0 72 72" role="img" aria-label="{atattr(gi.get("标签", ""))}">'
+                f'<circle class="rb" cx="36" cy="36" r="30"/>'
+                f'<circle class="rf{altcls}" cx="36" cy="36" r="30" stroke-dasharray="{gi.get("初始占比", "0 188.5")}"/></svg>'
+                f'<span class="rt">{atattr(wi.get("占比", ""))}</span></div>{cap}</div>')
+
+    if g2:
+        return (f'<div class="ringwrap" data-ring="{c["环形"]}">'
+                f'<div class="rings2">{_ring(g, w, False)}{_ring(g2, w2, True)}</div>'
+                f'<div class="ringinfo"><div class="rv">{w.get("数值", "")}</div>'
+                f'<div class="rs">{w.get("说明", "")}</div></div></div>')
     return (f'<div class="ringwrap" data-ring="{c["环形"]}">'
             f'<div class="ring"><svg viewBox="0 0 72 72" role="img" aria-label="{atattr(g.get("标签", ""))}">'
             f'<circle class="rb" cx="36" cy="36" r="30"/>'
