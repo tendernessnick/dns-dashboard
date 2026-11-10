@@ -503,3 +503,9 @@
 .ringu{display:flex;flex-direction:column;align-items:center;gap:5px}
 .ringu .rc{font:600 10px/13px var(--fn);color:var(--n500);white-space:nowrap}
 .ring .rf.ralt{stroke:var(--warn)}
+
+/* ==== v19.1 spark悬停查值：导引线/悬浮点/提示框（.spark需相对定位承载绝对定位元素） ==== */
+.spark{position:relative;cursor:crosshair}
+.spark .sguide{position:absolute;top:0;bottom:0;width:1px;background:var(--n300);pointer-events:none;display:none}
+.spark .sdot{position:absolute;width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid var(--brand);transform:translate(-50%,-50%);pointer-events:none;display:none;z-index:2}
+.spark .ctool{z-index:6}
