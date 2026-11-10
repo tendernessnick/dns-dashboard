@@ -1,54 +1,54 @@
 {
- "updated": "2026-11-10T03:06:01+00:00",
+ "updated": "2026-11-10T16:03:18+00:00",
  "source": "CNBC World",
  "items": [
   {
-   "date": "11-10",
-   "title": "China exports, imports soar past expectations in October — surplus narrows sharply",
-   "title_zh": "中国10月出口、进口飙升超出预期--顺差大幅收窄",
-   "url": "https://www.cnbc.com/2026/11/10/china-trade-october-exports-imports-surplus-.html"
+   "date": "11-11",
+   "title": "Consumer prices rose 0.4% in October, more than expected, complicating Fed's inflation fight",
+   "title_zh": "10月份消费者价格上涨0.4% ，高于预期，使美联储的通胀斗争复杂化",
+   "url": "https://www.cnbc.com/2026/11/10/cpi-inflation-report-october-2026.html"
   },
   {
    "date": "11-10",
-   "title": "SoftBank Group shares surge 11% as Asian tech stocks track Wall Street rebound",
-   "title_zh": "软银集团股价飙升11% ，亚洲科技股追踪华尔街反弹",
-   "url": "https://www.cnbc.com/2026/11/10/ai-softbank-sk-hynix-samsung-wall-street-tech-stocks.html"
+   "title": "House Oversight calls on DOJ to interview key Epstein witnesses, says govt. ‘failed’ survivors",
+   "title_zh": "众议院监督局呼吁司法部采访关键的爱泼斯坦证人，政府表示“失败”的幸存者",
+   "url": "https://www.cnbc.com/2026/11/10/jeffrey-epstein-house-oversight-doj.html"
   },
   {
    "date": "11-10",
-   "title": "World’s No. 1 restaurant crowned as contest comes under increasing scrutiny",
-   "title_zh": "世界排名第一的餐厅在比赛中受到越来越多的关注",
-   "url": "https://www.cnbc.com/2026/11/07/worlds-50-best-restaurants-2026-asador-etxebarri.html"
+   "title": "Anthropic sets IPO price range of $70 to $78, looks to start trading Nov. 19, sources say",
+   "title_zh": "消息人士称， Anthropic将IPO价格设定在70美元至78美元之间，预计将于11月19日开始交易",
+   "url": "https://www.cnbc.com/2026/11/10/anthropic-sets-price-range-of-70-to-78-in-upcoming-ipo.html"
   },
   {
    "date": "11-10",
-   "title": "Trump says Jensen Huang told him Monday he didn't know paramour 'was a spy'",
-   "title_zh": "特朗普说， Jensen Huang周一告诉他，他不知道情人“是间谍”",
-   "url": "https://www.cnbc.com/2026/11/09/trump-jensen-huang-nvidia-chinese-spy.html"
+   "title": "Nvidia falls for second day as investors weigh fallout of CEO’s affair with alleged spy",
+   "title_zh": "英伟达连续第二天下跌，投资者权衡首席执行官与涉嫌间谍事件的影响",
+   "url": "https://www.cnbc.com/2026/11/10/nvidia-nvda-jensen-huang-affair-chinese-spy.html"
   },
   {
    "date": "11-10",
-   "title": "What is Megaspeed? The Nvidia chip buyer in the spotlight after Jensen Huang’s affair",
-   "title_zh": "",
-   "url": "https://www.cnbc.com/2026/11/09/megaspeed-nvidia-jensen-huang-alice-huang.html"
+   "title": "Brent crude dips below $90 for first time since August on Iran war de-escalation hopes",
+   "title_zh": "布伦特原油自8月以来首次跌破90 $ ，因伊朗战争降级",
+   "url": "https://www.cnbc.com/2026/11/10/oil-prices-trump-iran.html"
   },
   {
    "date": "11-10",
-   "title": "S&P 500 futures are little changed as traders brace for crucial consumer inflation report: Live updates",
-   "title_zh": "标准普尔500指数期货几乎没有变化，因为交易员支持关键的消费者通胀报告：实时更新",
-   "url": "https://www.cnbc.com/2026/11/09/stock-market-today-live-updates.html"
+   "title": "As Nvidia probes Jensen Huang affair, here’s the board member likely to play a big role",
+   "title_zh": "在英伟达调查Jensen Huang事件时，这位董事会成员可能会扮演重要角色",
+   "url": "https://www.cnbc.com/2026/11/09/nvidia-jensen-huang-investigation.html"
   },
   {
    "date": "11-10",
-   "title": "Senate advances Trump-backed bipartisan bill to speed critical infrastructure projects",
-   "title_zh": "参议院推进特朗普支持的两党法案，以加快关键基础设施项目",
-   "url": "https://www.cnbc.com/2026/11/09/senate-infrastructure-bill-data-centers.html"
+   "title": "Jensen Huang's affair with alleged Chinese spy further complicates Nvidia’s China problem",
+   "title_zh": "Jensen Huang与涉嫌中国间谍的婚外情使英伟达的中国问题进一步复杂化",
+   "url": "https://www.cnbc.com/2026/11/10/jensen-huang-nvidia-china-ties.html"
   },
   {
    "date": "11-10",
-   "title": "PepsiCo to cut about 1,000 jobs as North American business struggles",
-   "title_zh": "随着北美业务陷入困境，百事公司将裁员约1,000人",
-   "url": "https://www.cnbc.com/2026/11/09/pepsico-north-america-job-cuts.html"
+   "title": "CoreWeave earnings put debt-fueled AI build-out under scrutiny",
+   "title_zh": "CoreWeave盈利将债务推动的人工智能建设置于审查之下",
+   "url": "https://www.cnbc.com/2026/11/10/coreweave-earnings-preview-debt-capex.html"
   }
  ]
 }

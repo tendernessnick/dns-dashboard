@@ -1,11 +1,17 @@
 {
- "updated": "2026-11-10T03:05:55+00:00",
+ "updated": "2026-11-10T16:03:15+00:00",
  "source": "CNBC Markets",
  "items": [
   {
    "date": "11-10",
-   "title": "China exports, imports soar past expectations in October — surplus narrows sharply",
-   "title_zh": "中国10月出口、进口飙升超出预期--顺差大幅收窄",
+   "title": "Consumer prices rose 0.4% in October, more than expected, complicating Fed's inflation fight",
+   "title_zh": "10月份消费者价格上涨0.4% ，高于预期，使美联储的通胀斗争复杂化",
+   "url": "https://www.cnbc.com/2026/11/10/cpi-inflation-report-october-2026.html"
+  },
+  {
+   "date": "11-10",
+   "title": "China's goods surplus tops $1 trillion for a second year amid calls for Beijing to rebalance trade",
+   "title_zh": "在呼吁北京重新平衡贸易的情况下，中国的商品盈余连续第二年超过1万$",
    "url": "https://www.cnbc.com/2026/11/10/china-trade-october-exports-imports-surplus-.html"
   },
   {
@@ -43,12 +49,6 @@
    "title": "The October jobs report is out Friday. Here's everything to expect",
    "title_zh": "10月份的就业报告将于周五发布。以下是所有信息",
    "url": "https://www.cnbc.com/2026/11/05/october-jobs-report-preview.html"
-  },
-  {
-   "date": "11-06",
-   "title": "Voters say the economy drove them to the polls — and blame Trump for their troubles",
-   "title_zh": "选民表示，经济驱使他们参加民意调查—并将他们的麻烦归咎于特朗普",
-   "url": "https://www.cnbc.com/2026/11/04/2026-midterms-trump-economy-iran-war.html"
   }
  ]
 }
