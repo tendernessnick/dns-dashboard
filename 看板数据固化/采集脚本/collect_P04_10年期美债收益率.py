@@ -59,7 +59,9 @@ def run():
         n, latest, latest_date = 0, None, ''
         try:
             for y in range(today.year - YEARS + 1, today.year + 1):
-                txt = common.http_get(BASE_URL.format(year=y), retries=3, timeout=60)
+                # 预算收紧（2026-11-10）：财政部时慢时断，3文件×2次×30s≈180s内完成，
+                # 给run_all超时预算(420s)里的FRED API备用留出时间
+                txt = common.http_get(BASE_URL.format(year=y), retries=1, timeout=30)
                 time.sleep(1)
                 for row in csv.DictReader(io.StringIO(txt)):
                     v = (row.get('10 Yr') or '').strip()
@@ -84,15 +86,29 @@ def run():
             return '成功', msg
         except Exception as treasury_err:  # noqa: BLE001
             # 备用：FRED官方API DGS10（2026-11-05接入，同口径10年期CMT）
+            # 同值不覆写来源（2026-11-10修正：首轮兜底曾把历史行来源整体翻成FRED，已修复台账）
             rows = _fetch_fred_api(cut)
+            existing = {}
+            if os.path.exists(CSV_PATH):
+                for row in csv.DictReader(open(CSV_PATH, encoding='utf-8-sig', newline='')):
+                    existing[row['数据日期']] = row.get('数值', '')
+            filled = 0
             for d, v in rows:
+                cur = existing.get(d, '')
+                if cur:
+                    try:
+                        if abs(float(cur) - v) <= 0.05:
+                            continue  # 同值不覆写（保留财政部历史归属）
+                    except ValueError:
+                        pass
                 common.save_row(CSV_PATH, d, {
                     '数值': f'{v:.2f}', '单位': '%',
                     '数据来源': 'FRED (St. Louis Fed) DGS10(备用)',
                     '备注': '10年期固定期限国债收益率CMT；财政部官网当轮不可达，经FRED官方API获取'}, COLUMNS)
+                filled += 1
             latest_date, latest = rows[-1]
-            return '成功', (f'财政部不可达({str(treasury_err)[:50]})，经FRED API备用通道回填'
-                           f'{len(rows)}个交易日，最新{latest_date} 10Y={latest}%')
+            return '成功', (f'财政部不可达({str(treasury_err)[:50]})，FRED API备用补缺{filled}行'
+                           f'（共{len(rows)}期），最新{latest_date} 10Y={latest}%')
     except Exception as e:
         return '失败', str(e)
 
