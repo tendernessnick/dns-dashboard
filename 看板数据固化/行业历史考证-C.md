@@ -74,7 +74,8 @@
 | 2024Q4全球腕上设备出货 | 2024-12-31 | 51.0百万台（全年推算，约值） | IDC | 推算：IDC公布2024全年约1.9亿只（同比-1.4%）−前三季度139.0百万台≈51.0；全年值为四舍五入口径，误差较大 | 2025-03-07 | https://tw.stock.yahoo.com/news/idc-中國腕戴設備出貨量占全球32-成最大市場-085003055.html |
 | 2025Q3全球腕上设备出货 | 2025-09-30 | 55.2百万台（累计推算，约值） | IDC | 推算：IDC公布2025前三季度约150百万台（同比+10.0%）−Q1 45.57−Q2 49.22≈55.2 | 2025-12-17 | https://www.idc.com/getdoc.jsp?containerId=prCHC54108425 ；https://www.guancha.cn/economy/2025_12_17_800740.shtml |
 | 2026Q1全球腕上设备出货 | 2026-03-31 | 47.05百万台，同比+2.2% | IDC | IDC：2026Q1全球腕戴设备出货4705万台，同比+2.2%（智能手表3703万台/+4.8%、手环1002万台/-6.1%；IT之家转引） | 2026-06-11 | https://www.ithome.com/0/962/833.htm |
-| 未回填说明 | 2025Q4 | — | — | IDC未单独发布2025Q4全球腕上设备季度新闻稿（仅发布2025前三季度累计与2025中国全年），全球季度值与全年总量均无公开数字，无法推算，不填；2026Q3截至2026-10-28尚未发布（IDC腕戴季报通常11-12月发布） | — | — |
+| 未回填说明 | 2025Q4 | — | — | IDC未单独发布2025Q4全球腕上设备季度新闻稿（仅发布2025前三季度累计与2025中国全年），全球季度值与全年总量均无公开数字，无法推算，不填。2026-11-10复核：中文财经索引检索确认仍无IDC全球全年/4Q25腕戴值（旁证锚点=IDC中国2026-03博客：中国2025全年腕戴7390万台+20.8%，占全球38.6%口径可反推全球约1.9亿台量级但精度不足，不采），需待my.idc.com英文4Q25 Wearable Tracker PR（预计2027-03前后）或IDC官方博客；届时可仿P48法用官方同比基数反推补录 | 2026-11-10 | https://www.idc.com/resource-center/blog/2025年中国腕戴设备市场同比增长20-8%仅补贴对市场 |
+| 未回填说明 | 2026Q3 | — | — | 截至2026-11-10尚未发布（IDC腕戴季报通常11-12月发布，参考2025Q3于2025-12-17发布）；届时运行collect_P46或人工补录 | — | — |
 
 ## P47 全球传统PC季度出货量（百万台）—— IDC Worldwide Quarterly Personal Computing Device Tracker
 
@@ -105,7 +106,8 @@
 | 2025Q4全球平板出货 | 2025-12-31 | 40.9百万台，同比+1.9% | IDC | Global tablet shipments rise 1.9% in 4Q25 as seasonal demand offsets cooling replacement cycle（IDC官方博客） | 2026-02-24 | https://www.idc.com/resource-center/blog/global-tablet-shipments-rise-1-9-in-4q25-as-seasonal-demand-offsets-cooling-replacement-cycle |
 | 2026Q1全球平板出货 | 2026-03-31 | 35.4百万台，同比+2.4% | IDC | WW Personal Computing Device Market: Q1 2026 Performance（IDC官方页"Tablet shipments grew 2.4% YoY with 35.4 million units"） | 2026-06-08 | https://www.idc.com/promo/pcdforecast |
 | 2026Q2全球平板出货 | 2026-06-30 | 33.6百万台，同比-12.3% | IDC | The Tablet Market Hits a Wall（IDC官方博客：环比-5.2%、同比-12.3%，内存涨价冲击，本轮最大跌幅） | 2026-08-13 | https://www.idc.com/resource-center/blog/the-tablet-market-hits-a-wall |
-| 未回填说明 | 2024Q4/2026Q3 | — | — | 2024Q4仅见Canalys口径39.9百万台/+5.6%（telecompaper 2025-02-06），IDC精确值未获，为保持口径不填；2026Q3截至2026-10-28 IDC尚未发布（平板季报通常11月初发布，届时运行collect_P48或人工补录） | — | https://www.telecompaper.com/news/global-tablet-shipments-up-6-to-nearly-40-mln-in-q4-canalys--1526819 |
+| 2024Q4全球平板出货（2026-11-10补录） | 2024-12-31 | 40.1百万台（推算=IDC官方博客4Q25文同比基数反推：40.9/(1+1.9%)=40.14，即IDC现修订口径的4Q24基数；与检索复原的4Q24初版PR约40.1M/-5.5%两路吻合；2025全年151.9(+5%)反推2024基数144.7，与存量Q1-Q3初版值求和144.9差0.2M系初版/修订口径差） | IDC | Global tablet shipments rise 1.9% in 4Q25 as seasonal demand offsets cooling replacement cycle（同比基数反推，非直接刊载4Q24值） | 2026-02-24（博客）；2026-11-10（考证补录） | https://www.idc.com/resource-center/blog/global-tablet-shipments-rise-1-9-in-4q25-as-seasonal-demand-offsets-cooling-replacement-cycle |
+| 未回填说明 | 2026Q3 | — | — | 截至2026-11-10 IDC 3Q26平板PR尚未发布（平板季报通常11月初-中旬，参考2Q26博客2026-08-13；IDC PCD Forecast页2026-10-30预测3Q26约-18%属预测值勿当实值）；Omdia已发32.0M/-23%但口径不同勿混排；届时运行collect_P48或人工补录。历史备注：2024Q4曾仅见Canalys口径39.9/+5.6%（telecompaper）而未填，2026-11-10经IDC官方同比基数反推后以推算值补录 | — | https://www.telecompaper.com/news/global-tablet-shipments-up-6-to-nearly-40-mln-in-q4-canalys--1526819 |
 
 ## P38 全球航空货运需求CTK同比（%）—— IATA月度空运市场报告
 

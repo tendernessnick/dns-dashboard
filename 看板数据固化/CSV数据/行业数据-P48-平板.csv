@@ -2,6 +2,7 @@
 2024-03-31,30.8,0.5,百万台,IDC Worldwide Quarterly Personal Computing Device Tracker（转引：Gizchina、Communications Today 2024-05）,2024Q1全球平板电脑出货量
 2024-06-30,34.4,22.1,百万台,IDC（转引：Display Daily/Mobile Europe 2024-08）,2024Q2全球平板出货量（与IDC公布的2024H1累计65.2百万台一致）
 2024-09-30,39.6,20.4,百万台,IDC（转引：FoneArena 2024-11-02）,2024Q3全球平板出货量
+2024-12-31,40.1,,百万台,IDC Worldwide Quarterly Personal Computing Device Tracker（推算：IDC官方博客4Q25文同比基数反推）,2024Q4全球平板出货量；推算=4Q25值40.9/(1+1.9%)=40.14取40.1（IDC现修订口径基数），与检索复原的4Q24初版PR约40.1M(-5.5%)两路吻合；2025全年151.9(+5%)反推2024基数144.7，与CSV存量Q1-Q3初版值求和144.9差0.2M系初版/修订口径差；注意147.6M(+9.2%)为Canalys全年口径、39.9(+5.6%)为Canalys同季口径，均不可混入本IDC序列
 2025-03-31,36.8,8.5,百万台,IDC（转引：检索摘要2025-06）,2025Q1全球平板出货量；IDC正式文档Worldwide Tablet Market Shares 1Q25标题口径为+11.6%
 2025-06-30,38.3,13.1,百万台,IDC（转引：检索摘要）,2025Q2全球平板出货量
 2025-09-30,38.0,-4.4,百万台,IDC Worldwide Quarterly Personal Computing Device Tracker,2025Q3全球平板电脑出货量
