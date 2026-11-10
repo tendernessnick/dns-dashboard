@@ -5,6 +5,7 @@
 // 与15_chart同款交互；svg为preserveAspectRatio=none非等比拉伸，故导引/悬浮点用
 // 绝对定位div（像素空间）而非svg元素防变形；ResizeObserver重绘只重建图形，监听一次性绑定
 (function(){
+  var REDUCE=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var W=200,H=36,P=3;   // viewBox常量（绘制与命中换算共用）
   root.querySelectorAll('.card.kpi').forEach(function(card){
     if(card.querySelector('.chart'))return;
