@@ -76,7 +76,11 @@ def main():
     lock = _lock_acquire()
     if lock is None:
         return
-    only = {str(int(a.upper().lstrip('P'))) for a in sys.argv[1:]} if len(sys.argv) > 1 else None
+    only = set()
+    for a in sys.argv[1:]:
+        m = re.match(r'^P?(\d+)([a-z]?)$', a, re.IGNORECASE)   # 后缀大小写不敏感（P90b/P90B均可）
+        only.add((m.group(1) + m.group(2).lower()) if m else a.upper().lstrip('P'))
+    only = only or None
     run_id = common.begin_run()
     os.environ[common.RUN_ID_ENV] = run_id
     print(f'==== run_id={run_id} ====')
@@ -88,8 +92,8 @@ def main():
         return
     results = []
     for f in files:
-        m = re.match(r'collect_P(\d+)', f)  # 只取数字段
-        pid = m.group(1) if m else f[len('collect_P'):].split('_')[0]
+        m = re.match(r'collect_P(\d+)([a-z]?)', f)  # 数字段+可选字母后缀（P90b=v19.2状态键分离）
+        pid = (m.group(1) + (m.group(2) or '')) if m else f[len('collect_P'):].split('_')[0]
         if only and pid.lstrip('0') not in only:
             continue
         t0 = time.time()
@@ -171,13 +175,14 @@ def write_state(run_id, only, ok, skip, fail, results):
     print('采集状态已写:', os.path.basename(state_fp),
           '| 连续失败≥2:', [p for p, e in entries.items() if e['连续失败'] >= 2] or '无')
     # v19：存疑事件并入 核验状态.json（看板附录「最近核验」徽标消费）；已恢复的词条清除旧记录
+    # v19.2修正：只扫本次运行的 results——继承自旧状态文件的条目不参与（修复前的噪音残留不会复活）
     vfp = os.path.join(os.path.dirname(HERE), '核验状态.json')
     try:
         with open(vfp, encoding='utf-8') as f:
             vst = json.load(f)
     except Exception:
         vst = {}
-    sus = [(pid, e.get('详情', '')) for pid, e in entries.items() if '⚠存疑' in e.get('详情', '')]
+    sus = [(pid, d) for pid, _mod, _st, d, _el in results if '⚠存疑' in d]
     vst.setdefault('存疑', {})
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
     for pid, d in sus:

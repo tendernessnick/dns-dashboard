@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 from _news_common import fetch_ctw, parse_ctw, save_news
 
-PID, TITLE = 90, '非上市同业新闻'
+PID, TITLE = '90b', '非上市同业新闻'   # b后缀：与P90图文采集器状态键分离（v19.2整理）
 KEYS = ['倍思', 'Baseus', '酷态科', 'CUKTECH', 'iWALK', '爱沃可', '闪极', 'SHARGE',
         'Zendure', '征拓', 'Vention', '威迅', '摩点', '众筹']
 

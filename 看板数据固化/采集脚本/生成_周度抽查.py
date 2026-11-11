@@ -20,7 +20,8 @@ FIX = common.BASE
 REG = os.path.join(FIX, '词条注册表.csv')
 PROV = os.path.join(FIX, '溯源表.csv')
 STATE = os.path.join(FIX, '核验状态.json')
-OUT = os.path.join(FIX, '周度抽查核对单_%s.md' % date.today().strftime('%Y%m%d'))
+ARCHIVE = os.path.join(FIX, '抽查归档')            # 归档目录：保留最近12份，旧的自动清理（v19.2整理约定）
+OUT = os.path.join(ARCHIVE, '周度抽查核对单_%s.md' % date.today().strftime('%Y%m%d'))
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 9
 
 
@@ -83,6 +84,7 @@ def main():
 
     today = date.today()
     week = today.isocalendar()[1]
+    os.makedirs(ARCHIVE, exist_ok=True)
     with open(OUT, 'w', encoding='utf-8') as f:
         f.write(f'# 周度抽查核对单 · {today.isoformat()}（第{week}周）\n\n')
         f.write(f'> 用法：逐条打开「来源链接」，核对源站数值是否与「看板当前值」一致，在"人工结论"列填 ✅一致 / ❌不一致（不一致请顺手截屏存档并登记注册表备注）。\n'
@@ -104,6 +106,12 @@ def main():
             url = p['url'] or '—'
             f.write(f'| {p["pid"]} | {p["word"]} | {vtag} | {d} | {url} | {"、".join(st)} | ☐一致 ☐不一致 | 来源:{src[:20]} |\n')
         f.write('\n---\n完成后归档：本文件留在 看板数据固化/ 即为证据链一环；发现不一致→核对采集器与源站口径→修正后重采→在注册表备注登记。\n')
+    olds = sorted(glob.glob(os.path.join(ARCHIVE, '周度抽查核对单_*.md')))
+    for fp in olds[:-12]:
+        try:
+            os.remove(fp)
+        except OSError:
+            pass
     print('周度抽查核对单已生成:', os.path.basename(OUT), f'（{len(picks)}条：存疑{len([p for p in picks if p["sus"]])}）')
     for p in picks:
         tag = '⚠存疑' if p['sus'] else (p['grade'] + '级' if p['grade'] == 'C' else '随机')
