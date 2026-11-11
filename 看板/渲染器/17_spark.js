@@ -8,6 +8,7 @@
   var REDUCE=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var W=200,H=36,P=3;   // viewBox常量（绘制与命中换算共用）
   root.querySelectorAll('.card.kpi').forEach(function(card){
+    if(card.getAttribute('data-trend')==='none')return;
     if(card.querySelector('.chart'))return;
     if(card.querySelector('ul.multi,[data-multi],.sparkrow'))return;
     var dk=card.getAttribute('data-k');if(!dk)return;
@@ -28,7 +29,7 @@
     function X(i){return P+i*(W-2*P)/(n-1)}
     function Y(v){return P+(1-(v-mn)/rg)*(H-2*P)}
     var cs=getComputedStyle(root);
-    var c=vals[n-1]>=vals[0]?((cs.getPropertyValue('--up')||'#B42318').trim()):((cs.getPropertyValue('--down')||'#0E7A54').trim());
+    var c=canCompare(el)?(vals[n-1]>=vals[0]?((cs.getPropertyValue('--up')||'#B42318').trim()):((cs.getPropertyValue('--down')||'#0E7A54').trim())):((getComputedStyle(el).getPropertyValue('--acc')||'#0065B0').trim());
     var pts=vals.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1)}).join(' ');
     el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'
       +'<polygon fill="'+c+'" opacity=".12" points="'+P+','+(H-P)+' '+pts+' '+(W-P)+','+(H-P)+'"/>'
@@ -58,11 +59,11 @@
       if(v==null){hide();return}
       var lx=(P+i*(W-2*P)/(n-1))/W*r.width, ly=(P+(1-(v-mn)/rg)*(H-2*P))/H*r.height;
       var cs=getComputedStyle(root);
-      var c=vals[n-1]>=vals[0]?((cs.getPropertyValue('--up')||'#B42318').trim()):((cs.getPropertyValue('--down')||'#0E7A54').trim());
+      var c=canCompare(el)?(vals[n-1]>=vals[0]?((cs.getPropertyValue('--up')||'#B42318').trim()):((cs.getPropertyValue('--down')||'#0E7A54').trim())):((getComputedStyle(el).getPropertyValue('--acc')||'#0065B0').trim());
       gl.style.left=lx+'px';gl.style.display='block';
       dt.style.left=lx+'px';dt.style.top=ly+'px';dt.style.borderColor=c;dt.style.display='block';
       var b=BIND[pid]||[null,null],dec=(b[1]==null)?2:b[1],unit=b[0]||'';
-      var dd='';if(i>0&&vals[i-1]!=null){
+      var dd='';if(i>0&&vals[i-1]!=null&&canCompare(el)){
         var d0=Math.round((v-vals[i-1])*Math.pow(10,dec))/Math.pow(10,dec);
         dd='<span class="d '+(d0>=0?'up':'down')+'">（较前期 '+(d0>=0?'+':'')+d0+'）</span>';}
       tip.innerHTML=escH(s.rows[i][0])+' · <b>'+fmtN(v,dec)+'</b> '+escH(unit)+dd;

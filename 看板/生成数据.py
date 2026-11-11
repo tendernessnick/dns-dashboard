@@ -121,14 +121,27 @@ try:
     _vst = json.load(open(os.path.join(FIX, '核验状态.json'), encoding='utf-8'))
     for _pid, _p in (_vst.get('对照') or {}).items():
         _ok = _p.get('结果') == '通过'
+        _result = _p.get('结果') or '取数失败'
+        _scope = '双源一致' if _ok else ('待对齐' if '对齐' in _result else '对照异常')
+        _detail = ('同观测日对照通过' if _p.get('对照日期') else '双通道报价对照通过') if _ok else _result
+        if _p.get('容差单位') == 'bp':
+            _detail += '；容差%s基点' % _p.get('容差', _p.get('阈值bp', ''))
+            if _p.get('偏差bp') is not None:
+                _detail += '，偏差%s基点' % _p['偏差bp']
+        elif _p.get('偏差%') is not None:
+            _detail += '；偏差%s%%' % _p['偏差%']
+        if _p.get('对照日期'):
+            _detail += '；观测日' + _p['对照日期']
         VERIFY[_pid] = {'s': 'ok' if _ok else 'warn', 'd': (_p.get('时间') or '')[5:10],
-                        'x': ('对照通过' if _ok else ('偏差%s%%' % _p.get('偏差%') if _p.get('偏差%') is not None else '取数失败'))}
+                        't': _scope, 'x': _detail}
     for _pid, _e in (_vst.get('存疑') or {}).items():
         VERIFY[_pid] = {'s': 'sus', 'd': (_e.get('最近') or '')[5:10], 'x': (_e.get('说明') or '数值存疑')}
     for _pid, _e in (_vst.get('资讯') or {}).items():
-        # v20资讯健康（run_all.write_news_health）：ok/warn/sus → ✓核验/⚠核验/⚠存疑徽标
+        # 资讯健康只证明采集/时效状态，不等同于内容真实性或数值双源核验。
+        _desc = _e.get('说明') or '资讯异常'
+        _label = ('采集正常' if '采集' in _desc else '内容新鲜') if _e.get('级别') == 'ok' else '资讯异常'
         VERIFY[_pid] = {'s': _e.get('级别') or 'warn', 'd': (_e.get('最近') or '')[5:10],
-                        'x': _e.get('说明') or '资讯异常'}
+                        't': _label, 'x': _desc}
 except Exception:
     VERIFY = {}
 DDATA['_verify'] = VERIFY

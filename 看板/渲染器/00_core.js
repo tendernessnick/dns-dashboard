@@ -34,3 +34,5 @@ function getSeries(pid,col){col=col||1;var d=DDATA[pid];if(!d||!d.rows||!d.rows.
   var rows=d.rows.filter(function(r){return r[col]!==null&&r[col]!==undefined});
   rows=wind(pid,rows);
   return rows.length?{rows:rows,col:col,src:d.src}:null;}
+// 累计财报/预测等不可直接以前一观测差值解释为涨跌，卡配置可显式关闭。
+function canCompare(el){return !el.closest('[data-change="none"]');}

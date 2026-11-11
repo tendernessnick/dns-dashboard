@@ -1,30 +1,21 @@
 // 65_nav.js —— 渲染器：导航高亮（IntersectionObserver）+ 回顶按钮
-// v16：卡片滚动入场（一次性；REDUCE/无IO 时回退v14行为，绝不隐藏内容）
-(function(){
-  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  if(!('IntersectionObserver' in window))return;
-  var els=[].slice.call(root.querySelectorAll('.card,.cco'));
-  if(!els.length)return;
-  root.classList.add('js-anim');
-  var io=new IntersectionObserver(function(es){
-    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}});
-  },{rootMargin:'0px 0px 96px 0px'});
-  els.forEach(function(el){
-    if(el.getBoundingClientRect().top<window.innerHeight+80){el.classList.add('in')}
-    else{io.observe(el)}
-  });
-})();
+// v21：卡片直接可见，去除滚动入场；导航保留当前位置与键盘语义。
 var links=[].slice.call(root.querySelectorAll('#dnav a'));
 var secs=links.map(function(a){return root.querySelector(a.getAttribute('href'))}).filter(Boolean);
-function mark(id){links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+id)})}
-if('IntersectionObserver' in window && secs.length){
-  var io=new IntersectionObserver(function(es){
-    es.forEach(function(e){if(e.isIntersecting)mark(e.target.id)});
-  },{rootMargin:'-40% 0px -55% 0px'});
-  secs.forEach(function(s){io.observe(s)});
-}
+function mark(id){links.forEach(function(a){var active=a.getAttribute('href')==='#'+id;
+  a.classList.toggle('on',active);if(active)a.setAttribute('aria-current','location');else a.removeAttribute('aria-current');})}
 var btn=root.querySelector('#toTop');
-window.addEventListener('scroll',function(){btn.style.display=window.scrollY>500?'block':'none'},{passive:true});
+var navFrame=0;
+function updateNav(){
+  navFrame=0;
+  if(secs.length){var current=secs[0],edge=Math.min(window.innerHeight*.35,250);
+    secs.forEach(function(s){if(s.getBoundingClientRect().top<=edge)current=s});mark(current.id);}
+  btn.style.display=window.scrollY>500?'block':'none';
+}
+function queueNav(){if(!navFrame)navFrame=requestAnimationFrame(updateNav)}
+window.addEventListener('scroll',queueNav,{passive:true});
+window.addEventListener('resize',queueNav,{passive:true});
+updateNav();
 btn.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
 // v18.7：外链卡片委托点击——组装器b_hlines不再注入内联onclick，改data-href属性统一在此打开
 root.addEventListener('click',function(ev){

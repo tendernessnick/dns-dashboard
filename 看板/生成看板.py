@@ -110,10 +110,13 @@ def b_sub(c, after=None):
     want_after = bool(c.get('副标题在图后'))
     if after is not None and want_after != after:
         return ''
-    return f'<div class="sub"{st(c.get("副标题样式"))}>{c["副标题"]}</div>'
+    template = f' data-sub-template="{atattr(c["动态副标题"])}"' if c.get('动态副标题') else ''
+    return f'<div class="sub"{template}{st(c.get("副标题样式"))}>{c["副标题"]}</div>'
 
 
 def b_charts(c):
+    if c.get('显示趋势') is False:
+        return ''
     chs = c.get('图表组') or []
     out = []
     for ch in chs:
@@ -279,6 +282,8 @@ def card_html(c, slot=None):
     attrs = (st(css)
              + (f' data-mid="{atattr(c["ID"])}"' if c.get('ID') else '')
              + (f' data-k="{dk}"' if dk else '')
+             + (' data-change="none"' if c.get('显示前值变化') is False else '')
+             + (' data-trend="none"' if c.get('显示趋势') is False else '')
              + (f' data-news="{atattr(c["资讯键"])}"' if c.get('资讯键') else ''))
     if t == 'strip':
         inner = b_strip(c)

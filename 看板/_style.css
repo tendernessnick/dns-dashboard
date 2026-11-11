@@ -516,3 +516,363 @@
 [data-mid^="83_"]{justify-content:center}
 [data-mid^="83_"] .desc{margin:0;font-size:14px;line-height:25px;color:var(--n700);display:flex;align-items:center}
 [data-mid^="83_"] .btn-ext{font-size:13.5px;padding:10px 22px}
+
+/* ===== v21 · 浅色研究工作台（2026-11-11） =====
+   最终视觉层：浅中性色建立层级，蓝色仅用于重点/交互；保留涨跌和异常语义。
+   网格、数字对齐、可读时点形成精细感；不使用连续装饰动画或外部字体资源。 */
+html{scroll-padding-top:88px}
+body{margin:0;background:#F4F6FA}
+#dns-dash{
+  --brand:#285FAF;--brand-700:#204F94;--brand-ink:#1C416B;--brand-300:#9DBBDF;--brand-100:#EDF3FC;
+  --n0:#FFF;--n25:#F8FAFD;--n50:#F4F6FA;--n100:#EBEFF5;--n200:#DAE2EC;--n300:#B8C5D5;
+  --n500:#627287;--n700:#36465B;--n900:#172B43;
+  --up:#B83B32;--upbg:#FDF2F0;--down:#207C60;--downbg:#EEF7F3;--warn:#9A671A;--warnbg:#FCF6EA;
+  --ok:#426C9D;
+  --section-accent:#527DA6;
+  --sh0:0 1px 2px rgba(25,46,76,.025);--sh1:0 3px 12px rgba(25,46,76,.06);--sh2:0 8px 28px rgba(25,46,76,.13);
+  --el-rest:var(--sh0);--el-hover:var(--sh1);--el-pop:var(--sh2);
+  --fn:"Microsoft YaHei UI","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+  --fnnum:"Bahnschrift","Segoe UI",Arial,"Microsoft YaHei",sans-serif;
+  font-size:14px;line-height:1.6;overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+#dns-dash :where(a,button,input,select){-webkit-tap-highlight-color:transparent}
+#dns-dash :where(a,button,input,select):focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+#dns-dash .rule3{height:3px;background:var(--brand)}
+#dns-dash .mast{background:#FFF;border-bottom:1px solid var(--n200)}
+#dns-dash .mast-in,#dns-dash .toolbar-in,#dns-dash .ticker-wrap,#dns-dash .d-main,#dns-dash .prov-app,#dns-dash .d-foot{
+  width:100%;max-width:1536px;margin-left:auto;margin-right:auto;padding-left:40px;padding-right:40px;min-width:0;
+}
+#dns-dash .mast-in{padding-top:28px;padding-bottom:26px;align-items:center;gap:24px;flex-wrap:nowrap}
+#dns-dash .m-brand{gap:18px;min-width:0}
+#dns-dash .mark{width:54px;height:62px;flex:none;border-radius:10px;flex-direction:column;gap:5px;background:var(--brand-100);border:1px solid #D6E3F4;color:var(--brand);font-size:11px;letter-spacing:.12em}
+#dns-dash .mark svg{width:25px;height:25px}
+#dns-dash .m-eyebrow{display:flex;align-items:center;gap:16px;color:var(--n500);letter-spacing:.06em;font-size:11px;line-height:17px;margin-bottom:7px}
+#dns-dash .m-eyebrow>span{font:500 10px/1 var(--fnnum);color:#62758E;letter-spacing:.14em;padding-left:15px;border-left:1px solid var(--n200)}
+#dns-dash .mast h1{display:flex;align-items:center;gap:14px;font-size:27px;line-height:36px;font-weight:650;letter-spacing:.035em}
+#dns-dash .workbench-tag{font:500 11px/20px var(--fn);letter-spacing:.02em;color:var(--brand);background:var(--brand-100);border:1px solid #D8E4F4;border-radius:4px;padding:0 7px;white-space:nowrap}
+#dns-dash .m-sub{font-size:12px;line-height:19px;color:var(--n500);margin-top:7px;letter-spacing:.02em}
+#dns-dash .m-right{flex:none;align-items:center;gap:30px;text-align:left;padding:6px 0}
+#dns-dash .m-meta+.m-meta{border-left:1px solid var(--n200);padding-left:30px}
+#dns-dash .m-k{font-size:11px;letter-spacing:.03em;margin-bottom:5px;color:var(--n500)}
+#dns-dash .m-meta b{font-size:18px;line-height:24px;font-weight:550;color:var(--n900)}
+#dns-dash .m-meta b>span{font:400 11px/1 var(--fn);color:var(--n500);margin-left:4px}
+#dns-dash .mline{display:none}
+
+/* 轻量导航与周期分段控件 */
+#dns-dash .toolbar{background:rgba(255,255,255,.97);border-bottom:1px solid var(--n200);box-shadow:0 2px 8px rgba(25,46,76,.025);backdrop-filter:blur(12px)}
+#dns-dash .toolbar-in{height:60px;gap:18px}
+#dns-dash #dnav{min-width:0;gap:4px;align-items:center;flex:none}
+#dns-dash .tlink{height:38px;padding:0 12px;gap:7px;border-radius:6px;color:var(--n500);font-size:12.5px;font-weight:550;letter-spacing:.02em}
+#dns-dash .nav-no{font:400 10px/1 var(--fnnum);color:#62758E;letter-spacing:.03em}
+#dns-dash .tlink.on{background:var(--brand-100);color:var(--brand)}
+#dns-dash .tlink.on .nav-no{color:var(--brand)}
+#dns-dash .tlink.on::after{left:12px;right:12px;bottom:0;height:2px;border-radius:2px;background:var(--brand)}
+#dns-dash .tlink:hover{background:var(--n25);color:var(--brand)}
+#dns-dash .tspace{min-width:0}
+#dns-dash .pctl{gap:1px;border:1px solid var(--n200);border-radius:6px;padding:3px;background:var(--n25);margin:0 0 0 auto;flex:none}
+#dns-dash .pctl i{display:none}
+#dns-dash .pctl button{appearance:none;border:1px solid transparent;background:transparent;font:500 11.5px/26px var(--fn);padding:0 8px;white-space:nowrap;min-width:34px;border-radius:4px;color:var(--n500);cursor:pointer;transition:background .12s,border-color .12s}
+#dns-dash .pctl button:hover{color:var(--brand);background:#FFF}
+#dns-dash .pctl button.on{background:#FFF;border-color:var(--n200);color:var(--brand);box-shadow:0 1px 2px rgba(25,46,76,.04)}
+#dns-dash .tbtn{height:34px;padding:0 12px;border-radius:6px;font-size:12px;color:var(--n700);margin-left:10px;white-space:nowrap;flex:none}
+#dns-dash .tbtn svg{width:15px;height:15px;color:var(--n500)}
+
+/* 首屏摘要：六个真实指标，统一对齐的数字和独立时点 */
+#dns-dash .ticker{background:transparent;border:0}
+#dns-dash .ticker-wrap{padding-top:26px;padding-bottom:0}
+#dns-dash .snapshot-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}
+#dns-dash .section-kicker{font:500 9px/14px var(--fnnum);letter-spacing:.18em;color:#62758E;display:block;margin-bottom:5px}
+#dns-dash .snapshot-head h2{font:600 15px/22px var(--fn);color:var(--n900);letter-spacing:.035em}
+#dns-dash .snapshot-head p{font:400 11px/17px var(--fn);color:var(--n500);margin-bottom:1px}
+#dns-dash .snapshot-head p span{color:var(--n300);padding:0 8px}
+#dns-dash .ticker-in{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;max-width:none;padding:0;min-height:0;margin:0}
+#dns-dash .ticker-in::before{display:none}
+#dns-dash .tk{min-width:0;padding:16px 16px 13px;border:1px solid var(--n200);border-radius:8px;background:#FFF;position:relative;box-shadow:var(--sh0)}
+#dns-dash .tk::before{content:"";position:absolute;left:16px;top:0;width:22px;height:2px;background:#97B6DF}
+#dns-dash .tk .k{font-size:11px;font-weight:500;line-height:18px;color:var(--n500);white-space:normal}
+#dns-dash .tk .v{display:flex;align-items:baseline;gap:3px;margin:8px 0 6px;font-size:24px;line-height:29px;font-weight:600;letter-spacing:-.035em;color:var(--n900);font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
+#dns-dash .tk .v small{font:400 10.5px/1 var(--fn);color:var(--n500);margin-left:1px;letter-spacing:0}
+#dns-dash .tk .s{font:400 10.5px/16px var(--fn);color:var(--n500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 板块与数据卡：中性色结构，颜色只在小范围保留板块识别 */
+#dns-dash .d-main{padding-top:2px;padding-bottom:0}
+#dns-dash .mod{margin-top:36px;scroll-margin-top:88px}
+#dns-dash .sec-head{padding:0 0 15px;margin-bottom:18px;align-items:center;gap:13px;border-bottom:1px solid #D3DEEB;position:relative}
+#dns-dash .sec-head::after{content:"";position:absolute;left:0;bottom:-1px;width:36px;height:2px;background:var(--brand)}
+#dns-dash .sec-no{width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex:none;border:1px solid #D5E0EF;background:#F9FBFE;border-radius:6px;color:#4C6C98;font:500 15px/1 var(--fnnum);letter-spacing:.02em;opacity:1}
+#dns-dash .sec-head h2{font-size:20px;line-height:27px;font-weight:650;letter-spacing:.035em}
+#dns-dash .sec-head p{font-size:11.5px;line-height:18px;margin-top:3px;color:var(--n500)}
+#dns-dash .sec-meta{font-size:11px;line-height:18px;color:var(--n500)}
+#dns-dash .sec-meta .ok{color:var(--n500)}
+#dns-dash .grp{font-size:12px;line-height:18px;font-weight:600;letter-spacing:.04em;margin:24px 0 12px;color:#435673;gap:8px}
+#dns-dash .grp::before{width:7px;height:7px;border-radius:1px;background:var(--brand);opacity:.65}
+#dns-dash .row{grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;margin-bottom:16px}
+#dns-dash .row>*,#dns-dash .card,#dns-dash .cco,#dns-dash .co-panel{min-width:0}
+#dns-dash .card{padding:19px 20px 14px;border:1px solid var(--n200);border-radius:10px;background:#FFF;box-shadow:var(--sh0);animation:none;transform:none;transition:border-color .15s,box-shadow .15s}
+#dns-dash .card:hover{transform:none;box-shadow:var(--sh1);border-color:#BFCFE3}
+#dns-dash .card.tint{background:#FBFDFF;border-color:#C8D9EE}
+#dns-dash .card-top{gap:7px;min-width:0;align-items:center;margin-bottom:12px;flex-wrap:wrap;row-gap:6px}
+#dns-dash .card-top .t{font-size:15px;line-height:22px;font-weight:600;letter-spacing:.015em;flex:1;min-width:100px;color:var(--n900)}
+#dns-dash .card-top .t small{color:var(--n500)}
+#dns-dash .chip{height:20px;font-size:10px;padding:0 6px;border-radius:4px;letter-spacing:0;margin-left:auto;font-weight:500}
+#dns-dash .chip .cdot{width:4px;height:4px}
+#dns-dash .chip.c-ok,#dns-dash .pchip.c-ok{color:#526F94;background:#F5F8FD;border-color:#DCE6F3}
+#dns-dash .chip.c-ok .cdot{background:#5B82B4}
+#dns-dash .rlbadge{font-size:9px;font-weight:600;padding:3px 5px;border-radius:3px;margin-left:0}
+#dns-dash .rlbadge.b{background:#F5F7FA;color:#586C85;border-color:#DFE6EF}
+#dns-dash .rlbadge.a{background:#F2F8F5;color:#3D7860;border-color:#D7E8DF}
+#dns-dash .rlbadge.c{background:#FFF6EF;color:#9C5E28;border-color:#F0DDCD}
+#dns-dash .kbflag,#dns-dash .warn-tag{font-size:10px;line-height:15px;border-radius:4px}
+#dns-dash .card-top .warn-tag{margin-left:0}
+#dns-dash .kpi .val{font-size:34px;line-height:40px;font-weight:600;letter-spacing:-.025em;font-variant-numeric:tabular-nums lining-nums}
+#dns-dash .kpi.lg .val{font-size:37px;line-height:43px}
+#dns-dash .kpi .val .unit{font-size:13px;letter-spacing:0;font-weight:400;margin-left:5px;vertical-align:baseline}
+#dns-dash .kpi .sub{font-size:12px;line-height:19px;margin-top:7px;gap:7px;color:var(--n500)}
+#dns-dash .dpill{padding:3px 6px;border-radius:4px;font-size:10.5px;line-height:13px;font-weight:550}
+#dns-dash .dpill.up{border-color:#F1DAD5}
+#dns-dash .dpill.down{border-color:#D3E7DD}
+#dns-dash .foot{font-size:11px;line-height:18px;gap:5px;color:var(--n500);border-top:1px solid var(--n100);padding-top:10px;margin-top:auto}
+#dns-dash .statline{font-size:12px;line-height:18px;padding:8px 0;border-color:var(--n100)}
+#dns-dash .statline b{font-size:17px;line-height:23px;font-weight:550}
+
+/* 静态优先的图表：淡网格、清晰读值，无呼吸光环/绘制/滚动入场 */
+#dns-dash .chart{height:144px;margin-top:13px;margin-bottom:7px}
+#dns-dash .chart text{font-size:10.5px;fill:var(--n500)}
+#dns-dash .chart .grid{stroke:#ECF0F6;stroke-width:1}
+#dns-dash .chart .baseline{stroke:#C9D5E4;stroke-dasharray:3,4;opacity:.65}
+#dns-dash .chart .chiptext{font-size:10px;font-weight:600;fill:#FFF}
+#dns-dash .chart .guide{stroke:#8CA4C4;stroke-dasharray:3,3}
+#dns-dash .chart svg circle:has(animate){display:none}
+#dns-dash .line-a,#dns-dash .area-a,#dns-dash .chip-a{animation:none;opacity:1}
+#dns-dash .line-a{stroke-dasharray:none;stroke-dashoffset:0}
+#dns-dash.js-anim .card,#dns-dash.js-anim .cco,#dns-dash.js-anim .card:not(.in),#dns-dash.js-anim .cco:not(.in){animation:none;opacity:1}
+#dns-dash .chart .nodata{background:var(--n25);border:1px dashed var(--n200);font-size:12px;color:var(--n500)}
+#dns-dash .chart .nodata::before{font-size:20px}
+#dns-dash .ctool{background:#FFF;color:var(--n700);border:1px solid #CBDAED;border-radius:6px;box-shadow:var(--sh2);padding:8px 11px;font-size:12px}
+#dns-dash .ctool b{color:var(--n900);font-size:13px}
+#dns-dash .ctool .d.up{color:var(--up)}
+#dns-dash .ctool .d.down{color:var(--down)}
+#dns-dash .sparkrow{padding-top:10px}
+#dns-dash .spark{height:40px}
+#dns-dash .sharechart{min-height:180px}
+
+/* 资讯与榜单：正文优先，统一缩略图与两行标题 */
+#dns-dash .feed{margin-top:0;padding-right:3px}
+#dns-dash .feed li{border-color:var(--n100)}
+#dns-dash .feed .fi{font-size:13px;line-height:1.65;padding:10px 5px;gap:9px;border-radius:4px;min-width:0}
+#dns-dash .feed .fi:hover{background:var(--n25)}
+#dns-dash .feed .fi i{font-size:10px;border:0;background:#F1F5FA;color:#62758E;border-radius:4px;padding:4px 6px}
+#dns-dash .feed .fi .lthumb{width:42px;height:42px;border-color:var(--n100);border-radius:5px}
+#dns-dash .feed .fi .rk{width:21px;height:21px;border-radius:4px;font-weight:550}
+#dns-dash .feed .fi .ptag{font-size:11px;border:0;border-radius:4px;padding:4px 6px;background:#F4F6FA}
+#dns-dash .revcards{gap:9px;padding-right:4px;margin-top:1px;min-width:0}
+#dns-dash .revcard{height:104px;padding:10px;gap:12px;border-radius:6px;border-color:var(--n100);background:#FAFBFD;min-width:0;box-shadow:none}
+#dns-dash .revcard:hover{border-color:#BFCFE4;box-shadow:none;background:#F6F9FE}
+#dns-dash .rthumb{width:76px;height:80px;border-radius:5px;object-fit:cover}
+#dns-dash .rinfo{min-width:0}
+#dns-dash .rl1{align-items:flex-start;gap:5px}
+#dns-dash .rname{font-size:12.5px;line-height:18px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:600;flex:1;min-width:0}
+#dns-dash .rtag{font-size:9px;padding:3px 5px;border-radius:3px;background:#EEF3FA;color:#5278A6;white-space:nowrap}
+#dns-dash .rdate{font-size:10px;line-height:17px;color:var(--n500);white-space:nowrap}
+#dns-dash .rchips{gap:4px;margin-top:5px}
+#dns-dash .rchip{font-size:10px;line-height:16px;padding:0 5px;border-color:var(--n200);background:#FFF;border-radius:3px}
+#dns-dash .rdesc{font-size:11.5px;line-height:17px;-webkit-line-clamp:2;margin-top:4px;color:var(--n500)}
+#dns-dash [data-review="41"].revcards,#dns-dash [data-review="42"].revcards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#dns-dash [data-review="41"] .revcard,#dns-dash [data-review="42"] .revcard{height:142px;padding:12px;gap:13px;border-radius:7px}
+#dns-dash [data-review="41"] .rthumb,#dns-dash [data-review="42"] .rthumb{width:112px;height:116px;border-radius:5px}
+#dns-dash [data-review="41"] .rname,#dns-dash [data-review="42"] .rname{font-size:14px;line-height:21px;-webkit-line-clamp:2}
+#dns-dash [data-review="41"] .rdesc,#dns-dash [data-review="42"] .rdesc{font-size:12px;line-height:19px;-webkit-line-clamp:2}
+
+/* 公司面板、结构指标及时间线 */
+#dns-dash .co-tabs{gap:8px;padding:6px;border:1px solid var(--n200);border-radius:8px;background:#EEF2F8;margin-bottom:18px}
+#dns-dash .cotab{flex:1;min-height:40px;padding:10px 12px;min-width:0;text-align:center;border-radius:5px;background:transparent;border:1px solid transparent;color:var(--n500);font-size:12.5px;font-weight:550}
+#dns-dash .cotab small{font-size:10px;color:var(--n500);margin-left:6px}
+#dns-dash .cotab.on{background:#FFF;color:var(--brand);border-color:#CDDBEE;box-shadow:0 1px 3px rgba(25,46,76,.05)}
+#dns-dash .cotab.on small{color:#5B7BA7}
+#dns-dash .co-panel[hidden]{display:none!important}
+#dns-dash .cco{border:1px solid var(--n200);border-radius:8px;padding:16px;background:#FFF;box-shadow:var(--sh0)}
+#dns-dash .cco:hover{transform:none;border-color:#BFCFE3;box-shadow:var(--sh1)}
+#dns-dash .cco .mono{border-radius:5px;background:var(--brand-100);color:var(--brand);font-weight:550}
+#dns-dash .cco .cn{font-size:14px;font-weight:600}
+#dns-dash .cco .cd{font-size:12px;line-height:20px}
+#dns-dash .btn-ext{font-size:12px;line-height:18px;border-radius:5px;background:#F7FAFE;color:var(--brand);border-color:#D2DFF0;box-shadow:none}
+#dns-dash .sc{padding-left:18px;padding-right:18px;min-width:0}
+#dns-dash .sc .v{font-size:25px;font-weight:550;letter-spacing:-.025em;line-height:32px}
+#dns-dash .sc .k,#dns-dash .sc .s{white-space:normal;overflow-wrap:anywhere}
+#dns-dash .sc .k{font-size:11.5px}
+#dns-dash .sc .s{font-size:10.5px;margin-top:5px}
+#dns-dash .sc .chg{font-size:10px;font-weight:500;border-radius:4px}
+#dns-dash .ringwrap{flex-wrap:wrap;gap:18px;margin-top:10px;margin-bottom:14px}
+#dns-dash .rings2{gap:20px;min-width:0}
+#dns-dash .ring .rt{font-size:18px;font-weight:550}
+#dns-dash .ring .rf{transition:stroke-dasharray .2s ease-out;stroke-linecap:butt}
+#dns-dash .ringinfo .rv{font-size:16px;font-family:var(--fnnum);font-weight:550}
+#dns-dash .ringinfo .rs{font-size:11px;line-height:19px}
+#dns-dash .tl-list{border-left-color:#CEDAEA}
+#dns-dash .tl-list li{font-size:12px;line-height:20px;padding-top:6px;padding-bottom:6px}
+#dns-dash .tl-list li.next::before{border-color:var(--brand)}
+#dns-dash .hln .hd{font-size:19px;font-weight:550}
+#dns-dash .hln .hn{font-size:12px}
+#dns-dash .hln .hs{font-size:11px}
+#dns-dash .bar .bt{height:8px;border-radius:3px}
+#dns-dash .bar .bf{border-radius:3px}
+#dns-dash .card ul.multi li{padding:7px 0;font-size:12px;border-bottom-style:solid}
+#dns-dash .card ul.multi li b{font-size:14px;font-weight:550}
+
+/* 溯源作为可检索的数据目录 */
+#dns-dash .prov-app{margin-top:36px;scroll-margin-top:88px}
+#dns-dash .prov-toggle{font-size:14px;font-weight:600;padding:18px 20px;border-radius:8px;border:1px solid var(--n200);box-shadow:none;background:#FFF}
+#dns-dash .prov-toggle::before{content:"";width:7px;height:7px;flex:none;border:1px solid var(--brand);background:var(--brand-100);border-radius:1px}
+#dns-dash .prov-toggle .sum{font-size:11px;line-height:18px}
+#dns-dash .prov-app[data-open="true"] .prov-toggle{border-radius:8px 8px 0 0}
+#dns-dash .prov-body{border-radius:0 0 8px 8px;padding:20px;border-color:var(--n200)}
+#dns-dash .prov-note{font-size:12px;line-height:21px;margin-bottom:16px}
+#dns-dash .prov-tools{padding:12px;background:var(--n25);border:1px solid var(--n100);border-radius:6px;gap:8px}
+#dns-dash .prov-tools input,#dns-dash .prov-tools select{height:36px;font-size:12px;border-radius:5px}
+#dns-dash .twrap{max-height:620px;overflow:auto;overscroll-behavior:contain;min-width:0;border:1px solid var(--n100);border-radius:5px}
+#dns-dash .ptable{font-size:12px}
+#dns-dash .ptable th{position:sticky;top:0;z-index:1;background:#F1F5FA;font-size:11px;font-weight:600;padding:12px 10px;color:#51657F}
+#dns-dash .ptable td{padding:11px 10px;font-size:11.5px;line-height:19px;border-color:var(--n100)}
+#dns-dash .ptable tbody tr:nth-child(even){background:#FAFBFD}
+#dns-dash .ptable tbody tr:hover{background:#F0F5FC}
+#dns-dash .ptable .pfresh{font-size:11px}
+#dns-dash .pchip{font-size:10px;font-weight:500;border-radius:4px}
+#dns-dash .prov-tip{background:#FFF;color:var(--n700);border:1px solid #CBD9EB;box-shadow:var(--sh2);border-radius:7px}
+#dns-dash .prov-tip .pt-t{color:var(--n900);border-color:var(--n100)}
+#dns-dash .prov-tip .pt-k{color:var(--n500)}
+#dns-dash .prov-tip .pt-v a{color:var(--brand)}
+#dns-dash .d-foot{margin-top:28px;padding-top:22px;padding-bottom:32px;font-size:11px;line-height:19px;gap:10px 22px;border-color:var(--n200)}
+#dns-dash .d-foot .footer-note{flex-basis:100%;font-size:10.5px;color:var(--n500)}
+#dns-dash #toTop{width:38px;height:38px;border-radius:7px;background:#FFF;border-color:#CFDAE8;box-shadow:var(--sh1);color:var(--brand)}
+
+@media(min-width:1600px){
+  #dns-dash .mast-in,#dns-dash .toolbar-in,#dns-dash .ticker-wrap,#dns-dash .d-main,#dns-dash .prov-app,#dns-dash .d-foot{padding-left:48px;padding-right:48px}
+}
+@media(max-width:1200px){
+  #dns-dash .mast-in,#dns-dash .toolbar-in,#dns-dash .ticker-wrap,#dns-dash .d-main,#dns-dash .prov-app,#dns-dash .d-foot{padding-left:28px;padding-right:28px}
+  #dns-dash .toolbar-in{gap:8px}
+  #dns-dash .tlink{padding-left:10px;padding-right:10px}
+  #dns-dash .nav-no{display:none}
+  #dns-dash .m-right{gap:20px}
+  #dns-dash .m-meta+.m-meta{padding-left:20px}
+  #dns-dash .tk{padding-left:12px;padding-right:12px}
+  #dns-dash .tk .v{font-size:22px}
+}
+@media(max-width:960px){
+  html{scroll-padding-top:116px}
+  #dns-dash .mast-in{flex-wrap:wrap;padding-top:22px;padding-bottom:20px}
+  #dns-dash .mast h1{font-size:25px}
+  #dns-dash .m-right{margin-left:72px}
+  #dns-dash .toolbar-in{height:auto;gap:0;padding-top:5px;padding-bottom:5px;flex-wrap:wrap;min-width:0}
+  #dns-dash #dnav{flex:1 1 100%;width:0;height:41px;min-width:0;gap:3px;overflow-x:auto}
+  #dns-dash .tlink{height:36px;font-size:12px;padding:0 12px}
+  #dns-dash .nav-no{display:inline}
+  #dns-dash .tb2{display:flex;flex:1 1 100%;min-width:0;max-width:100%;margin:4px 0 0;padding:0 0 1px;gap:0;overflow-x:auto}
+  #dns-dash .pctl{margin:0;border-right:1px solid var(--n200);padding:2px;flex:none}
+  #dns-dash .pctl i{display:none}
+  #dns-dash .tbtn{margin:0 0 0 10px;height:34px;padding:0 12px;flex:none}
+  #dns-dash .ticker-in{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #dns-dash .mod,#dns-dash .prov-app{scroll-margin-top:116px}
+}
+@media(max-width:768px){
+  #dns-dash .mast-in,#dns-dash .toolbar-in,#dns-dash .ticker-wrap,#dns-dash .d-main,#dns-dash .prov-app,#dns-dash .d-foot{padding-left:18px;padding-right:18px}
+  #dns-dash .mast-in{gap:16px;padding-top:22px;padding-bottom:20px}
+  #dns-dash .m-brand{gap:12px;align-items:flex-start;width:100%}
+  #dns-dash .mark{width:42px;height:52px;border-radius:7px;margin-top:2px;font-size:9px}
+  #dns-dash .mark svg{width:21px;height:21px}
+  #dns-dash .m-eyebrow{font-size:10px;line-height:16px;margin-bottom:4px;gap:8px;flex-wrap:wrap}
+  #dns-dash .m-eyebrow>span{font-size:8px;letter-spacing:.1em;padding-left:8px}
+  #dns-dash .mast h1{font-size:23px;line-height:32px;gap:8px;flex-wrap:wrap}
+  #dns-dash .workbench-tag{font-size:10px;line-height:18px;padding:0 5px}
+  #dns-dash .m-sub{font-size:10.5px;line-height:18px;margin-top:5px;letter-spacing:0}
+  #dns-dash .m-right{width:100%;margin:0;padding:12px 0 0;border-top:1px solid var(--n100);gap:22px;flex-wrap:wrap}
+  #dns-dash .m-meta+.m-meta{padding-left:22px}
+  #dns-dash .m-meta b{font-size:16px;line-height:22px}
+  #dns-dash .m-meta b>span{font-size:10px}
+  #dns-dash .m-k{font-size:10px;margin-bottom:3px}
+  #dns-dash .ticker-wrap{padding-top:22px}
+  #dns-dash .snapshot-head{align-items:flex-start;gap:12px;margin-bottom:12px}
+  #dns-dash .snapshot-head h2{font-size:14px}
+  #dns-dash .section-kicker{font-size:8px;letter-spacing:.14em;margin-bottom:3px}
+  #dns-dash .snapshot-head p{max-width:142px;text-align:right;font-size:10px;line-height:17px}
+  #dns-dash .snapshot-head p span{display:none}
+  #dns-dash .ticker-in{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0}
+  #dns-dash .tk,#dns-dash .tk:nth-child(n+4){border:1px solid var(--n200);padding:13px 12px 11px}
+  #dns-dash .tk .k{font-size:10.5px;min-height:17px}
+  #dns-dash .tk .v{font-size:23px;margin-top:7px;margin-bottom:4px;gap:2px;flex-wrap:wrap;row-gap:0}
+  #dns-dash .tk .v small{font-size:10px}
+  #dns-dash .tk .s{font-size:10px;line-height:15px}
+  #dns-dash .mod{margin-top:28px}
+  #dns-dash .sec-head{gap:11px;flex-wrap:wrap;padding-bottom:13px;margin-bottom:16px}
+  #dns-dash .sec-no{font-size:14px;width:32px;height:32px}
+  #dns-dash .sec-head h2{font-size:19px;line-height:26px}
+  #dns-dash .sec-head p{font-size:10.5px;line-height:17px}
+  #dns-dash .sec-meta{font-size:10.5px;line-height:17px;margin-left:43px;flex-basis:calc(100% - 43px);margin-top:-4px}
+  #dns-dash .grp{font-size:11.5px;margin-top:20px}
+  #dns-dash .row{grid-template-columns:minmax(0,1fr);gap:12px;margin-bottom:12px}
+  #dns-dash .row>*{grid-column:auto!important;grid-row:auto!important;min-width:0}
+  #dns-dash .card{padding:17px 16px 13px;border-radius:9px;min-width:0}
+  #dns-dash .card-top{gap:6px;margin-bottom:12px}
+  #dns-dash .card-top .t{font-size:14px;line-height:21px}
+  #dns-dash .kpi .val{font-size:34px;line-height:40px}
+  #dns-dash .kpi .sub{font-size:11.5px;line-height:19px}
+  #dns-dash .chart{height:150px}
+  #dns-dash .foot{font-size:11px;line-height:18px;flex-wrap:wrap}
+  #dns-dash .card div[data-multi]{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+  #dns-dash .sc{padding-left:0;padding-right:0;min-width:0}
+  #dns-dash .card.strip{gap:0}
+  #dns-dash .sc .v{font-size:24px}
+  #dns-dash .ringwrap{flex-wrap:wrap;gap:16px}
+  #dns-dash .rings2{gap:18px;flex:0 1 auto}
+  #dns-dash .revcards{min-width:0}
+  #dns-dash .revcard{height:110px;padding:10px;gap:10px;min-width:0}
+  #dns-dash .rthumb{width:70px;height:86px}
+  #dns-dash .rname{font-size:12px;line-height:18px}
+  #dns-dash .rtag{display:none}
+  #dns-dash .rdesc{font-size:11px;line-height:17px;-webkit-line-clamp:2}
+  #dns-dash [data-review="41"].revcards,#dns-dash [data-review="42"].revcards{grid-template-columns:minmax(0,1fr);gap:9px}
+  #dns-dash [data-review="41"] .revcard,#dns-dash [data-review="42"] .revcard{height:132px;padding:10px;gap:11px}
+  #dns-dash [data-review="41"] .rthumb,#dns-dash [data-review="42"] .rthumb{width:84px;height:108px}
+  #dns-dash [data-review="41"] .rname,#dns-dash [data-review="42"] .rname{font-size:13px;line-height:20px}
+  #dns-dash [data-review="41"] .rdesc,#dns-dash [data-review="42"] .rdesc{font-size:11px;line-height:17px}
+  #dns-dash .co-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:5px}
+  #dns-dash .cotab{font-size:12px;line-height:18px;min-height:42px;padding:8px}
+  #dns-dash .cotab small{font-size:10px;margin-left:4px}
+  #dns-dash .crow{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  #dns-dash .cco{padding:13px 12px}
+  #dns-dash .cco .chead{flex-wrap:wrap;gap:7px}
+  #dns-dash .cco .cn{font-size:13px}
+  #dns-dash .hlines{grid-template-columns:minmax(0,1fr)}
+  #dns-dash .hln{padding:11px 6px 11px 14px}
+  #dns-dash .hln+.hln{border-top:1px solid var(--n100)}
+  #dns-dash .prov-app{margin-top:28px}
+  #dns-dash .prov-toggle{padding:15px 14px;gap:8px;font-size:13px;flex-wrap:wrap}
+  #dns-dash .prov-toggle .sum{margin-left:0;font-size:10px;flex:1;min-width:100px}
+  #dns-dash .prov-toggle .chev{margin-left:auto}
+  #dns-dash .prov-body{padding:14px}
+  #dns-dash .prov-note{font-size:11px;line-height:20px}
+  #dns-dash .prov-tools{padding:10px;gap:8px;min-width:0}
+  #dns-dash .prov-tools input,#dns-dash .prov-tools select{font-size:16px;min-width:0;max-width:100%}
+  #dns-dash .prov-tools select{flex:1 1 40%;padding-left:7px;padding-right:7px}
+  #dns-dash .prov-tools input{flex:1 1 100%;width:0}
+  #dns-dash .pcount{margin:0;font-size:11px;line-height:18px}
+  #dns-dash .twrap{max-height:60vh}
+  #dns-dash .d-foot{margin-top:24px;font-size:10.5px;padding-top:18px;padding-bottom:25px;gap:10px}
+}
+@media(max-width:380px){
+  #dns-dash .mast h1{font-size:21px}
+  #dns-dash .workbench-tag{display:none}
+  #dns-dash .m-eyebrow>span{font-size:7px}
+  #dns-dash .pctl button{min-width:30px;padding-left:6px;padding-right:6px}
+  #dns-dash .tbtn{font-size:11px;padding:0 8px;margin-left:7px}
+  #dns-dash .tk .v{font-size:21px}
+}
+@media print{
+  body,#dns-dash{background:#FFF}
+  #dns-dash .mast-in,#dns-dash .ticker-wrap,#dns-dash .d-main,#dns-dash .prov-app,#dns-dash .d-foot{max-width:none;padding-left:12px;padding-right:12px}
+  #dns-dash .toolbar,#dns-dash #toTop{display:none!important}
+  #dns-dash .twrap{max-height:none;overflow:visible}
+  #dns-dash .card,#dns-dash .cco{box-shadow:none;break-inside:avoid}
+  #dns-dash .line-a{stroke-dasharray:none;stroke-dashoffset:0}
+}

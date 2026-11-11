@@ -1,25 +1,24 @@
 // 35_bind.js —— 渲染器：数值绑定（.val卡片 / .sc指标条 / ticker / statline）
 // v14：大数字滚动动画（REDUCE降级）、涨跌chip格式化（▲▼+绝对值，红涨绿跌）、.sc 较前值chip
-var V8RBIND=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function v8count(el,to,dec){
-  if(V8RBIND){el.textContent=fmtN(to,dec);return}
-  var from=to*0.72,t0=null;
-  function step(t){if(!t0)t0=t;var p=Math.min(1,(t-t0)/520);p=1-Math.pow(1-p,3);
-    el.textContent=fmtN(from+(to-from)*p,dec);
-    if(p<1)requestAnimationFrame(step)}
-  requestAnimationFrame(step);
+  // v21：管理层阅读优先，数字直接显示真实末值，不经过滚动中间帧。
+  el.textContent=fmtN(to,dec);
 }
 function v8dec(b){return (b[1]==null)?2:b[1]}
 function applyBind(pid, el, valEl, subEl){
   var s=getSeries(pid);if(!s)return;
   var b=BIND[pid]||[null,null];
   var last=s.rows[s.rows.length-1],v=last[1];
+  if(subEl&&subEl.hasAttribute('data-sub-template')){
+    var date=String(last[0]),parts={'日期':date,'期间':date.slice(0,7),'年度':date.slice(0,4),'月份':Number(date.slice(5,7))+'月'};
+    subEl.textContent=subEl.getAttribute('data-sub-template').replace(/\{(日期|期间|年度|月份)\}/g,function(_,k){return parts[k]});
+  }
   if(valEl){
     valEl.innerHTML='<span class="vnum"></span>'+(b[0]?'<span class="unit">'+b[0]+'</span>':'');
     var vn=valEl.querySelector('.vnum');
     if(vn)v8count(vn,v,v8dec(b));
   }
-  if(subEl&&s.rows.length>1){
+  if(subEl&&s.rows.length>1&&canCompare(el)){
     var pv=s.rows[s.rows.length-2][1];
     var d=Math.round((v-pv)*Math.pow(10,v8dec(b)))/Math.pow(10,v8dec(b));
     var dir=d>=0?'up':'down',arw=d>=0?'▲':'▼';
@@ -39,7 +38,7 @@ root.querySelectorAll('[data-k]').forEach(function(el){
       var sEl=el.querySelector('.s');
       if(sEl&&!sEl.textContent.includes('·'))sEl.textContent=s.rows[s.rows.length-1][0]+' · '+sEl.textContent;
       /* v14：较前值chip */
-      if(vEl&&s.rows.length>1){
+      if(vEl&&s.rows.length>1&&canCompare(el)){
         var pv=s.rows[s.rows.length-2][1];
         var dd=Math.round((s.rows[s.rows.length-1][1]-pv)*Math.pow(10,v8dec(b)))/Math.pow(10,v8dec(b));
         var chg=document.createElement('span');

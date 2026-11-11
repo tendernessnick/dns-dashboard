@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 import _article_common as art
 from _news_common import (fetch_ctw, parse_ctw, extract_ctw_article, chips_from_title,
-                          load_keys, keymatch, audit_discards)
+                          load_keys, keymatch, keys_detail, audit_discards)
 
 PID, TITLE = 61, '苹果AVS资讯图文'
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))          # 看板数据固化
@@ -50,11 +50,11 @@ def run():
         if it[2] not in seen:
             seen.add(it[2])
             merged.append(it)
-    keys = (load_keys(PID) or {'core': KEYS, 'exclude': []})
+    keys = load_keys(PID, fallback=KEYS)
     picked = [(d, t, u) for d, t, u in merged if keymatch(t, keys)]
     audit_discards(PID, merged, {u for _, _, u in picked})   # B3: 被过滤标题留痕供周度召回审计
     if not picked:
-        return '成功', '关键词无命中(AVS/苹果低频主题属正常)，库存图文卡继续展示最近篇目'
+        return '成功', keys_detail(keys, '关键词无命中(AVS/苹果低频主题属正常)，库存图文卡继续展示最近篇目')
     new, missing, skipped = [], [], 0
     for dt, title, url in picked:
         if len(new) >= limit:
@@ -78,12 +78,12 @@ def run():
         if not photos:
             missing.append(name)
     if not new and not existing:
-        return '失败', f'无命中落盘(候选{len(picked)}, 短稿跳过{skipped})'
+        return '失败', keys_detail(keys, f'无命中落盘(候选{len(picked)}, 短稿跳过{skipped})')
     detail = (f'苹果AVS图文 · 新增{len(new)}篇{new if new else ""}，'
               f'库存{len(existing) + len(new)}篇'
               + (f'，短稿跳过{skipped}篇' if skipped else '')
               + (f'，{len(missing)}篇未取到照片{missing}' if missing else ''))
-    return '成功', detail
+    return '成功', keys_detail(keys, detail)
 
 
 if __name__ == '__main__':

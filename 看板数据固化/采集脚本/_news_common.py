@@ -154,29 +154,62 @@ def merge_rolling(filename, source, picked, keep_days=DAYS, max_items=60):
     return len(items), n_new_in
 
 
-# ---------------- 关键词外置（v20资讯治理B2）：词表= 看板数据固化/关键词表.csv ----------------KEYWORDS_FILE = os.path.join(os.path.dirname(NEWS_DIR), '关键词表.csv')
+# ---------------- 关键词外置（v20资讯治理B2）：词表= 看板数据固化/关键词表.csv ----------------
+KEYWORDS_FILE = os.path.join(os.path.dirname(NEWS_DIR), '关键词表.csv')
 
 
-def load_keys(pid):
-    """读某P号的关键词分层 {'core': [...], 'exclude': [...]}；文件缺失/该P号无行 → None（调用方回退内置词表）。
-    层级: 核心=命中保留；排除=命中剔除。核心为空+排除非空 = 全保留仅排除（仅负向过滤）。"""
+def _keyword_pid(pid):
+    """P号统一为 P数字+小写后缀，兼容 59/P59/p59 和 90b/P90B。"""
+    m = re.fullmatch(r'P?(\d+)([a-z]?)', str(pid).strip(), re.I)
+    if not m:
+        raise ValueError('P号格式无效')
+    return 'P' + str(int(m.group(1))) + m.group(2).lower()
+
+
+def load_keys(pid, fallback=None):
+    """读取核心/排除词，P号兼容有无前缀与大小写；保留关键词有意设置的尾空格。
+    文件缺失/格式异常/无该P号配置时打印原因；提供 fallback 则返回带原因的内置词表，
+    未提供则返回 None。消费者须用 keys_detail 把回退原因带入采集日志，避免静默降级。
+    核心为空+排除非空 = 全保留仅排除，不改变既有匹配规则。"""
     try:
         import csv as _csv
+        wanted = _keyword_pid(pid)
         with open(KEYWORDS_FILE, encoding='utf-8-sig', newline='') as f:
-            rows = list(_csv.DictReader(f))
-    except Exception:
+            reader = _csv.DictReader(f, strict=True)
+            fields = reader.fieldnames or []
+            if not {'P号', '层级', '词'}.issubset(fields) or len(set(fields)) != len(fields):
+                raise ValueError('词表表头须含不重复的 P号/层级/词')
+            core, excl = [], []
+            for r in reader:
+                if None in r or any(v is None for v in r.values()):
+                    raise ValueError(f'词表第{reader.line_num}行列数不符')
+                if _keyword_pid(r.get('P号') or '') != wanted:
+                    continue
+                level = (r.get('层级') or '').strip()
+                if level not in {'核心', '排除'}:
+                    raise ValueError(f'词表第{reader.line_num}行层级须为核心或排除')
+                w = (r.get('词') or '').lstrip()  # mac /ios 等尾空格有意保留，勿strip
+                if not w.strip():
+                    raise ValueError(f'词表第{reader.line_num}行关键词为空')
+                (excl if level == '排除' else core).append(w)
+        if not core and not excl:
+            raise ValueError('词表无该P号有效配置')
+        return {'core': core, 'exclude': excl}
+    except FileNotFoundError:
+        reason = '词表文件缺失'
+    except (OSError, UnicodeError, ValueError, _csv.Error) as e:
+        reason = str(e)
+    notice = f'关键词回退[{pid}]: {reason}'
+    print('[warn] ' + notice)
+    if fallback is None:
         return None
-    core, excl = [], []
-    for r in rows:
-        if str(r.get('P号') or '').strip() != str(pid):
-            continue
-        w = (r.get('词') or '').lstrip()   # 只剥首空白；尾空白有意保留（如'mac '/'ios '防误配，勿strip）
-        if not w.strip():
-            continue
-        (excl if (r.get('层级') or '').strip() == '排除' else core).append(w)
-    if not core and not excl:
-        return None
-    return {'core': core, 'exclude': excl}
+    return {'core': list(fallback), 'exclude': [], '_fallback': notice}
+
+
+def keys_detail(keys, detail):
+    """回退原因置于详情开头，run_all截取日志时仍可见；正常外置词表不加提示。"""
+    notice = keys.get('_fallback')
+    return f'{notice} | {detail}' if notice else detail
 
 
 def keymatch(title, keys):

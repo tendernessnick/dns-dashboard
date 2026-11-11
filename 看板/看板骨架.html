@@ -8,34 +8,35 @@
 <body>
 <style>/*__CSS__*/</style>
 <div id="dns-dash">
-<div class="rule3"></div>
+<div class="rule3" aria-hidden="true"></div>
 <header class="mast"><div class="mast-in">
-  <div class="m-brand"><span class="mark">DNS</span>
-    <div><div class="m-eyebrow">DNS · 深圳和宏</div><h1>市场与竞对监测数据看板</h1><div class="m-sub">宏观 · 大宗商品 · 行业 · 品类 · 竞对同业（共109项监测源）</div></div>
+  <div class="m-brand"><span class="mark" aria-label="DNS 深圳和宏"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3z" fill="currentColor"/><path d="M14 14h7v7h-7z" fill="currentColor" opacity=".35"/></svg><span>DNS</span></span>
+    <div><div class="m-eyebrow">DNS · 深圳和宏 <span>STRATEGY INTELLIGENCE</span></div><h1>市场与竞对监测<span class="workbench-tag">研究工作台</span></h1><div class="m-sub">宏观环境 / 成本变化 / 行业趋势 / 产品与同业动态</div></div>
   </div>
   <div class="m-right">
-    <div class="m-meta"><span class="m-k">数据截至</span><b id="asof">2026-10-23</b></div>
-    <div class="m-meta"><span class="m-k">数据说明</span><b>固化CSV自动绑定 · 资讯近7天</b></div>
+    <div class="m-meta"><span class="m-k">全库最新观测</span><b id="asof">—</b></div>
+    <div class="m-meta"><span class="m-k">监测范围</span><b>109 <span>项词条 · 5 大板块</span></b></div>
   </div>
 </div></header>
 <div class="mline"></div>
-<nav class="toolbar"><div class="toolbar-in">
+<nav class="toolbar" aria-label="看板导航"><div class="toolbar-in">
   <span id="dnav">
-    <a class="tlink" href="#m1">宏观数据</a><a class="tlink" href="#m2">大宗商品</a><a class="tlink" href="#m3">行业数据</a><a class="tlink" href="#m4">产品品类</a><a class="tlink" href="#m5">竞对同业</a>
+    <a class="tlink" href="#m1"><span class="nav-no">01</span>宏观数据</a><a class="tlink" href="#m2"><span class="nav-no">02</span>大宗商品</a><a class="tlink" href="#m3"><span class="nav-no">03</span>行业数据</a><a class="tlink" href="#m4"><span class="nav-no">04</span>产品品类</a><a class="tlink" href="#m5"><span class="nav-no">05</span>竞对同业</a>
   </span>
   <span class="tspace"></span>
-  <span class="tb2"><span class="pctl" title="切换折线图显示周期（仅影响曲线渲染，不改动固化数据）"><i>周期</i><b class="on">默认</b><b data-m="3">3月</b><b data-m="6">6月</b><b data-m="12">1年</b><b data-m="36">3年</b><b data-all="1">全部</b></span>
-  <a class="tbtn" href="#appendix" id="provbtn">数据溯源索引</a></span>
+  <span class="tb2"><span class="pctl" title="切换折线图显示周期（仅影响曲线渲染，不改动固化数据）"><i>周期</i><button class="on" type="button" aria-pressed="true">默认</button><button type="button" data-m="3" aria-pressed="false">3月</button><button type="button" data-m="6" aria-pressed="false">6月</button><button type="button" data-m="12" aria-pressed="false">1年</button><button type="button" data-m="36" aria-pressed="false">3年</button><button type="button" data-all="1" aria-pressed="false">全部</button></span>
+  <a class="tbtn" href="#appendix" id="provbtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 3a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm4 10 4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>数据溯源</a></span>
 </div></nav>
-<div class="ticker"><div class="ticker-in">
-  <span class="tk-eyebrow">今日焦点</span>
+<div class="ticker"><div class="ticker-wrap">
+  <div class="snapshot-head"><div><span class="section-kicker">MARKET SNAPSHOT</span><h2>重点指标速览</h2></div><p>各指标按自身频率更新 <span aria-hidden="true">/</span> 数据时点见卡片</p></div>
+  <div class="ticker-in">
   <div class="tk" data-tk="P21"><span class="k">美元兑人民币中间价</span><span class="v">6.7180</span><span class="s">10-23 · 中国货币网</span></div>
   <div class="tk" data-tk="P22"><span class="k">美元指数 DXY</span><span class="v">101.65</span><span class="s">10-23 · 东方财富</span></div>
   <div class="tk" data-tk="P26"><span class="k">LME铜（3月）</span><span class="v">14,164<small>美元/吨</small></span><span class="s">10-23 · 新浪财经</span></div>
   <div class="tk" data-tk="P36"><span class="k">布伦特原油</span><span class="v">113.87<small>美元/桶</small></span><span class="s">10-23 · 新浪财经</span></div>
   <div class="tk" data-tk="P37"><span class="k">SCFI集装箱运价</span><span class="v">3,679.58</span><span class="s">10-16期 · 上海航交所</span></div>
   <div class="tk" data-tk="P71"><span class="k">通讯器材零售同比</span><span class="v" style="color:var(--up)">+31.1%</span><span class="s">9月 · 国家统计局</span></div>
-</div></div>
+</div></div></div>
 
 <main class="d-main">
 <!--__SECTIONS__-->
@@ -45,11 +46,11 @@
 <section class="prov-app" id="appendix" data-open="false">
   <button class="prov-toggle" type="button" id="provToggle">附录 · 数据溯源索引<span class="sum" id="provSum"></span><span class="chev">▼</span></button>
   <div class="prov-body">
-    <p class="prov-note">溯源四要素：来源机构 · 来源链接 · 采集方式 · 最近抓取日期（本次全部为 <b class="num">2026-10-23</b>）。点击「词条」可回跳对应看板卡片；点击「来源URL」在新标签打开原文；悬停卡片内来源名可查看元信息。</p>
+    <p class="prov-note">按词条追溯来源、统计口径与有效数据日期。点击词条回到对应卡片，点击来源链接查看原文；不同指标的观测期与更新频率可能不同。</p>
     <div class="prov-tools">
-      <select id="pfCat"><option value="">全部板块</option></select>
-      <select id="pfStatus"><option value="">全部状态</option><option>成功</option><option>部分成功</option></select>
-      <input id="pfQ" placeholder="搜索词条 / 来源 / URL…">
+      <select id="pfCat" aria-label="筛选板块"><option value="">全部板块</option></select>
+      <select id="pfStatus" aria-label="筛选状态"><option value="">全部状态</option><option>成功</option><option>部分成功</option></select>
+      <input id="pfQ" aria-label="搜索数据来源" placeholder="搜索词条、来源或网址…">
       <span class="pcount" id="pfCount"></span>
     </div>
     <div class="twrap"><table class="ptable">
@@ -64,7 +65,7 @@
   <span class="lg"><span class="chip c-warn"><span class="cdot"></span>受限/接入中</span> 需账号或浏览器渲染</span>
   <span>涨跌标识：<b class="up">▲红涨</b> / <b class="down">▼绿跌</b>（中国惯例）</span>
   <span>数据来源：见「附录 · 数据溯源索引」；数据仅用于内部研究，引用请注明原始来源</span>
-  <span>本页为设计稿：数值为2026-10-23抓取测试值，历史曲线为示例序列，正式版按所示频率自动更新</span>
+  <span class="footer-note">预测、累计、代理指标及受限数据请结合卡片说明使用；各项有效日期与核验范围见数据溯源。</span>
 </footer>
 
 <button id="toTop" aria-label="回到顶部">↑</button>
@@ -166,7 +167,7 @@ function vrfHTML(pid){
   if(typeof DDATA==='undefined'||!DDATA._verify)return '';
   var v=DDATA._verify[pid];if(!v)return '';
   var cls=v.s==='ok'?'vrf ok':(v.s==='sus'?'vrf sus':'vrf warn');
-  var txt=v.s==='sus'?'⚠存疑':(v.s==='warn'?'⚠核验':'✓核验');
+  var txt=(v.s==='ok'?'✓':'⚠')+(v.t||(v.s==='sus'?'存疑':'对照异常'));
   return ' <span class="'+cls+'" title="'+escH((v.x||'')+' · '+v.d)+'">'+txt+' '+escH(v.d)+'</span>';
 }
 function freshHTML(pid){
@@ -187,10 +188,12 @@ function freshHTML(pid){
       var out2=ff.u+(ff.o>0?(' <span class="ovd">逾期'+ff.o+'天</span>'):'');
       return out2+vrfHTML(pid);
     }
-    return '—';
+    return '—'+vrfHTML(pid);
   }
-  var last=d.rows[d.rows.length-1][0];
-  if(!last)return '—';
+  // 与主数值使用同一列最后有效记录，避免“同比9月、附录10月空值行”错配。
+  var valid=d.rows.filter(function(r){return r[1]!==null&&r[1]!==undefined});
+  var last=valid.length?valid[valid.length-1][0]:null;
+  if(!last)return '—'+vrfHTML(pid);
   var dd=Math.floor((new Date(FRESH_TODAY)-new Date(last))/864e5);
   var m=DDATA._meta?DDATA._meta[pid]:null;
   var lim=m?FRESH_MAX[m.f]:null;

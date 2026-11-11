@@ -22,7 +22,8 @@ function drawChart(el,redraw){
   function Y(v){return pt+(1-(v-lo)/(hi-lo))*(H-pt-pb)}
   function XL(t){return t.length>=10?t.slice(0,7):t}
   function dec(){return (b[1]==null)?2:b[1]}
-  var CC=v8cols(),isUp=vals[n-1]>=vals[0],c=isUp?CC.up:CC.down;
+  var CC=v8cols(),isUp=vals[n-1]>=vals[0],comparable=canCompare(el);
+  var c=comparable?(isUp?CC.up:CC.down):getComputedStyle(el).getPropertyValue('--acc').trim()||'#0065B0';
   var gid='v8g'+(++v8seq);
   var svg='<svg'+((redraw||V8REDUCE)?' class="redraw"':'')+' width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="历史趋势，悬停或左右滑动查看数值">';
   var span=hi-lo,rawStep=span/(mini?3:3.5),mag=Math.pow(10,Math.floor(Math.log(rawStep)/Math.LN10));
@@ -84,7 +85,7 @@ function drawChart(el,redraw){
     var px=X(i),py=Y(s.rows[i][ci]);
     gl.setAttribute('x1',px);gl.setAttribute('x2',px);gl.style.display='block';
     hd.setAttribute('cx',px);hd.setAttribute('cy',py);hd.setAttribute('stroke',c);hd.style.display='block';
-    var dtxt='';if(i>0){var dd=Math.round((s.rows[i][ci]-s.rows[i-1][ci])*Math.pow(10,dec()))/Math.pow(10,dec());
+  var dtxt='';if(i>0&&comparable){var dd=Math.round((s.rows[i][ci]-s.rows[i-1][ci])*Math.pow(10,dec()))/Math.pow(10,dec());
       dtxt='<span class="d '+(dd>=0?'up':'down')+'">（较前期 '+(dd>=0?'+':'')+dd+'）</span>';}
     tip.innerHTML=escH(s.rows[i][0])+' · <b>'+fmtN(s.rows[i][ci],dec())+'</b> '+escH(b[0]||'')+dtxt;
     tip.style.display='block';

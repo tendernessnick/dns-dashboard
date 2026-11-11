@@ -101,9 +101,10 @@ def main():
         status = detail = None
         try:
             proc = subprocess.Popen(
-                [sys.executable, os.path.join(HERE, f)],
+                [sys.executable, '-X', 'utf8', os.path.join(HERE, f)],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                cwd=HERE, text=True, encoding='utf-8', errors='replace')
+                cwd=HERE, text=True, encoding='utf-8', errors='replace',
+                env={**os.environ, 'PYTHONIOENCODING': 'utf-8'})
             try:
                 out, _ = proc.communicate(timeout=timeout)
                 status, detail = _parse_child_output(out, proc.returncode)

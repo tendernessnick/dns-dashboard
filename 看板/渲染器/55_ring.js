@@ -2,7 +2,7 @@
 // v14：圆弧生长动画 + 占比滚动（REDUCE降级为直出）；结构色定妆品牌蓝
 // v19.1：双环对比——存在第二组 .rf/.rt 时，col3(Qi2.2)/全库 画第二环（琥珀色，类 ralt）
 (function(){
-  var REDUCE=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var REDUCE=true; // v21：双环与占比直接到位，避免装饰性滚动读数。
   root.querySelectorAll('[data-ring]').forEach(function(el){
     var d=DDATA[el.getAttribute('data-ring')];
     if(!d||!d.rows||!d.rows.length||d.cols.length<2)return;
