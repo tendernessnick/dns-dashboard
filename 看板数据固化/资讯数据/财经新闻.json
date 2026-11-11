@@ -1,7 +1,13 @@
 {
- "updated": "2026-11-11T07:18:01+00:00",
+ "updated": "2026-11-11T16:02:40+00:00",
  "source": "CNBC Markets",
  "items": [
+  {
+   "date": "11-11",
+   "title": "Consumers are showing signs of strain even as they keep spending, CNBC/NRF Retail Monitor shows",
+   "title_zh": "CNBC/NRF零售监测显示，即使消费者仍在消费，但也出现了紧张迹象",
+   "url": "https://www.cnbc.com/2026/11/11/october-retail-sales-cnbc-nrf-2026.html"
+  },
   {
    "date": "11-11",
    "title": "Consumer prices rose 0.4% in October, more than expected, complicating Fed's inflation fight",
@@ -43,12 +49,6 @@
    "title": "U.S. economy added 165,000 jobs in October, way more than expected; unemployment rate slips to 4.1%",
    "title_zh": "美国经济10月新增16.5万个就业岗位，远高于预期；失业率降至4.1%",
    "url": "https://www.cnbc.com/2026/11/06/jobs-report-october-2026.html"
-  },
-  {
-   "date": "11-06",
-   "title": "The October jobs report is out Friday. Here's everything to expect",
-   "title_zh": "10月份的就业报告将于周五发布。以下是所有信息",
-   "url": "https://www.cnbc.com/2026/11/05/october-jobs-report-preview.html"
   }
  ]
 }
