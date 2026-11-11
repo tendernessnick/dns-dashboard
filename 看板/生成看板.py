@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 生成看板（组装器）：看板骨架.html + 布局.csv + 模块/*.json + 渲染器/*.js + _style.css
-    → index.html（页面壳，不含数据）
+    → 页面.json登记的各部门HTML（页面壳，不含数据）
 
 v13 模块化改造（2026-10-29），取代 v12 的「看板模板.html + 字符串补丁」机制：
   - 页面 = 骨架（页头/导航/ticker/附录，长期稳定）
@@ -19,12 +19,13 @@ import glob
 import json
 import os
 import sys
+import re
+from html import escape
+from 页面配置 import load_pages
 
 sys.stdout.reconfigure(encoding='utf-8')
 BASE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(BASE, 'index.html')
 SKEL = os.path.join(BASE, '看板骨架.html')
-LAYOUT = os.path.join(BASE, '布局.csv')
 MOD_DIR = os.path.join(BASE, '模块')
 REN_DIR = os.path.join(BASE, '渲染器')
 CSS = os.path.join(BASE, '_style.css')
@@ -32,8 +33,7 @@ CSS = os.path.join(BASE, '_style.css')
 # ============ 读入 ============
 skeleton = open(SKEL, encoding='utf-8').read()
 css = open(CSS, encoding='utf-8').read()
-with open(LAYOUT, encoding='utf-8-sig', newline='') as f:
-    layout = list(csv.DictReader(f))
+DEFAULT_PAGE, PAGES = load_pages(BASE)
 
 CARDS = {}
 for fp in sorted(glob.glob(os.path.join(MOD_DIR, '*.json'))):
@@ -42,6 +42,7 @@ for fp in sorted(glob.glob(os.path.join(MOD_DIR, '*.json'))):
     except Exception as e:
         raise SystemExit(f'模块JSON解析失败: {os.path.basename(fp)}: {e}')   # v18.8：报错带文件名
     cid = cfg.get('ID') or os.path.basename(fp)[:-5]
+    cfg.setdefault('ID', cid)
     if cid in CARDS:
         raise SystemExit(f'卡片ID重复：{cid}（{fp}）')
     CARDS[cid] = cfg
@@ -269,7 +270,7 @@ def b_cco(c):
     head = (f'<div class="chead"><span class="mono">{c.get("角标字", "")}</span>'
             f'<span><div class="cn">{c["卡名"]}</div><div class="cs">{c.get("代码", "")}</div></span>{dot}</div>')
     cd = f'<div class="cd">{c["说明"]}</div>' if c.get('说明') else ''
-    return f'<div class="cco" data-k="{Pn(c["主数据"])}">{head}{cd}{b_btn(c)}</div>'
+    return f'<div class="cco" data-mid="{atattr(c["ID"])}" data-k="{Pn(c["主数据"])}"{source_attrs(c)}>{head}{cd}{b_btn(c)}</div>'
 
 
 def card_html(c, slot=None):
@@ -281,6 +282,7 @@ def card_html(c, slot=None):
     css = ';'.join(p for p in [(c.get('卡片样式') or '').rstrip(';'), slot or ''] if p)
     attrs = (st(css)
              + (f' data-mid="{atattr(c["ID"])}"' if c.get('ID') else '')
+             + source_attrs(c)
              + (f' data-k="{dk}"' if dk else '')
              + (' data-change="none"' if c.get('显示前值变化') is False else '')
              + (' data-trend="none"' if c.get('显示趋势') is False else '')
@@ -312,119 +314,124 @@ def card_html(c, slot=None):
 # ============ 板块拼装 ============
 
 
-sections = []
-for r in layout:
-    if r['类型'] == 'S':
-        sections.append({'meta': r, 'body': []})
-    elif sections:
-        sections[-1]['body'].append(r)
-    else:
-        # v18.8：首个S板块行之前的布局行旧行为是静默丢弃——直接报错防改表踩坑
-        raise SystemExit(f'布局第{r.get("序号")}行（{r["类型"]} {r["引用"]}）位于第一个S板块行之前，无处挂载')
+def render_sections(layout, use_layout_columns=False):
+    sections = []
+    for r in layout:
+        if r['类型'] == 'S':
+            sections.append({'meta': r, 'body': []})
+        elif sections:
+            sections[-1]['body'].append(r)
+        else:
+            # v18.8：首个S板块行之前的布局行旧行为是静默丢弃——直接报错防改表踩坑
+            raise SystemExit(f'布局第{r.get("序号")}行（{r["类型"]} {r["引用"]}）位于第一个S板块行之前，无处挂载')
 
-out = []
-for sec in sections:
-    meta, body = sec['meta'], sec['body']
-    out.append(f'<section class="mod" id="{meta["引用"]}">')
-    out.append('  <div class="sec-head"><div class="sec-no">%s</div><div><h2>%s</h2><p>%s</p></div><div class="sec-meta">%s</div></div>'
-               % (meta['编号'], meta['标题'], meta['副标题'], meta['角标']))
-    companies = [r for r in body if r['类型'] == 'P']
-    row_open = wall_open = panel_open = tabs_done = False
-    stack = None        # (堆叠名, span, 容器样式)
-    stack_open = False
-    slot_line, slot_fill = 1, 0   # v14固定槽位：行内当前网格行 / 已占列数
+    out = []
+    for sec in sections:
+        meta, body = sec['meta'], sec['body']
+        out.append(f'<section class="mod" id="{meta["引用"]}">')
+        out.append('  <div class="sec-head"><div class="sec-no">%s</div><div><h2>%s</h2><p>%s</p></div><div class="sec-meta">%s</div></div>'
+                   % (meta['编号'], meta['标题'], meta['副标题'], meta['角标']))
+        companies = [r for r in body if r['类型'] == 'P']
+        row_open = wall_open = panel_open = tabs_done = False
+        stack = None        # (堆叠名, span, 容器样式)
+        stack_open = False
+        slot_line, slot_fill = 1, 0   # v14固定槽位：行内当前网格行 / 已占列数
 
-    def close_row():
-        global row_open, wall_open, stack, stack_open, panel_open, slot_line, slot_fill
-        if stack_open:
-            out.append('  </div>')
-            stack_open = False
-        stack = None  # 待用的堆叠容器定义一并失效
-        if row_open:
-            out.append('  </div>')
-            row_open = False
-        if wall_open:
-            out.append('  </div>')
-            wall_open = False
-        slot_line, slot_fill = 1, 0
-
-    for r in body:
-        t = r['类型']
-        if t == 'G':
-            close_row()
-            if panel_open:
+        def close_row():
+            nonlocal row_open, wall_open, stack, stack_open, panel_open, slot_line, slot_fill
+            if stack_open:
                 out.append('  </div>')
-                panel_open = False
-            out.append(f'  <h3 class="grp">{r["引用"]}</h3>')
-        elif t == 'P':
-            close_row()
-            if panel_open:
+                stack_open = False
+            stack = None  # 待用的堆叠容器定义一并失效
+            if row_open:
                 out.append('  </div>')
-                panel_open = False
-            if not tabs_done:
-                btns = []
-                for i, co in enumerate(companies):
-                    on = ' on' if i == 0 else ''
-                    btns.append(f'<button class="cotab{on}" data-cotab="{co["引用"]}">{co["引用"]} <small>{co["代码"]}</small></button>')
-                out.append(f'  <div class="co-tabs" id="coTabs">{"".join(btns)}</div>')
-                tabs_done = True
-            hidden = ' hidden' if r.get('隐藏') == '是' else ''
-            out.append(f'  <div class="co-panel" data-copanel="{r["引用"]}"{hidden}>')
-            panel_open = True
-        elif t == 'R':
-            close_row()
-            if r.get('容器') == '卡墙':
-                out.append('  <div class="crow">')
-                wall_open = True
-        elif t == 'K':
-            # 行内堆叠容器（如 议息双卡 flex c4）：先确保所在行已打开
-            if not row_open:
-                out.append('  <div class="row">')
-                row_open = True
-                slot_line, slot_fill = 1, 0
-            stack = (r['堆叠'], r.get('跨列') or '', r.get('容器样式', ''))
-        elif t == 'C':
-            cfg = CARDS.get(r['引用'])
-            if cfg is None:
-                raise SystemExit(f'布局.csv 引用了不存在的卡片：{r["引用"]}')
+                row_open = False
             if wall_open:
-                out.append('    ' + card_html(cfg))
-            elif r.get('堆叠'):
-                if stack is None:
-                    stack = (r['堆叠'], str(r.get('跨列') or cfg['跨列']), '')
-                if not stack_open:
-                    span_k = int(stack[1]) if str(stack[1]).strip().isdigit() else 0
-                    slot_k = None
-                    if span_k > 0:
-                        if slot_fill + span_k > 12:
-                            slot_line += 1
-                            slot_fill = 0
-                        slot_k = f'grid-column:span {span_k};grid-row:{slot_line}'
-                        slot_fill += span_k
-                    css_k = ';'.join(p for p in [(stack[2] or '').rstrip(';'), slot_k or ''] if p)
-                    out.append(f'  <div class="c{stack[1]}"{st(css_k)}>')
-                    stack_open = True
-                out.append('    ' + card_html(cfg))
-            else:
+                out.append('  </div>')
+                wall_open = False
+            slot_line, slot_fill = 1, 0
+
+        for r in body:
+            t = r['类型']
+            if t == 'G':
+                close_row()
+                if panel_open:
+                    out.append('  </div>')
+                    panel_open = False
+                out.append(f'  <h3 class="grp">{r["引用"]}</h3>')
+            elif t == 'P':
+                close_row()
+                if panel_open:
+                    out.append('  </div>')
+                    panel_open = False
+                if not tabs_done:
+                    btns = []
+                    for i, co in enumerate(companies):
+                        on = ' on' if i == 0 else ''
+                        btns.append(f'<button class="cotab{on}" data-cotab="{co["引用"]}">{co["引用"]} <small>{co["代码"]}</small></button>')
+                    out.append(f'  <div class="co-tabs" id="coTabs-{meta["引用"]}" role="group" aria-label="选择公司">{"".join(btns)}</div>')
+                    tabs_done = True
+                hidden = ' hidden' if r.get('隐藏') == '是' else ''
+                out.append(f'  <div class="co-panel" data-copanel="{r["引用"]}"{hidden}>')
+                panel_open = True
+            elif t == 'R':
+                close_row()
+                if r.get('容器') == '卡墙':
+                    out.append('  <div class="crow">')
+                    wall_open = True
+            elif t == 'K':
+                # 行内堆叠容器（如 议息双卡 flex c4）：先确保所在行已打开
                 if not row_open:
                     out.append('  <div class="row">')
                     row_open = True
                     slot_line, slot_fill = 1, 0
-                span = cfg.get('跨列') or 0
-                slot = None
-                if span > 0:
-                    if slot_fill + span > 12:
-                        slot_line += 1
-                        slot_fill = 0
-                    slot = f'grid-column:span {span};grid-row:{slot_line}'
-                    slot_fill += span
-                out.append('    ' + card_html(cfg, slot))
-    close_row()
-    if panel_open:
-        out.append('</div>')
-    out.append('</section>')
+                stack = (r['堆叠'], r.get('跨列') or '', r.get('容器样式', ''))
+            elif t == 'C':
+                cfg = CARDS.get(r['引用'])
+                if cfg is None:
+                    raise SystemExit(f'布局.csv 引用了不存在的卡片：{r["引用"]}')
+                if use_layout_columns and r.get('跨列'):
+                    cfg = dict(cfg, 跨列=int(r['跨列']))
+                if wall_open:
+                    out.append('    ' + card_html(cfg))
+                elif r.get('堆叠'):
+                    if stack is None:
+                        stack = (r['堆叠'], str(r.get('跨列') or cfg['跨列']), '')
+                    if not stack_open:
+                        span_k = int(stack[1]) if str(stack[1]).strip().isdigit() else 0
+                        slot_k = None
+                        if span_k > 0:
+                            if slot_fill + span_k > 12:
+                                slot_line += 1
+                                slot_fill = 0
+                            slot_k = f'grid-column:span {span_k};grid-row:{slot_line}'
+                            slot_fill += span_k
+                        css_k = ';'.join(p for p in [(stack[2] or '').rstrip(';'), slot_k or ''] if p)
+                        out.append(f'  <div class="c{stack[1]}"{st(css_k)}>')
+                        stack_open = True
+                    out.append('    ' + card_html(cfg))
+                else:
+                    if not row_open:
+                        out.append('  <div class="row">')
+                        row_open = True
+                        slot_line, slot_fill = 1, 0
+                    span = cfg.get('跨列') or 0
+                    slot = None
+                    if span > 0:
+                        if slot_fill + span > 12:
+                            slot_line += 1
+                            slot_fill = 0
+                        slot = f'grid-column:span {span};grid-row:{slot_line}'
+                        slot_fill += span
+                    out.append('    ' + card_html(cfg, slot))
+        close_row()
+        if panel_open:
+            out.append('</div>')
+        out.append('</section>')
 
-sections_html = '\n'.join(x for x in out if x != '' and not x.startswith('<!--stack:'))
+    sections_html = '\n'.join(x for x in out if x != '' and not x.startswith('<!--stack:'))
+
+    return sections_html, sections
 
 # ============ 溯源注册表（v17：由 看板数据固化/溯源表.csv 注入骨架，替代内嵌PROV） ============
 PROV_CSV = os.path.join(os.path.dirname(BASE), '看板数据固化', '溯源表.csv')
@@ -435,30 +442,147 @@ PROV = [{'id': int(r['P号'][1:]), 'cat': r['板块'], 'sub': r['分组'], 'titl
          'status': r['状态'], 'sample': r['实测样例'], 'note': r['备注'], 'method': r['采集方式']}
         for r in _prov_rows]
 
-# ============ 组装输出 ============
-js = ''
-for fp in sorted(glob.glob(os.path.join(REN_DIR, '*.js'))):
-    js += open(fp, encoding='utf-8').read().rstrip() + '\n'
+# ============ 注册页面组装 ============
 
-html = skeleton
-html = html.replace('var PROV=/*__PROV__*/[];', 'var PROV=' + json.dumps(PROV, ensure_ascii=False) + ';', 1)
-if '/*__PROV__*/' in html:
-    raise SystemExit('骨架占位符未替换：/*__PROV__*/（骨架缺 PROV 占位行？）')
-html = html.replace('<style>/*__CSS__*/</style>', '<style>\n' + css + '\n</style>', 1)
-html = html.replace('<!--__SECTIONS__-->', sections_html, 1)
-html = html.replace('<!--__DATA_JS__-->', '<script src="data.js"></script>', 1)
-html = html.replace('<!--__ENGINE__-->', '<script>\n' + js + '</script>', 1)
-for mark in ('<!--__SECTIONS__-->', '<!--__DATA_JS__-->', '<!--__ENGINE__-->', '/*__CSS__*/'):
-    if mark in html:
-        raise SystemExit(f'骨架占位符未替换：{mark}')
 
-with open(OUT, 'w', encoding='utf-8') as f:
-    f.write(html)
+def normalize_pid(value):
+    m = re.fullmatch(r'P(\d+)', str(value))
+    return 'P' + str(int(m.group(1))) if m else None
 
-unused = set(CARDS) - {r['引用'] for r in layout if r['类型'] == 'C'}
-print('页面壳已重建:', os.path.basename(OUT), os.path.getsize(OUT) // 1024, 'KB（不含数据）')
-print('卡片', sum(1 for r in layout if r['类型'] == 'C'), '张 / 板块', len(sections),
-      '个 / 渲染器', len(glob.glob(os.path.join(REN_DIR, "*.js"))), '个 / 溯源', len(PROV), '条')
-if unused:
-    print('警告：以下卡片配置未被布局引用：', sorted(unused))
-print('日常更新数据请运行: python 生成数据.py；发同事用: python 打包单文件.py')
+
+REG_PATH = os.path.join(os.path.dirname(BASE), '看板数据固化', '词条注册表.csv')
+with open(REG_PATH, encoding='utf-8-sig', newline='') as f:
+    REGISTRY = list(csv.DictReader(f))
+NEWS_PIDS = {}
+for record in REGISTRY:
+    for key in (record.get('资讯key') or '').split(';'):
+        if key.strip():
+            NEWS_PIDS.setdefault(key.strip(), set()).add(normalize_pid(record['P号']))
+
+
+def module_pids(config):
+    """数据键来自原模块嵌套配置及资讯键映射，不能把模块编号误当数据P号。"""
+    found = set()
+    def visit(value):
+        if isinstance(value, dict):
+            for item in value.values():
+                visit(item)
+        elif isinstance(value, list):
+            for item in value:
+                visit(item)
+        elif isinstance(value, str):
+            pid = normalize_pid(value)
+            if pid:
+                found.add(pid)
+    visit(config)
+    for key in (config.get('资讯键') or '').split(';'):
+        found.update(NEWS_PIDS.get(key.strip(), set()))
+    return found - {None}
+
+
+CARD_PIDS = {cid: module_pids(c) for cid, c in CARDS.items()}
+
+
+def source_attrs(config):
+    pids = sorted(CARD_PIDS.get(config.get('ID'), set()), key=lambda p: int(p[1:]))
+    return ' data-source-pids="' + ' '.join(pids) + '"' if pids else ''
+
+
+def read_layout(page):
+    with open(os.path.join(BASE, page['布局']), encoding='utf-8-sig', newline='') as f:
+        reader = csv.DictReader(f, strict=True)
+        if not {'类型', '引用', '跨列', '编号', '标题', '副标题', '角标'}.issubset(reader.fieldnames or []):
+            raise ValueError(page['ID'] + '布局表头缺失')
+        layout = list(reader)
+    seen_cards, seen_sections = set(), set()
+    fixed_ids = {'dns-dash', 'appendix', 'dnav', 'provbtn', 'asof', 'toTop',
+                 'pfCat', 'pfStatus', 'pfQ', 'provRows', 'provToggle', 'provSum', 'pfCount'}
+    for row in layout:
+        if None in row or any(value is None for value in row.values()):
+            raise ValueError(page['ID'] + '布局列数不符')
+        kind, ref = row['类型'], row['引用']
+        if kind not in {'S', 'G', 'R', 'K', 'C', 'P'}:
+            raise ValueError(f'{page["ID"]}未知布局类型：{kind}')
+        if kind == 'S':
+            if (not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]*', ref) or ref in fixed_ids
+                    or ref.startswith(('coTabs-', 'card-', 'module-', 'prov-')) or ref in seen_sections):
+                raise ValueError(f'{page["ID"]}板块ID无效或重复：{ref}')
+            seen_sections.add(ref)
+        if kind == 'C':
+            if ref not in CARDS or ref in seen_cards:
+                raise ValueError(f'{page["ID"]}模块不存在或重复：{ref}')
+            seen_cards.add(ref)
+        if kind in {'C', 'K'} and row['跨列'] and (not row['跨列'].isdigit() or not 1 <= int(row['跨列']) <= 12):
+            raise ValueError(f'{page["ID"]}模块/堆叠跨列须为1~12：{ref}')
+    if not seen_sections or not seen_cards:
+        raise ValueError(page['ID'] + '必须含板块及模块')
+    return layout
+
+
+ENGINE = ''.join(open(fp, encoding='utf-8').read().rstrip() + '\n'
+                 for fp in sorted(glob.glob(os.path.join(REN_DIR, '*.js'))))
+
+
+def build_page(page):
+    layout = read_layout(page)
+    body, sections = render_sections(layout, page.get('使用布局跨列', False))
+    used = [row['引用'] for row in layout if row['类型'] == 'C']
+    pids = set().union(*(CARD_PIDS[cid] for cid in used))
+    full_provenance = page.get('完整溯源', page['ID'] == DEFAULT_PAGE)
+    sources = PROV if full_provenance else [r for r in PROV if 'P' + str(r['id']) in pids]
+    page_info = {'id': page['ID'], 'label': page['名称'], 'file': page['文件'],
+                 'moduleCount': len(used), 'sourceCount': len(sources)}
+    tabs = ''.join('<a class="department-link' + (' on' if other['ID'] == page['ID'] else '')
+                   + '" data-dashboard-page="' + escape(other['ID'], quote=True)
+                   + '" href="' + escape(other['文件'], quote=True) + '"'
+                   + (' aria-current="page"' if other['ID'] == page['ID'] else '')
+                   + '>' + escape(other['名称']) + '</a>' for other in PAGES)
+    nav = ''.join('<a class="tlink" href="#' + escape(section['meta']['引用'], quote=True)
+                  + '"><span class="nav-no">' + escape(section['meta']['编号']) + '</span>'
+                  + escape(section['meta']['标题']) + '</a>' for section in sections)
+    replacements = {
+        '<!--__PAGE_TABS__-->': tabs,
+        '<!--__SECTION_NAV__-->': nav,
+        '<!--__PAGE_TITLE__-->': escape(page['标题']),
+        '<!--__PAGE_SUBTITLE__-->': escape(page['副标题']),
+        '<!--__PAGE_EYEBROW__-->': escape(page['眉标']),
+        '<!--__PAGE_TAG__-->': escape(page['定位']),
+        '<!--__PAGE_DESCRIPTION__-->': escape(page['说明']),
+        '<!--__PAGE_SCOPE__-->': str(len(sources)) + ' <span>项词条 · ' + str(len(used)) + ' 个模块</span>',
+        '<!--__SECTIONS__-->': body,
+        '<!--__DATA_JS__-->': '<script src="data.js"></script>',
+        '<!--__ENGINE__-->': '<script>\n' + ENGINE + '</script>',
+        '<style>/*__CSS__*/</style>': '<style>\n' + css + '\n</style>',
+        'var PROV=/*__PROV__*/[];': 'var PROV=' + json.dumps(sources, ensure_ascii=False).replace('</', '<\\/') + ';',
+        'var PAGE_INFO=/*__PAGE_INFO__*/{};': 'var PAGE_INFO=' + json.dumps(page_info, ensure_ascii=False).replace('</', '<\\/') + ';',
+    }
+    html = skeleton
+    if not page.get('速览', True):
+        html = re.sub(r'<!--__OVERVIEW_START__-->.*?<!--__OVERVIEW_END__-->', '', html, flags=re.S)
+    for old, new in replacements.items():
+        if old not in html:
+            raise ValueError(f'{page["ID"]}骨架缺少占位符：{old}')
+        html = html.replace(old, new, 1)
+    html = html.replace('<!--__OVERVIEW_START__-->', '').replace('<!--__OVERVIEW_END__-->', '')
+    html = html.replace('<title>DNS 数据看板 · 市场与竞对监测</title>',
+                        '<title>DNS · ' + escape(page['名称']) + '</title>', 1)
+    if re.search(r'<!--__[A-Z_]+__-->|/\*__[A-Z_]+__\*/', html):
+        raise ValueError(page['ID'] + '仍有未替换的骨架占位符')
+    return html, page_info
+
+
+def main():
+    # 先完整校验全部视图，再写入，避免坏配置覆盖现有页面。
+    outputs = [(page, *build_page(page)) for page in PAGES]
+    for page, html, info in outputs:
+        output = os.path.join(BASE, page['文件'])
+        temp = output + '.tmp'
+        with open(temp, 'w', encoding='utf-8') as f:
+            f.write(html)
+        os.replace(temp, output)
+        print(f'{page["名称"]}: {page["文件"]} | {info["moduleCount"]}模块 / {info["sourceCount"]}词条')
+    print('所有部门页面共用模块、data.js、媒体及同一套样式；分享请运行 打包单文件.py')
+
+
+if __name__ == '__main__':
+    main()

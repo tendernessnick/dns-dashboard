@@ -876,3 +876,34 @@ body{margin:0;background:#F4F6FA}
   #dns-dash .card,#dns-dash .cco{box-shadow:none;break-inside:avoid}
   #dns-dash .line-a{stroke-dasharray:none;stroke-dashoffset:0}
 }
+
+/* ===== v22 · 配置驱动的部门子看板，沿用v21浅色视觉 ===== */
+html{scroll-padding-top:136px}
+#dns-dash .department-bar{max-width:1536px;margin:0 auto;padding:10px 40px 0;display:flex;align-items:center;gap:14px;min-width:0}
+#dns-dash .department-label{font:500 11px/18px var(--fn);color:var(--n500);white-space:nowrap;flex:none}
+#dns-dash .department-links{display:flex;align-items:center;gap:6px;flex:none}
+#dns-dash .department-link{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 13px;border:1px solid var(--n200);border-radius:6px;background:#FFF;color:var(--n500);font:550 12px/18px var(--fn);text-decoration:none;white-space:nowrap;transition:background .12s,border-color .12s}
+#dns-dash .department-link:hover{color:var(--brand);border-color:var(--brand-300)}
+#dns-dash .department-link.on{background:var(--brand-100);color:var(--brand);border-color:#BFD1EA}
+#dns-dash .department-summary{margin-left:auto;color:var(--n500);font:400 11px/18px var(--fn);text-align:right;max-width:650px;min-width:0}
+#dns-dash #dnav{flex:1 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none}
+#dns-dash #dnav::-webkit-scrollbar{display:none}
+#dns-dash #dnav .tlink{flex:none}
+#dns-dash .mod,#dns-dash .prov-app{scroll-margin-top:136px}
+#dns-dash .sec-head>div:nth-child(2){min-width:0;flex:1}
+@media(min-width:1600px){#dns-dash .department-bar{padding-left:48px;padding-right:48px}}
+@media(max-width:1200px){#dns-dash .department-bar{padding-left:28px;padding-right:28px}.department-summary{max-width:400px}}
+@media(max-width:960px){
+  html{scroll-padding-top:168px}
+  #dns-dash .department-bar{padding:9px 28px 4px;gap:10px}
+  #dns-dash .department-summary{display:none}
+  #dns-dash #dnav{flex:1 1 100%;width:0}
+  #dns-dash .mod,#dns-dash .prov-app{scroll-margin-top:168px}
+}
+@media(max-width:768px){
+  #dns-dash .department-bar{padding-left:18px;padding-right:18px;gap:8px;flex-wrap:wrap}
+  #dns-dash .department-label{font-size:10px}
+  #dns-dash .department-link{font-size:11px;padding:7px 10px;min-height:34px}
+  #dns-dash .department-links{gap:5px}
+}
+@media print{#dns-dash .department-bar{display:none}}

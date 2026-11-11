@@ -13,15 +13,22 @@ const shellDir = path.join(root, '看板');
     ...(process.env.DNS_BROWSER_EXECUTABLE ? { executablePath: process.env.DNS_BROWSER_EXECUTABLE } : {}) });
   const errors = [];
   const pages = [];
+  const outerPages = [];
   try {
     for (const filename of ['index.html', '数据看板-单文件版.html']) {
-      const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
+      const outerPage = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
+      outerPages.push(outerPage);
+      outerPage.on('pageerror', e => errors.push(`${filename}: ${e.message}`));
+      await outerPage.goto(pathToFileURL(path.join(shellDir, filename)).href, { waitUntil: 'load' });
+      let page = outerPage;
+      if (await outerPage.locator('[data-dashboard-frame]').count()) {
+        page = await (await outerPage.locator('[data-dashboard-frame]').elementHandle()).contentFrame();
+        await page.waitForFunction(() => window.__provOK === true);
+      }
       pages.push(page);
-      page.on('pageerror', e => errors.push(`${filename}: ${e.message}`));
-      await page.goto(pathToFileURL(path.join(shellDir, filename)).href, { waitUntil: 'load' });
       const period = page.locator('.pctl button[data-m="3"]');
       await period.focus();
-      await page.keyboard.press('Enter');
+      await outerPage.keyboard.press('Enter');
       assert.equal(await page.evaluate(() => PSEL.months), 3, '周期选择支持键盘');
       assert.equal(await period.getAttribute('aria-pressed'), 'true');
       await page.locator('.pctl button').first().click();
@@ -49,7 +56,7 @@ const shellDir = path.join(root, '看板');
         const chart = card.locator('.chart').first();
         const box = await chart.boundingBox();
         assert.ok(box && box.width > 100);
-        await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.4);
+        await outerPage.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.4);
         assert.ok(!(await chart.locator('.ctool').innerText()).includes('较前期'));
       }
       await page.locator('#provbtn').click();
@@ -91,16 +98,18 @@ const shellDir = path.join(root, '看板');
     assert.equal(await payload(pages[0]), await payload(pages[1]), '本机版与单文件版数据一致');
     const js = fs.readFileSync(path.join(shellDir, 'data.js'), 'utf8');
     const single = fs.readFileSync(path.join(shellDir, '数据看板-单文件版.html'), 'utf8');
+    const bundleJson = /<script type="application\/json" id="dashboard-bundle">(.*?)<\/script>/s.exec(single);
+    const inlineData = bundleJson ? Buffer.from(JSON.parse(bundleJson[1]).data, 'base64').toString('utf8') : single;
     const media = [...js.matchAll(/"(媒体\/[^"\n]+\.jpg)"/g)].map(m => m[1]);
     for (const relative of media) {
       const file = path.join(shellDir, relative);
       assert.ok(fs.existsSync(file), '媒体引用必须存在：' + relative);
-      assert.ok(single.includes(fs.readFileSync(file).toString('base64')), '分享版包含同一图片');
+      assert.ok(inlineData.includes(fs.readFileSync(file).toString('base64')), '分享版包含同一图片');
     }
-    assert.ok(!/"媒体\/[^"\n]+\.jpg"/.test(single), '分享版不依赖本地媒体目录');
+    assert.ok(!/"媒体\/[^"\n]+\.jpg"/.test(inlineData), '分享版不依赖本地媒体目录');
     const responsive = [];
     for (const width of [320, 390, 768, 1024, 1366, 1440, 1920]) {
-      await pages[0].setViewportSize({ width, height: 1000 });
+      await outerPages[0].setViewportSize({ width, height: 1000 });
       await pages[0].evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       const actual = await pages[0].evaluate(() => document.documentElement.scrollWidth);
       assert.ok(actual <= width + 1, `主体不能横向溢出：${width}px视口，${actual}px文档`);

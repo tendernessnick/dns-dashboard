@@ -11,22 +11,25 @@
 <div class="rule3" aria-hidden="true"></div>
 <header class="mast"><div class="mast-in">
   <div class="m-brand"><span class="mark" aria-label="DNS 深圳和宏"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3z" fill="currentColor"/><path d="M14 14h7v7h-7z" fill="currentColor" opacity=".35"/></svg><span>DNS</span></span>
-    <div><div class="m-eyebrow">DNS · 深圳和宏 <span>STRATEGY INTELLIGENCE</span></div><h1>市场与竞对监测<span class="workbench-tag">研究工作台</span></h1><div class="m-sub">宏观环境 / 成本变化 / 行业趋势 / 产品与同业动态</div></div>
+    <div><div class="m-eyebrow">DNS · 深圳和宏 <span><!--__PAGE_EYEBROW__--></span></div><h1><!--__PAGE_TITLE__--><span class="workbench-tag"><!--__PAGE_TAG__--></span></h1><div class="m-sub"><!--__PAGE_SUBTITLE__--></div></div>
   </div>
   <div class="m-right">
     <div class="m-meta"><span class="m-k">全库最新观测</span><b id="asof">—</b></div>
-    <div class="m-meta"><span class="m-k">监测范围</span><b>109 <span>项词条 · 5 大板块</span></b></div>
+    <div class="m-meta"><span class="m-k">本页范围</span><b><!--__PAGE_SCOPE__--></b></div>
   </div>
 </div></header>
 <div class="mline"></div>
-<nav class="toolbar" aria-label="看板导航"><div class="toolbar-in">
+<nav class="toolbar" aria-label="看板导航">
+<div class="department-bar"><span class="department-label">看板视角</span><div class="department-links" aria-label="选择部门看板"><!--__PAGE_TABS__--></div><p class="department-summary"><!--__PAGE_DESCRIPTION__--></p></div>
+<div class="toolbar-in">
   <span id="dnav">
-    <a class="tlink" href="#m1"><span class="nav-no">01</span>宏观数据</a><a class="tlink" href="#m2"><span class="nav-no">02</span>大宗商品</a><a class="tlink" href="#m3"><span class="nav-no">03</span>行业数据</a><a class="tlink" href="#m4"><span class="nav-no">04</span>产品品类</a><a class="tlink" href="#m5"><span class="nav-no">05</span>竞对同业</a>
+    <!--__SECTION_NAV__-->
   </span>
   <span class="tspace"></span>
   <span class="tb2"><span class="pctl" title="切换折线图显示周期（仅影响曲线渲染，不改动固化数据）"><i>周期</i><button class="on" type="button" aria-pressed="true">默认</button><button type="button" data-m="3" aria-pressed="false">3月</button><button type="button" data-m="6" aria-pressed="false">6月</button><button type="button" data-m="12" aria-pressed="false">1年</button><button type="button" data-m="36" aria-pressed="false">3年</button><button type="button" data-all="1" aria-pressed="false">全部</button></span>
   <a class="tbtn" href="#appendix" id="provbtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 3a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm4 10 4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>数据溯源</a></span>
 </div></nav>
+<!--__OVERVIEW_START__-->
 <div class="ticker"><div class="ticker-wrap">
   <div class="snapshot-head"><div><span class="section-kicker">MARKET SNAPSHOT</span><h2>重点指标速览</h2></div><p>各指标按自身频率更新 <span aria-hidden="true">/</span> 数据时点见卡片</p></div>
   <div class="ticker-in">
@@ -37,6 +40,7 @@
   <div class="tk" data-tk="P37"><span class="k">SCFI集装箱运价</span><span class="v">3,679.58</span><span class="s">10-16期 · 上海航交所</span></div>
   <div class="tk" data-tk="P71"><span class="k">通讯器材零售同比</span><span class="v" style="color:var(--up)">+31.1%</span><span class="s">9月 · 国家统计局</span></div>
 </div></div></div>
+<!--__OVERVIEW_END__-->
 
 <main class="d-main">
 <!--__SECTIONS__-->
@@ -78,6 +82,7 @@
 var root=document.getElementById('dns-dash');
 if(!root)throw new Error('dns-dash root missing');
 var PROV=/*__PROV__*/[];
+var PAGE_INFO=/*__PAGE_INFO__*/{};
 var STATMAP={'成功':['c-ok','已接入'],'部分成功':['c-warn','受限/接入中'],'失败':['c-warn','失败']};
 // 状态点 → 文字chip
 root.querySelectorAll('span.dot.g,span.dot.y').forEach(function(d){
@@ -86,11 +91,36 @@ root.querySelectorAll('span.dot.g,span.dot.y').forEach(function(d){
   c.innerHTML='<span class="cdot"></span>'+(d.classList.contains('g')?'已接入':'受限/接入中');
   d.replaceWith(c);
 });
-// 卡片：id + 底部来源行注入
-root.querySelectorAll('[data-k]').forEach(function(el){
+// 卡片实例与数据P号分离：允许同P多卡/嵌套指标，不制造重复DOM ID。
+var SOURCE_CARDS=Object.create(null),cardIds=Object.create(null);
+root.querySelectorAll('.card[data-mid],.cco[data-mid]').forEach(function(el,index){
+  var pids=(el.getAttribute('data-source-pids')||'').split(/\s+/).filter(Boolean);
+  var primary=(el.getAttribute('data-k')||'').split(/\s+/)[0];
+  var preferred=primary?'card-P'+primary:'module-'+el.getAttribute('data-mid');
+  var id=preferred;
+  if(cardIds[id]||document.getElementById(id))id=preferred+'-instance-'+index;
+  el.id=id;cardIds[id]=true;
+  pids.forEach(function(pid){(SOURCE_CARDS[pid]||(SOURCE_CARDS[pid]=[])).push(el)});
+});
+function focusSourceCard(pid){
+  var cards=SOURCE_CARDS[pid]||[];
+  var card=cards.find(function(el){return !el.closest('[data-copanel][hidden]')})||cards[0];
+  if(!card)return false;
+  var panel=card.closest('[data-copanel]');
+  if(panel&&panel.hidden){
+    var group=panel.closest('.mod');
+    var button=Array.from(group.querySelectorAll('[data-cotab]')).find(function(b){return b.getAttribute('data-cotab')===panel.getAttribute('data-copanel')});
+    if(button)button.click();
+  }
+  card.scrollIntoView({behavior:'smooth',block:'center'});
+  card.style.transition='box-shadow .3s';card.style.boxShadow='0 0 0 3px rgba(0,101,176,.25)';
+  setTimeout(function(){card.style.boxShadow=''},1200);
+  return true;
+}
+// 底部来源行注入（只为真实卡片处理，跳过内部指标的data-k）
+root.querySelectorAll('.card[data-k],.cco[data-k]').forEach(function(el){
   var ids=el.getAttribute('data-k').split(' ');
   var pid='P'+ids[0];
-  el.id='card-'+pid;
   var p=null;for(var i=0;i<PROV.length;i++){if(PROV[i].id==ids[0]){p=PROV[i];break}}
   var foot=el.querySelector('.foot');if(!foot||!p)return;
   var first=foot.firstElementChild;
@@ -118,7 +148,7 @@ function tipHTML(p){
   h+='<div class="pt-row"><span class="pt-k">来源</span><span class="pt-v">'+esc(p.source)+'</span></div>';
   h+='<div class="pt-row"><span class="pt-k">链接</span><span class="pt-v"><a href="'+esc(p.url)+'" target="_blank" rel="noopener">'+esc(p.url.length>58?p.url.slice(0,58)+'…':p.url)+'</a></span></div>';
   h+='<div class="pt-row"><span class="pt-k">采集</span><span class="pt-v">'+esc(p.method||'—')+'</span></div>';
-  h+='<div class="pt-row"><span class="pt-k">频率</span><span class="pt-v">'+esc(p.freq||'—')+' · 上次抓取 '+esc(p.lastFetch||'2026-10-23')+'</span></div>';
+  h+='<div class="pt-row"><span class="pt-k">频率</span><span class="pt-v">'+esc(p.freq||'—')+' · 有效观测期见溯源表</span></div>';
   h+='<div class="pt-row"><span class="pt-k">状态</span><span class="pt-v"><span class="pchip '+st[0]+'">'+st[1]+'</span></span></div>';
   if(p.sample)h+='<div class="pt-row"><span class="pt-k">实测</span><span class="pt-v">'+esc(p.sample.length>76?p.sample.slice(0,76)+'…':p.sample)+'</span></div>';
   if(p.note)h+='<div class="pt-row"><span class="pt-k">备注</span><span class="pt-v">'+esc(p.note.length>70?p.note.slice(0,70)+'…':p.note)+'</span></div>';
@@ -214,7 +244,7 @@ function renderProv(){
     var stc=STATMAP[p.status]||['',''];
     var u=esc(p.url);var us=u.replace(/^https?:\/\//,'');
     return '<tr id="prov-P'+p.id+'"><td class="pnum">P'+p.id+'</td><td>'+esc(p.cat)+'</td>'+
-      '<td class="ptitle" data-goto="card-P'+p.id+'" title="回跳看板卡片">'+((typeof DDATA!=='undefined'&&DDATA._meta&&DDATA._meta['P'+p.id]&&DDATA._meta['P'+p.id].r)?('<span class="rlbadge '+(DDATA._meta['P'+p.id].r==='A'?'a':DDATA._meta['P'+p.id].r==='C'?'c':'b')+'" title="可靠度'+DDATA._meta['P'+p.id].r+'级'+(DDATA._meta['P'+p.id].k?'：'+DDATA._meta['P'+p.id].k:'')+'">'+DDATA._meta['P'+p.id].r+'</span> '):'')+esc(p.title)+'</td>'+
+      '<td class="ptitle" data-goto="P'+p.id+'" tabindex="0" role="button" title="回跳本页看板卡片">'+((typeof DDATA!=='undefined'&&DDATA._meta&&DDATA._meta['P'+p.id]&&DDATA._meta['P'+p.id].r)?('<span class="rlbadge '+(DDATA._meta['P'+p.id].r==='A'?'a':DDATA._meta['P'+p.id].r==='C'?'c':'b')+'" title="可靠度'+DDATA._meta['P'+p.id].r+'级'+(DDATA._meta['P'+p.id].k?'：'+DDATA._meta['P'+p.id].k:'')+'">'+DDATA._meta['P'+p.id].r+'</span> '):'')+esc(p.title)+'</td>'+
       '<td>'+esc(p.source)+'</td>'+
       '<td><a href="'+u+'" target="_blank" rel="noopener">'+esc(us.length>44?us.slice(0,44)+'…':us)+'</a></td>'+
       '<td>'+esc(p.method||'—')+'</td><td>'+esc(p.freq||'—')+'</td><td class="pfresh">'+freshHTML('P'+p.id)+'</td>'+
@@ -232,10 +262,10 @@ document.getElementById('provToggle').addEventListener('click',function(){
 document.getElementById('pfQ').addEventListener('input',renderProv);
 document.getElementById('provRows').addEventListener('click',function(e){
   var t=e.target.closest('[data-goto]');if(!t)return;
-  var card=document.getElementById(t.getAttribute('data-goto'));
-  if(card){card.scrollIntoView({behavior:'smooth',block:'center'});
-    card.style.transition='box-shadow .3s';card.style.boxShadow='0 0 0 3px rgba(0,101,176,.25)';
-    setTimeout(function(){card.style.boxShadow=''},1200);}
+  focusSourceCard(t.getAttribute('data-goto'));
+});
+document.getElementById('provRows').addEventListener('keydown',function(e){
+  if(e.key==='Enter'||e.key===' '){var target=e.target.closest('[data-goto]');if(target){e.preventDefault();focusSourceCard(target.getAttribute('data-goto'));}}
 });
 // 初始化：板块下拉 + 摘要
 (function(){
@@ -244,7 +274,7 @@ document.getElementById('provRows').addEventListener('click',function(e){
   Object.keys(cats).forEach(function(c){var o=document.createElement('option');o.textContent=c;sel.appendChild(o)});
   var srcs={};PROV.forEach(function(p){srcs[p.source]=1});
   var lim=PROV.filter(function(p){return p.status!=='成功'}).length;
-  document.getElementById('provSum').textContent='共 '+PROV.length+' 条 · '+Object.keys(srcs).length+' 个来源 · '+lim+' 项受限/接入中 · 最近抓取 2026-10-23';
+  document.getElementById('provSum').textContent='本页 '+PROV.length+' 条 · '+Object.keys(srcs).length+' 个来源 · '+lim+' 项受限/接入中';
   window.__provOK=true;
 })();</script>
 </body>

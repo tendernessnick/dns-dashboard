@@ -2,11 +2,12 @@
 var cotabs=[].slice.call(root.querySelectorAll('[data-cotab]'));
 cotabs.forEach(function(b){
   b.addEventListener('click',function(){
-    cotabs.forEach(function(x){x.classList.toggle('on',x===b)});
+    var scope=b.closest('.mod')||root;
+    scope.querySelectorAll('[data-cotab]').forEach(function(x){x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b?'true':'false')});
     var co=b.getAttribute('data-cotab');
-    root.querySelectorAll('[data-copanel]').forEach(function(p){
+    scope.querySelectorAll('[data-copanel]').forEach(function(p){
       p.hidden=p.getAttribute('data-copanel')!==co;});
-    root.querySelectorAll('.chart').forEach(function(el){
+    scope.querySelectorAll('.chart').forEach(function(el){
       if(!el.closest('[data-copanel]')||!el.closest('[data-copanel]').hidden)drawChart(el);});
   });
 });
