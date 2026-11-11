@@ -12,7 +12,8 @@ import re
 
 
 def sanitize(name):
-    return re.sub(r'[\\/:*?"<>|#]+', '', str(name)).strip()[:60] or '未命名'
+    # v19.2修复：截断后再strip（同 _article_common.sanitize——防切点尾随空格致 Windows 路径错位）
+    return (re.sub(r'[\\/:*?"<>|#]+', '', str(name))[:60].strip().rstrip(' .') or '未命名')
 
 
 def existing_urls(dst):

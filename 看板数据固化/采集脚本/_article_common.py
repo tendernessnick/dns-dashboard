@@ -11,7 +11,9 @@ import time
 
 
 def sanitize(name):
-    return re.sub(r'[\\/:*?"<>|#]+', '', name).strip()[:50] or '未命名'
+    # v19.2修复：截断后再strip——旧顺序(strip→[:50])会在50字符切点重新引入尾随空格/点，
+    # Windows剥目录名尾空格致 makedirs 与 open 的路径不一致（P41 iPhone 18 文章夹 Errno 2 案）
+    return (re.sub(r'[\\/:*?"<>|#]+', '', name)[:50].strip().rstrip(' .') or '未命名')
 
 
 def scan_existing(dst):

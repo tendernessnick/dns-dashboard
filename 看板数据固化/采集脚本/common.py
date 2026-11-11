@@ -149,16 +149,20 @@ def _load_ranges():
 
 def verify_row(csv_path, values, existing_rows, date_str, mutation=True):
     """对一行待写数值做两级校验，返回[(level, msg)]，level ∈ REJECT/SUSPECT。
-    突变检测：与同列、日期早于本行的最近历史值中位数比（≥5个历史点才启用），
-    阈值按更新频率：每日25%/每周50%/每月80%/每季120%/半年150%/每年200%，其余60%。
+    [拒]全日期生效（越界抛错放弃写入）；[疑]仅近7日日期生效（历史行疑告警会在每日重跑中反复出现=噪音）。
+    突变检测（近7日日期才启用）：与本列按日期序近24点局部中位数比，双条件=相对偏离超阈值
+    （每日25%/每周50%/每月80%/每季120%/半年150%/每年200%，其余60%）且绝对偏离>近24点窗口跨度×10%
+    （防空比噪声）。历史点<5不启用。
     mutation=False 用于横截面快照类CSV（联合主键，如Amazon榜单）——列构成逐日变化，
-    中位数突变无统计意义，只保留区间校验。"""
+    突变无统计意义，只保留区间校验。"""
     pid = _pid_from_csv(csv_path)
     cache = _load_ranges()
     if not pid or pid not in cache:
         return []
     freq, segs = cache[pid]
     mut_lim = _MUT_BY_FREQ.get(freq, 0.6)
+    cutoff7 = (datetime.date.today() - datetime.timedelta(days=7)).isoformat()
+    recent = str(date_str) >= cutoff7   # [疑]与突变仅对近7日日期生效；[拒]全日期生效（历史行疑告警会在每日重跑中反复出现=噪音）
     out = []
     for col, raw in values.items():
         if col in SKIP_CHECK_COLS or col == '数据日期':
@@ -172,6 +176,8 @@ def verify_row(csv_path, values, existing_rows, date_str, mutation=True):
         for s_mode, s_col, lo, hi in segs:
             if s_col != col and not (s_col == '*' and not has_col_specific):
                 continue
+            if s_mode == '疑' and not recent:
+                continue
             if (lo is not None and v < lo) or (hi is not None and v > hi):
                 msg = f'{col}={v} 超出{s_mode}写区间[{lo},{hi}]'
                 if s_mode == '拒':
@@ -184,21 +190,28 @@ def verify_row(csv_path, values, existing_rows, date_str, mutation=True):
             out.append(('SUSPECT', hit_sus))
         if not mutation or col in MUT_SKIP_COLS or not existing_rows:
             continue
-        hist = []
+        # 突变检测（v19.2三修正）：①只对近7日日期生效（历史回填行不做——趋势序列必然"突变"）；
+        # ②基线=按日期序近24点局部中位数（全历史中位数对长期趋势是坏基线，如P12利率长期下行）；
+        # ③双条件：相对偏离>阈值 且 绝对偏离>近24点窗口跨度×10%（防空比噪声，如环比-0.4vs中位2.2=118%）
+        pts = []
         for r in existing_rows:
             d = str(r.get('数据日期', ''))
-            if d and d < str(date_str):
+            if d and str(date_str) > d >= cutoff7:
                 try:
-                    hist.append(float(str(r.get(col, '')).replace(',', '').strip()))
+                    pts.append((d, float(str(r.get(col, '')).replace(',', '').strip())))
                 except (TypeError, ValueError):
                     continue
-        if len(hist) >= 5:
-            hist.sort()
-            n = len(hist)
-            med = hist[n // 2] if n % 2 else (hist[n // 2 - 1] + hist[n // 2]) / 2
-            if med and abs(v - med) / abs(med) > mut_lim:
-                pct = round(abs(v - med) / abs(med) * 100, 1)
-                out.append(('SUSPECT', f'{col}={v} 较近期中位数{round(med, 4)}突变({pct}%>'
+        pts.sort(key=lambda p: p[0])
+        if len(pts) >= 5:
+            w = [v for _, v in pts[-24:]]
+            w.sort()
+            m = len(w)
+            med = w[m // 2] if m % 2 else (w[m // 2 - 1] + w[m // 2]) / 2
+            span = w[-1] - w[0]
+            dev = abs(v - med)
+            if med and dev > abs(span) * 0.10 and dev / abs(med) > mut_lim:
+                pct = round(dev / abs(med) * 100, 1)
+                out.append(('SUSPECT', f'{col}={v} 较近24点中位数{round(med, 4)}突变({pct}%>'
                                         f'{int(mut_lim * 100)}%)'))
     return out
 
