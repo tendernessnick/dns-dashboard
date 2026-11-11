@@ -56,6 +56,10 @@ def col_reject(pid, col, first_col, env):
         return CURATED_MAIN[pid]
     if any(k in col for k in ('同比', '环比', '增速')):
         return (-150, 150)
+    if '达成率' in col:
+        # v20修正（2026-11-11全量批P93/P94拒写实证）：众筹达成率超额是常态（历史max P93≈3.45万%，P94≈39.7万%），
+        # 不能落进通用百分比(-1,101)拒界
+        return (0, 500000)
     if '%' in col:
         return (-1, 101)
     if '排名' in col:

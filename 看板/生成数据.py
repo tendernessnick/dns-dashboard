@@ -125,6 +125,10 @@ try:
                         'x': ('对照通过' if _ok else ('偏差%s%%' % _p.get('偏差%') if _p.get('偏差%') is not None else '取数失败'))}
     for _pid, _e in (_vst.get('存疑') or {}).items():
         VERIFY[_pid] = {'s': 'sus', 'd': (_e.get('最近') or '')[5:10], 'x': (_e.get('说明') or '数值存疑')}
+    for _pid, _e in (_vst.get('资讯') or {}).items():
+        # v20资讯健康（run_all.write_news_health）：ok/warn/sus → ✓核验/⚠核验/⚠存疑徽标
+        VERIFY[_pid] = {'s': _e.get('级别') or 'warn', 'd': (_e.get('最近') or '')[5:10],
+                        'x': _e.get('说明') or '资讯异常'}
 except Exception:
     VERIFY = {}
 DDATA['_verify'] = VERIFY
@@ -179,6 +183,25 @@ def _ann_items(pid):
     return items
 
 
+def _feed_iso(it, _ref):
+    """feed条目完整日期：iso直取；旧条目MM-DD按跨年启发式补年。"""
+    s = it.get('iso') or ''
+    if s:
+        return s
+    md = it.get('date') or ''
+    try:
+        y = _ref.year
+        if (int(md[:2]), int(md[3:5])) > (_ref.month, _ref.day):
+            y -= 1
+        return f'{y}-{md}'
+    except Exception:
+        return ''
+
+
+FEEDFRESH = {}          # v20资讯治理A3：P号→{'u':最新条目日期,'o':逾期天数(0=未逾期)}，附录最近数据列消费
+_FEED_LIM = {'每日': 3}  # 与 run_all.NEWS_FRESH_LIM 同值（内容feed 每日3天/其余7天）
+_FEED_COLLECT = {'P84', 'P93', 'P94', 'P96'}   # 与 run_all.NEWS_COLLECT_MODE 同值：采集型feed不计条目逾期
+_ftoday = _dt.date.today()
 NEWS = {}
 _news_stat = []
 for _r in REG_ROWS:
@@ -187,6 +210,7 @@ for _r in REG_ROWS:
         continue
     _files = [f.strip() for f in (_r.get('资讯文件') or '').split(';') if f.strip()]
     if _files:
+        _row_newest = ''
         for _k, _fn in zip(_keys, _files):
             fp = os.path.join(NEWS_DIR, _fn)
             if not os.path.exists(fp):
@@ -197,16 +221,26 @@ for _r in REG_ROWS:
                 continue
             if not items:
                 continue
+            _row_newest = max([_row_newest] + [_feed_iso(i, _ftoday) for i in items])
+            # 展示裁前8条：滚动库(v20)存全量7天窗口，看板卡维持原8条视觉不变
             NEWS[_k] = [{'date': it.get('date', ''), 'title': it.get('title', ''),
                          'title_zh': it.get('title_zh', ''), 'url': it.get('url', '#')}
-                        for it in items]
+                        for it in items[:8]]
             _news_stat.append('%s:%d条' % (_k, len(NEWS[_k])))
+        if _row_newest:
+            try:
+                _dd = (_ftoday - _dt.date.fromisoformat(_row_newest)).days
+            except Exception:
+                _dd = 0
+            _lim = 99 if _r['P号'] in _FEED_COLLECT else _FEED_LIM.get((_r.get('更新频率') or '').strip(), 7)
+            FEEDFRESH[_r['P号']] = {'u': _row_newest, 'o': _dd if _dd > _lim else 0}
     else:
         for _k in _keys:
             items = _ann_items(_r['P号'])
             if items:
                 NEWS[_k] = items
                 _news_stat.append('%s:%d条' % (_k, len(items)))
+DDATA['_feedfresh'] = FEEDFRESH
 
 # ============ 榜单快照（P66线材榜/P68充电榜）→ TOPS：TOP5条目(带图)+Anker席数+均价 ============
 def _tops(pid, label):

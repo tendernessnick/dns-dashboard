@@ -10,13 +10,14 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 import _article_common as art
-from _news_common import fetch_ctw, parse_ctw, extract_ctw_article, chips_from_title
+from _news_common import (fetch_ctw, parse_ctw, extract_ctw_article, chips_from_title,
+                          load_keys, keymatch, audit_discards)
 
 PID, TITLE = 61, '苹果AVS资讯图文'
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))          # 看板数据固化
 DST = os.path.join(BASE, '图文数据', '苹果AVS资讯')
 CTW_HOME = 'https://www.chongdiantou.com'
-KEYS = ['AVS', '苹果']
+KEYS = ['AVS', '苹果']   # 兜底词表（词表csv缺失时回退；运营改词请编辑 关键词表.csv）
 BRANDS = ('苹果', 'Apple', 'AirPods', 'HomePod', 'Siri')
 
 
@@ -49,7 +50,9 @@ def run():
         if it[2] not in seen:
             seen.add(it[2])
             merged.append(it)
-    picked = [(d, t, u) for d, t, u in merged if any(k.lower() in t.lower() for k in KEYS)]
+    keys = (load_keys(PID) or {'core': KEYS, 'exclude': []})
+    picked = [(d, t, u) for d, t, u in merged if keymatch(t, keys)]
+    audit_discards(PID, merged, {u for _, _, u in picked})   # B3: 被过滤标题留痕供周度召回审计
     if not picked:
         return '成功', '关键词无命中(AVS/苹果低频主题属正常)，库存图文卡继续展示最近篇目'
     new, missing, skipped = [], [], 0

@@ -31,8 +31,9 @@ def fetch_rss(url, referer=None):
     return common.http_get(url, referer=referer)
 
 
-def parse_items(xml, keywords=None, exclude=None):
-    """解析RSS的<item>，返回[(datetime_utc, title, url)]，已按keywords/exclude过滤。"""
+def parse_items(xml, keywords=None, exclude=None, _drop=None):
+    """解析RSS的<item>，返回[(datetime_utc, title, url)]，已按keywords/exclude过滤。
+    _drop: 传入list时，被关键词/排除词筛掉的(title,url)追加进去（B3弃用标题留痕用）。"""
     out = []
     for m in re.finditer(r'<item>(.*?)</item>', xml, re.S):
         blk = m.group(1)
@@ -46,8 +47,12 @@ def parse_items(xml, keywords=None, exclude=None):
         if not title or not url.startswith('http'):
             continue
         if keywords and not any(k.lower() in title.lower() for k in keywords):
+            if _drop is not None:
+                _drop.append((title, url))
             continue
         if exclude and any(k.lower() in title.lower() for k in exclude):
+            if _drop is not None:
+                _drop.append((title, url))
             continue
         dt = None
         if dm:
@@ -87,6 +92,135 @@ def save_news(filename, source, items):
         json.dump(data, f, ensure_ascii=False, indent=1)
     _save_tcache(cache)
     return len(kept)
+
+
+def _mmdd_to_iso(md, now):
+    """旧items只有MM-DD日期：补全年份（跨年启发式——月日"在未来"则归去年）。"""
+    try:
+        y = now.year
+        if (int(md[:2]), int(md[3:5])) > (now.month, now.day):
+            y -= 1
+        return f'{y}-{md}'
+    except Exception:
+        return ''
+
+
+def merge_rolling(filename, source, picked, keep_days=DAYS, max_items=60):
+    """滚动7天feed（v20资讯治理B1）：新见条目按URL并入既有items，再按文章日期裁7天窗口。
+    背景：充电头网列表页/page/N为伪分页（实测三页同内容），单次抓取有效深度仅~2天；
+    覆盖深度改为随每次运行自然累积——条目首见入库后，在文章日期7天窗口内持续保留。
+    库容量 max_items=60 与看板展示（生成数据注入时裁前8条）解耦，防截断-重见假阳性。
+    picked: [(datetime_aware, title, url)]；items 增加 iso 完整日期（跨年裁窗与新鲜度计算用）。
+    返回 (保留条数, 新增条数)。"""
+    fp = os.path.join(NEWS_DIR, filename)
+    cache = _load_tcache()
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cst = datetime.timezone(datetime.timedelta(hours=8))
+    by_url = {}
+    try:
+        for it in (json.load(open(fp, encoding='utf-8')).get('items') or []):
+            u = it.get('url') or ''
+            if u:
+                by_url[u] = {'iso': it.get('iso') or _mmdd_to_iso(it.get('date', ''), now),
+                             'title': it.get('title', ''), 'title_zh': it.get('title_zh', '')}
+    except Exception:
+        pass
+    n_new = 0
+    new_urls = set()
+    for dt, title, url in picked or []:
+        if dt is None or not str(url).startswith('http'):
+            continue
+        if dt > now + datetime.timedelta(hours=2):
+            continue                       # 未来时间戳（站方预发）不入库
+        iso = dt.astimezone(cst).strftime('%Y-%m-%d')
+        cur = by_url.get(url)
+        if cur is None:
+            new_urls.add(url)
+            by_url[url] = {'iso': iso, 'title': title, 'title_zh': translate_title(title, cache)}
+        elif iso > cur['iso']:
+            cur['iso'] = iso               # 站方改期以新见为准
+    cutoff = (now.astimezone(cst) - datetime.timedelta(days=keep_days)).strftime('%Y-%m-%d')
+    items = sorted(({'date': e['iso'][5:], 'iso': e['iso'], 'title': e['title'],
+                     'title_zh': e['title_zh'], 'url': u}
+                    for u, e in by_url.items() if e['iso'] >= cutoff),
+                   key=lambda x: x['iso'], reverse=True)[:max_items]
+    # 新见=新入库且留在窗口内的条数（窗外旧文每跑都会重见，不计避免假阳性刷屏）
+    n_new_in = sum(1 for it in items if it['url'] in new_urls)
+    data = {'updated': now.isoformat(timespec='seconds'), 'source': source, 'items': items}
+    os.makedirs(NEWS_DIR, exist_ok=True)
+    with open(fp, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=1)
+    _save_tcache(cache)
+    return len(items), n_new_in
+
+
+# ---------------- 关键词外置（v20资讯治理B2）：词表= 看板数据固化/关键词表.csv ----------------KEYWORDS_FILE = os.path.join(os.path.dirname(NEWS_DIR), '关键词表.csv')
+
+
+def load_keys(pid):
+    """读某P号的关键词分层 {'core': [...], 'exclude': [...]}；文件缺失/该P号无行 → None（调用方回退内置词表）。
+    层级: 核心=命中保留；排除=命中剔除。核心为空+排除非空 = 全保留仅排除（仅负向过滤）。"""
+    try:
+        import csv as _csv
+        with open(KEYWORDS_FILE, encoding='utf-8-sig', newline='') as f:
+            rows = list(_csv.DictReader(f))
+    except Exception:
+        return None
+    core, excl = [], []
+    for r in rows:
+        if str(r.get('P号') or '').strip() != str(pid):
+            continue
+        w = (r.get('词') or '').lstrip()   # 只剥首空白；尾空白有意保留（如'mac '/'ios '防误配，勿strip）
+        if not w.strip():
+            continue
+        (excl if (r.get('层级') or '').strip() == '排除' else core).append(w)
+    if not core and not excl:
+        return None
+    return {'core': core, 'exclude': excl}
+
+
+def keymatch(title, keys):
+    """核心/排除双层标题匹配（大小写不敏感）：核心空=全保留仅排除生效。"""
+    core = keys.get('core') or []
+    excl = keys.get('exclude') or []
+    t = str(title).lower()
+    if core and not any(k.lower() in t for k in core):
+        return False
+    return not any(e.lower() in t for e in excl)
+
+
+# ---------------- 弃用标题留痕（v20资讯治理B3）：被过滤标题滚动7天，供周度召回审计 ----------------
+DISCARDS_FILE = os.path.join(NEWS_DIR, '_弃用标题.json')
+
+
+def audit_discards(pid, items, kept_urls, keep_days=7):
+    """资讯侧的"cross check"：数值数据对答案，资讯数据对"漏没漏"。
+    items: [(dt, title, url)] 全量候选；kept_urls: 本轮命中集合。差集按URL留痕（首见日期起滚7天）。
+    写 资讯数据/_弃用标题.json（gitignore运行态），返回留痕条数。"""
+    import datetime as _dt
+    today = _dt.date.today().isoformat()
+    try:
+        with open(DISCARDS_FILE, encoding='utf-8') as f:
+            store = json.load(f)
+    except Exception:
+        store = {}
+    bucket = store.get(str(pid), {})
+    for _d, title, url in items or []:
+        u = str(url or '')
+        if not u or u in kept_urls:
+            continue
+        if u not in bucket:
+            bucket[u] = {'t': title, 'd': today}
+    cutoff = (_dt.date.today() - _dt.timedelta(days=keep_days)).isoformat()
+    bucket = {u: v for u, v in bucket.items() if v.get('d', '') >= cutoff}
+    store[str(pid)] = bucket
+    try:
+        payload = json.dumps(store, ensure_ascii=False, indent=1)
+        with open(DISCARDS_FILE, 'w', encoding='utf-8') as f:
+            f.write(payload)
+    except Exception:
+        pass
+    return len(bucket)
 
 
 # ---------------- 英文标题翻译（v11：看板展示中文，悬停见英文原题） ----------------

@@ -106,6 +106,31 @@ def main():
             url = p['url'] or '—'
             f.write(f'| {p["pid"]} | {p["word"]} | {vtag} | {d} | {url} | {"、".join(st)} | ☐一致 ☐不一致 | 来源:{src[:20]} |\n')
         f.write('\n---\n完成后归档：本文件留在 看板数据固化/ 即为证据链一环；发现不一致→核对采集器与源站口径→修正后重采→在注册表备注登记。\n')
+
+        # v20资讯治理B3：资讯召回审计——被关键词过滤的标题过目（资讯侧的cross check）
+        try:
+            dis = json.load(open(os.path.join(FIX, '资讯数据', '_弃用标题.json'), encoding='utf-8'))
+        except Exception:
+            dis = {}
+        f.write('\n## 资讯召回审计：近7天被关键词过滤的标题过目\n\n')
+        f.write('> 逐条扫一眼：有没有"其实该收"的？有→把词补进 看板数据固化/关键词表.csv 对应P号（核心层），下轮采集自动生效。全没有→勾✅无遗漏。\n\n')
+        if not dis:
+            f.write('（本周无留痕数据：各资讯采集器尚未产生弃用标题）\n')
+        any_row = False
+        for pid, bucket in sorted(dis.items()):
+            rows_ = sorted(bucket.values(), key=lambda v: v.get('d', ''), reverse=True)
+            if not rows_:
+                continue
+            any_row = True
+            f.write(f'**{pid}**（{len(rows_)}条）\n\n')
+            for v in rows_[:8]:
+                f.write(f'- [{v.get("d", "")}] {v.get("t", "")[:64]}\n')
+            if len(rows_) > 8:
+                f.write(f'- …另有{len(rows_) - 8}条见 资讯数据/_弃用标题.json\n')
+            f.write('\n')
+        if not any_row:
+            f.write('（本周各feed留痕均为空）\n')
+        f.write('召回审计结论：☐无遗漏 ☐已补词（P号/词:______）\n')
     olds = sorted(glob.glob(os.path.join(ARCHIVE, '周度抽查核对单_*.md')))
     for fp in olds[:-12]:
         try:

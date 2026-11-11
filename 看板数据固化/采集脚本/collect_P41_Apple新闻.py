@@ -11,12 +11,13 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 import _article_common as art
-from _news_common import fetch_rss, parse_items, fetch_ithome_article, chips_from_title
+from _news_common import (fetch_rss, parse_items, fetch_ithome_article, chips_from_title,
+                          load_keys, audit_discards)
 
 PID, TITLE = 41, 'Apple生态新闻图文'
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))          # 看板数据固化
 DST = os.path.join(BASE, '图文数据', '苹果生态新闻')
-KEYS = ['苹果', 'apple', 'iphone', 'ipad', 'macbook', 'mac ', 'imac', 'airpods',
+KEYS = ['苹果',   # 兜底词表（词表csv缺失时回退；运营改词请编辑 关键词表.csv） 'apple', 'iphone', 'ipad', 'macbook', 'mac ', 'imac', 'airpods',
         'apple watch', 'vision pro', 'ios ', 'macos', 'm5', 'a19']
 BRANDS = ('苹果', 'Apple', 'iPhone', 'iPad', 'MacBook', 'AirPods', 'Watch', 'Vision')
 
@@ -40,7 +41,10 @@ def run():
     os.makedirs(DST, exist_ok=True)
     existing = art.scan_existing(DST)
     xml = fetch_rss('https://www.ithome.com/rss/', referer='https://www.ithome.com/')
-    items = parse_items(xml, keywords=KEYS)
+    keys = load_keys('P41') or {'core': KEYS, 'exclude': []}
+    drops = []
+    items = parse_items(xml, keywords=keys['core'] or None, exclude=keys['exclude'] or None, _drop=drops)
+    audit_discards('P41', [(None, t, u) for t, u in drops], set())   # B3: 被过滤标题留痕
     if not items:
         return '失败', 'IT之家RSS解析0条或关键词无命中'
     now = datetime.datetime.now(datetime.timezone.utc)

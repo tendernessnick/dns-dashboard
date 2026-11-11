@@ -179,7 +179,7 @@ def run_checks():
     ok = sum(1 for r in rows if r['结论'] == '一致')
     warn = sum(1 for r in rows if r['结论'].startswith('偏差'))
     fail = sum(1 for r in rows if r['结论'].startswith('取数失败'))
-    _save_state({'对照': state_pairs, '通过': ok, '偏差': warn, '取数失败': fail})
+    _save_state({'对照': state_pairs, '对照汇总': {'通过': ok, '偏差': warn, '取数失败': fail}})
 
     print(f'交叉验证结果（{date}，逐对阈值）')
     print('-' * 100)

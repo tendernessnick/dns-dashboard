@@ -1544,7 +1544,14 @@ function freshHTML(pid){
       var m=DDATA._meta?DDATA._meta[pid]:null;
       var lim=m?FRESH_MAX[m.f]:null;
       var dd=Math.floor((new Date(FRESH_TODAY)-new Date(REVIEWS[pid].updated))/864e5);
-      return (lim&&dd>lim)?(REVIEWS[pid].updated+' <span class="ovd">逾期'+dd+'天</span>'):REVIEWS[pid].updated;
+      var out=(lim&&dd>lim)?(REVIEWS[pid].updated+' <span class="ovd">逾期'+dd+'天</span>'):REVIEWS[pid].updated;
+      return out+vrfHTML(pid);   // v20资讯治理：P90=图文+同业feed双内容，feed健康徽标随行
+    }
+    // v20资讯治理A3：feed型词条（资讯数据/*.json）回退 _feedfresh——最新条目日期+逾期+资讯健康徽标
+    var ff=DDATA._feedfresh?DDATA._feedfresh[pid]:null;
+    if(ff){
+      var out2=ff.u+(ff.o>0?(' <span class="ovd">逾期'+ff.o+'天</span>'):'');
+      return out2+vrfHTML(pid);
     }
     return '—';
   }

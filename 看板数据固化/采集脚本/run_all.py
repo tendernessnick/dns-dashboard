@@ -125,12 +125,14 @@ def main():
         time.sleep(8 if pid in EM_HEAVY else 1)
     ok = sum(1 for r in results if r[2] == '成功')
     skip = sum(1 for r in results if r[2] == '跳过')
-    fail = len(results) - ok - skip
-    print(f'\n==== 汇总：共{len(results)} 成功{ok} 跳过{skip} 失败{fail} ====')
+    silent = sum(1 for r in results if r[2] == '静默')
+    fail = len(results) - ok - skip - silent
+    print(f'\n==== 汇总：共{len(results)} 成功{ok} 静默{silent} 跳过{skip} 失败{fail} ====')
     for r in results:
         if r[2] != '成功':
             print(f'  [{r[2]}] {r[0]} {r[1]}: {r[3][:150]}')
     write_state(run_id, only, ok, skip, fail, results)
+    write_news_health(results)
     if not only:
         # v19：全量批次尾部自动跑双源对照（12对，逐对阈值），结果入 核验状态.json（对照段）
         try:
@@ -170,7 +172,8 @@ def write_state(run_id, only, ok, skip, fail, results):
         json.dump({'run_id': run_id,
                    '结束时间': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                    '范围': '全量' if not only else '指定:' + ','.join(sorted(only)),
-                   '汇总': {'成功': ok, '跳过': skip, '失败': fail},
+                   '汇总': {'成功': ok, '静默': sum(1 for r in results if r[2] == '静默'),
+                           '跳过': skip, '失败': fail},
                    '词条': entries}, f, ensure_ascii=False, indent=1)
     print('采集状态已写:', os.path.basename(state_fp),
           '| 连续失败≥2:', [p for p, e in entries.items() if e['连续失败'] >= 2] or '无')
@@ -192,9 +195,105 @@ def write_state(run_id, only, ok, skip, fail, results):
     if sus:
         print('存疑告警已并入 核验状态.json:', [p for p, _ in sus])
     vst['更新时间'] = now
-    with open(vfp, 'w', encoding='utf-8') as f:
+    with open(vfp, 'w', encoding='utf-8', ) as f:
         json.dump(vst, f, ensure_ascii=False, indent=1)
 
 
+# v20资讯治理A2：内容feed按"最新条目日期"判新鲜（item模式），API快照feed按"采集时间"判（collect模式）
+NEWS_COLLECT_MODE = {'P84', 'P93', 'P94', 'P96'}   # 问答/榜单类：无新条目是常态，看采集是否停滞
+NEWS_FRESH_LIM = {'每日': 3}                        # 其余更新频率默认7天
+
+
+def write_news_health(results):
+    """v20资讯治理A2：注册表驱动扫描 资讯数据/*.json → 核验状态.json['资讯']（附录徽标消费）。
+    item模式: 最新条目距今超阈值→sus（P59式源静默、关键词漂移都从这里暴露）；
+    collect模式: 文件updated距今>3天→warn（采集停滞；P96多文件取最差）。
+    本次运行结果为"失败"的资讯P号直接warn（fetch异常即时可见，不等阈值）。
+    每次调用全量重算（无跨run状态，幂等）。"""
+    import csv as _csv
+    import datetime
+    import json
+    base = os.path.dirname(HERE)
+    reg_fp = os.path.join(base, '词条注册表.csv')
+    news_dir = os.path.join(base, '资讯数据')
+    now = datetime.datetime.now()
+    try:
+        with open(reg_fp, encoding='utf-8-sig', newline='') as f:
+            rows = list(_csv.DictReader(f))
+    except Exception:
+        return
+    rank = {'ok': 0, 'warn': 1, 'sus': 2}
+    ent = {}
+    for r in rows:
+        pid = (r.get('P号') or '').strip()
+        files = [x.strip() for x in (r.get('资讯文件') or '').split(';') if x.strip()]
+        if not files:
+            continue
+        lim = NEWS_FRESH_LIM.get((r.get('更新频率') or '').strip(), 7)
+        worst = None
+        for fn in files:
+            try:
+                d = json.load(open(os.path.join(news_dir, fn), encoding='utf-8'))
+            except Exception:
+                cand = ('warn', f'{fn} 读取失败（缺失或损坏）')
+            else:
+                items = d.get('items') or []
+                if pid in NEWS_COLLECT_MODE:
+                    upd = (d.get('updated') or '')[:10]
+                    try:
+                        dd = (now.date() - datetime.date.fromisoformat(upd)).days
+                    except Exception:
+                        dd = 99
+                    cand = ('ok', f'采集正常({upd[5:]})') if dd <= 3 else \
+                           ('warn', f'采集停滞{dd}天(>3) 更新于{upd[5:]}')
+                elif not items:
+                    cand = ('sus', f'{fn} 近7天窗内0条（源静默或关键词待校）')
+                else:
+                    isos = [str(i.get('iso') or '') for i in items]
+                    if not all(isos):
+                        from _news_common import _mmdd_to_iso
+                        isos = [x or _mmdd_to_iso(i.get('date', ''), now) for x, i in zip(isos, items)]
+                    iso = max(isos)
+                    try:
+                        dd = (now.date() - datetime.date.fromisoformat(iso)).days
+                    except Exception:
+                        dd = 99
+                    cand = ('ok', f'最新条目{iso[5:]}') if dd <= lim else \
+                           ('sus', f'最新条目{iso[5:]} 距今{dd}天(>{lim}天阈值)')
+            if worst is None or rank[cand[0]] > rank[worst[0]]:
+                worst = cand
+        for p, _m, st, dtl, _e in results:
+            if p == pid and st == '失败':
+                worst = ('warn', '本次采集异常: ' + dtl[:80])
+                break
+        ent[pid] = {'级别': worst[0], '说明': worst[1][:120],
+                    '最近': now.strftime('%Y-%m-%d %H:%M')}
+    vfp = os.path.join(base, '核验状态.json')
+    try:
+        with open(vfp, encoding='utf-8') as f:
+            vst = json.load(f)
+    except Exception:
+        vst = {}
+    vst['资讯'] = ent
+    vst['更新时间'] = now.strftime('%Y-%m-%d %H:%M')
+    payload = json.dumps(vst, ensure_ascii=False, indent=1)   # 先序列化再落盘：防半途异常截断状态文件
+    with open(vfp, 'w', encoding='utf-8') as f:
+        f.write(payload)
+    flagged = [p for p, e in ent.items() if e['级别'] != 'ok']
+    print('资讯健康已写 核验状态.json | 喂入', len(ent), 'feed | 异常:',
+          flagged or '无')
+
+
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    finally:
+        # v20资讯治理A2加固：异常路径也立即解锁（只清自己持有的锁，双开场景不误删他人锁）
+        _lk = os.path.join(HERE, '_run_all.lock')
+        if os.path.exists(_lk):
+            try:
+                with open(_lk, encoding='utf-8') as f:
+                    if f.read().strip() == str(os.getpid()):
+                        os.remove(_lk)
+            except OSError:
+                pass
