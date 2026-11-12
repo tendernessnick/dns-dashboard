@@ -1015,6 +1015,11 @@ body{background:#F5F6F3}
 #dns-dash .focus-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:16px}
 #dns-dash .focus-item{min-width:0;display:flex;flex-direction:column;padding:20px;background:#FFF;border:1px solid #D7E0DA;border-radius:8px}
 #dns-dash .focus-item:first-child{border-top:3px solid #347F77;padding-top:18px}
+#dns-dash a.focus-item{color:inherit;text-decoration:none;transition:border-color .18s,box-shadow .18s}
+#dns-dash a.focus-item[href]:hover{border-color:#81A69D;box-shadow:0 5px 18px rgba(29,65,59,.08)}
+#dns-dash a.focus-item[href]:focus-visible{outline:3px solid #347F77;outline-offset:3px}
+#dns-dash .focus-link-label{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin-top:16px;padding-top:12px;border-top:1px solid #E0E7DF;font-size:14px;font-weight:550;color:#245B65}
+#dns-dash .focus-item.source-unavailable .focus-link-label{color:#607272}
 #dns-dash .focus-category{font-size:12px;line-height:22px;color:#4E7774;font-weight:500;margin-bottom:5px}
 #dns-dash .focus-item h2{font-size:20px;line-height:30px;font-weight:600;color:#203B44}
 #dns-dash .focus-content{margin-top:14px;flex:1;min-width:0}
@@ -1119,6 +1124,9 @@ body{background:#F5F6F3}
 #dns-dash .cotab{min-height:44px;font-size:14px}
 #dns-dash .cotab small{font-size:12px}
 #dns-dash .cco .cn{font-size:16px;line-height:27px}
+#dns-dash .cco .chead{flex-wrap:wrap}
+#dns-dash .cco .chead>span:not(.mono):not(.chip){min-width:0;flex:1 1 96px}
+#dns-dash .cco .cs{overflow-wrap:anywhere}
 #dns-dash .cco .cd{font-size:14px;line-height:25px}
 #dns-dash .plan-purpose{font-size:15px;line-height:28px}
 #dns-dash .plan-content{font-size:14px;line-height:26px}
@@ -1258,6 +1266,149 @@ body{background:#F5F6F3}
  #dns-dash .focus-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 
+/* 资讯、榜单和图文统一手动分页。内容没有内部纵向滚动，滚轮自然传递给页面。 */
+#dns-dash .content-pager{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;grid-template-rows:auto auto;column-gap:8px;row-gap:10px;align-items:center;min-width:0;width:100%;margin:4px 0 12px;flex:1 0 auto}
+#dns-dash .content-pager>.pager-items{grid-column:2;grid-row:1;min-width:0;width:100%;margin:0;padding:0;max-height:none!important;height:auto!important;overflow:visible!important;overscroll-behavior:auto;touch-action:auto;mask-image:none!important;-webkit-mask-image:none!important;scrollbar-width:none;align-self:start}
+#dns-dash .content-pager .pager-item[hidden]{display:none!important}
+#dns-dash .content-pager .pager-arrow{display:flex;align-items:center;justify-content:center;min-width:44px;width:44px;min-height:44px;height:44px;padding:10px;border:1px solid #D9E3DD;border-radius:50%;background:#FFF;color:#345D65;cursor:pointer;box-shadow:0 1px 4px rgba(32,55,50,.04);transition:background .15s,border-color .15s,color .15s}
+#dns-dash .pager-arrow svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#dns-dash .content-pager .pager-arrow:hover:not(:disabled){background:#ECF3EF;border-color:#92B9AA;color:#164F51}
+#dns-dash .content-pager .pager-arrow:disabled{background:#F7F9F6;color:#BCC9C1;border-color:#E8EDE7;box-shadow:none;cursor:default}
+#dns-dash .content-pager .pager-arrow:focus-visible,#dns-dash .story-link:focus-visible{outline:3px solid #2F7D83;outline-offset:3px}
+#dns-dash .pager-previous{grid-column:1;grid-row:1}
+#dns-dash .pager-next{grid-column:3;grid-row:1}
+#dns-dash .pager-status{grid-column:1/-1;grid-row:2;text-align:center;font:400 12px/22px var(--fn);font-variant-numeric:tabular-nums;color:#6B7D79;min-width:0}
+#dns-dash .pager-single .pager-arrow{visibility:hidden}
+#dns-dash .content-pager.pager-compact{row-gap:12px}
+#dns-dash .content-pager.pager-compact>.pager-items{grid-column:1/-1;grid-row:1}
+#dns-dash .pager-compact>.pager-previous,#dns-dash .pager-compact>.pager-next{grid-row:2}
+#dns-dash .pager-compact>.pager-status{grid-column:2;grid-row:2}
+#dns-dash .pager-compact.pager-single .pager-arrow{display:none}
+#dns-dash .pager-compact.pager-single .pager-status{grid-column:1/-1}
+#dns-dash .feed.pager-items{display:flex;flex-direction:column;gap:11px;list-style:none;flex:none}
+#dns-dash .feed.pager-items>li{border:0;margin:0;padding:0;min-width:0}
+#dns-dash .feed.pager-items .fi{display:flex;align-items:stretch;gap:10px;padding:14px 15px;border:1px solid #E1E8E0;border-radius:7px;background:#FAFCF9;text-decoration:none;line-height:25px;min-width:0;color:#324D54;transition:background .15s,border-color .15s}
+#dns-dash .feed.pager-items a.fi:hover{background:#F1F6F1;border-color:#A9C7BA;color:#1F4A50}
+#dns-dash .feed.pager-items .fi::after{display:none}
+#dns-dash .feed.pager-items .story-link{flex-direction:column;gap:7px}
+#dns-dash .feed.pager-items .story-link span{display:block;flex:none;overflow:visible;-webkit-line-clamp:unset;-webkit-box-orient:unset}
+#dns-dash .feed.pager-items .story-link .story-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;line-height:20px;color:#637C76}
+#dns-dash .feed.pager-items .story-meta .dchip{padding:2px 6px;font:400 12px/19px var(--fnnum);background:#EFF3EE;border:0;border-radius:3px;color:#60756F}
+#dns-dash .feed.pager-items .story-meta .story-open{margin-left:auto}
+#dns-dash .feed.pager-items .story-link .story-title{font-size:15px;line-height:26px;font-weight:550;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+#dns-dash .feed.pager-items .story-link .story-summary{font-size:13px;line-height:23px;color:#6A7F79;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#dns-dash .story-open{font-size:12px;line-height:21px;color:#587D77;font-weight:400}
+#dns-dash .feed-empty,#dns-dash .top-empty{padding:24px 16px!important;background:#F7F9F5;border:1px dashed #D8E3D8!important;border-radius:7px;font-size:14px;line-height:26px;color:#708077}
+/* 议息模块与通用资讯使用同一套卡片。 */
+#dns-dash .calendar-card>.tl-list,#dns-dash .calendar-card>.desc{flex:none}
+#dns-dash .calendar-card>.foot{margin-top:auto}
+#dns-dash .calendar-news{margin-top:18px;min-width:0}
+#dns-dash .calendar-news-title{font-size:14px;line-height:24px;font-weight:550;margin:0 0 9px;color:#365B5D}
+#dns-dash .calendar-news-status{font-size:12px;line-height:22px;color:#718077;margin:5px 0}
+#dns-dash .calendar-news-feed.pager-items .fi.story-link{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:11px}
+#dns-dash .calendar-news-feed.pager-items .fi>.dchip{font:400 11px/20px var(--fnnum);padding:2px 5px;background:#EFF3EE;border:0;border-radius:3px;margin-top:1px;min-width:0}
+#dns-dash .calendar-news-feed.pager-items .story-body{min-width:0}
+#dns-dash .calendar-news-feed.pager-items .story-source{display:block;margin-top:5px;color:#6B817A;font:400 12px/21px var(--fn)}
+/* 图文两张并排或单张，空间留给标题、图片和摘要，整卡就是原文入口。 */
+#dns-dash .revcards.pager-items,#dns-dash [data-review="41"].revcards.pager-items,#dns-dash [data-review="42"].revcards.pager-items{display:grid;grid-template-columns:repeat(var(--pager-columns,1),minmax(0,1fr));gap:15px;align-items:stretch;flex:none}
+#dns-dash .revcards.pager-items .revcard,#dns-dash [data-review="41"].pager-items .revcard,#dns-dash [data-review="42"].pager-items .revcard{display:flex;flex-direction:column;align-items:stretch;min-width:0;min-height:0;height:auto!important;padding:16px;gap:14px;border:1px solid #DFE8DF;border-radius:8px;background:#FAFCF8;text-decoration:none;color:inherit;overflow:visible;transition:background .15s,border-color .15s,box-shadow .15s}
+#dns-dash .revcards.pager-items a.revcard:hover{background:#F3F8F1;border-color:#9CBEAD;box-shadow:0 3px 12px rgba(42,73,55,.06)}
+#dns-dash .revcards.pager-items .rmedia{flex:none;width:100%;min-width:0;margin:0}
+#dns-dash .revcards.pager-items .rthumb,#dns-dash [data-review="41"].pager-items .rthumb,#dns-dash [data-review="42"].pager-items .rthumb{display:block;width:100%;height:190px;object-fit:contain;background:#F0F4EC;border-radius:5px}
+#dns-dash .revcards.pager-items .rnoimg{display:flex;align-items:center;justify-content:center;font:400 13px/24px var(--fn);color:#84958A;letter-spacing:0}
+#dns-dash .revcards.pager-items .rinfo{display:flex;flex:1;min-width:0;flex-direction:column}
+#dns-dash .revcards.pager-items .rname{margin:0;font-size:16px;line-height:27px;font-weight:600;-webkit-line-clamp:3!important;color:#233E44;overflow-wrap:anywhere}
+#dns-dash .revcards.pager-items .rmeta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+#dns-dash .revcards.pager-items .rdate{margin:0;color:#6D8179;font-size:12px;line-height:22px}
+#dns-dash .revcards.pager-items .rdesc{font-size:14px;line-height:25px;margin:9px 0 0;-webkit-line-clamp:3;color:#617970}
+#dns-dash .revcards.pager-items .rchips{margin-top:8px;max-height:54px;gap:5px}
+#dns-dash .revcards.pager-items .review-open{display:block;margin-top:auto;padding-top:13px}
+#dns-dash .feed.pager-items .top-product-info{min-width:0}
+#dns-dash .feed.pager-items .top-product-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:24px}
+#dns-dash .feed.pager-items .top-product-meta{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:7px}
+#dns-dash.large-reading .feed.pager-items .story-link .story-title{font-size:18px;line-height:31px}
+#dns-dash.large-reading .revcards.pager-items .rname{font-size:19px;line-height:31px}
+#dns-dash.large-reading .revcards.pager-items .rdesc{font-size:16px;line-height:29px}
+@media(max-width:768px){
+ #dns-dash .content-pager{grid-template-columns:44px minmax(0,1fr) 44px;gap:10px}
+ #dns-dash .content-pager>.pager-items{grid-column:1/-1;grid-row:1}
+ #dns-dash .content-pager>.pager-previous,#dns-dash .content-pager>.pager-next{grid-row:2}
+ #dns-dash .content-pager>.pager-status{grid-column:2;grid-row:2}
+ #dns-dash .feed.pager-items .fi{padding:13px}
+ #dns-dash .feed.pager-items .story-title{font-size:15px;line-height:26px}
+ #dns-dash .revcards.pager-items .revcard{padding:14px}
+ #dns-dash .revcards.pager-items .rthumb{height:170px}
+ #dns-dash .calendar-news-feed.pager-items .fi.story-link{display:flex;gap:7px}
+}
+@media print{
+ #dns-dash .content-pager{display:block;break-inside:auto}
+ #dns-dash .content-pager .pager-arrow,#dns-dash .content-pager .pager-status{display:none!important}
+ #dns-dash .content-pager .pager-item[hidden]{display:block!important}
+ #dns-dash .revcards.pager-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dns-dash .revcards.pager-items .revcard{break-inside:avoid;margin-bottom:12px}
+}
+
+/* 可收缩研究目录。构建时在_workspace.css后内联，保持无脚本时的原生导航。 */
+#dns-dash[data-navigation-ready="true"] .rail-head{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:2px 0 16px}
+#dns-dash .rail-heading-copy{min-width:0}
+#dns-dash .rail-title{display:block;white-space:nowrap;letter-spacing:.03em}
+#dns-dash .rail-current{display:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 12px/20px var(--fn);color:#637B7D}
+#dns-dash .rail-toggle{display:inline-flex;align-items:center;justify-content:center;gap:4px;flex:none;min-height:44px;padding:7px 6px;border:1px solid #D7E1DC;border-radius:7px;background:#FAFCFA;color:#3D5B61;font:500 12px/20px var(--fn);cursor:pointer;box-shadow:0 1px 2px rgba(28,48,58,.025);transition:background .15s,border-color .15s,color .15s}
+#dns-dash .rail-toggle:hover{background:#EAF1EE;border-color:#B6CAC2;color:#204D5B}
+#dns-dash .rail-toggle:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+#dns-dash .rail-toggle svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#dns-dash .rail-toggle .rail-icon-list{display:none}
+
+@media(min-width:1280px){
+ #dns-dash[data-navigation-ready="true"] .workspace-rail{padding-left:0;padding-right:14px}
+ #dns-dash[data-nav-collapsed="true"] .workspace-layout{grid-template-columns:68px minmax(0,1fr);gap:24px}
+ #dns-dash[data-nav-collapsed="true"] .workspace-rail{padding:0 12px 16px 0;overflow-x:hidden;overflow-y:auto;border-color:#D7E1DA;scrollbar-width:none}
+ #dns-dash[data-nav-collapsed="true"] .rail-head{display:block;padding:0 0 15px}
+ #dns-dash[data-nav-collapsed="true"] .rail-heading-copy,#dns-dash[data-nav-collapsed="true"] .rail-foot{display:none}
+ #dns-dash[data-nav-collapsed="true"] .rail-toggle{width:54px;min-height:61px;flex-direction:column;gap:2px;padding:7px 4px;background:#FFF}
+ #dns-dash[data-nav-collapsed="true"] .rail-toggle .rail-icon-panel{transform:rotate(180deg)}
+ #dns-dash[data-nav-collapsed="true"] #dnav{gap:7px}
+ #dns-dash[data-nav-collapsed="true"] .tlink{justify-content:center;width:54px;min-height:48px;padding:10px 6px;border:1px solid transparent;border-radius:8px}
+ #dns-dash[data-nav-collapsed="true"] .tlink .nav-label,#dns-dash[data-nav-collapsed="true"] .tlink .nav-count{display:none}
+ #dns-dash[data-nav-collapsed="true"] .tlink .nav-no{font-size:14px;letter-spacing:.02em}
+ #dns-dash[data-nav-collapsed="true"] .tlink.on{background:#E5EEEA;border-color:#D0DFD8}
+ #dns-dash[data-nav-collapsed="true"] .tlink.on::after{left:-1px;top:13px;bottom:13px;border-radius:2px}
+}
+
+@media(max-width:1279px){
+ #dns-dash[data-navigation-ready="true"] .workspace-rail{position:sticky;top:0;z-index:75;max-height:none;overflow:visible;margin-bottom:22px;background:rgba(245,246,243,.98);backdrop-filter:blur(12px)}
+ #dns-dash[data-navigation-ready="true"] .rail-head{min-height:56px;padding:5px 0;gap:12px}
+ #dns-dash[data-navigation-ready="true"] .rail-heading-copy{display:flex;align-items:center;gap:12px;flex:1;overflow:hidden}
+ #dns-dash[data-navigation-ready="true"] .rail-title{font:600 13px/22px var(--fn);color:#36535B;flex:none}
+ #dns-dash[data-navigation-ready="true"] .rail-current{display:block;padding-left:12px;border-left:1px solid #D5DFD8;font-size:13px}
+ #dns-dash[data-navigation-ready="true"] .rail-toggle{padding:7px 10px;background:#FFF}
+ #dns-dash[data-navigation-ready="true"] .rail-toggle .rail-icon-panel{display:none}
+ #dns-dash[data-navigation-ready="true"] .rail-toggle .rail-icon-list{display:block;width:16px}
+ #dns-dash[data-navigation-ready="true"] #dnav{position:absolute;left:28px;right:28px;top:calc(100% - 1px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;width:auto;height:auto;max-height:min(390px,65dvh);overflow:auto;padding:12px;gap:7px;white-space:normal;border:1px solid #CCDAD2;border-top:2px solid #93B1A5;border-radius:0 0 11px 11px;background:#FFF;box-shadow:0 16px 36px rgba(26,53,48,.14);scrollbar-width:thin}
+ #dns-dash[data-navigation-ready="true"] .tlink{min-width:0;min-height:48px;height:auto;padding:10px 11px;white-space:normal;gap:8px;border-radius:6px;font-size:14px;line-height:23px;color:#4C656B;background:#F5F8F5}
+ #dns-dash[data-navigation-ready="true"] .tlink .nav-label{flex:1;min-width:0}
+ #dns-dash[data-navigation-ready="true"] .tlink .nav-count{display:block;color:#778A87}
+ #dns-dash[data-navigation-ready="true"] .tlink.on{background:#E8F0EB;color:#214E5A}
+ #dns-dash[data-navigation-ready="true"] .tlink.on::after{left:0;right:auto;top:13px;bottom:13px;width:2px;height:auto}
+ #dns-dash[data-navigation-ready="true"] .rail-foot{display:none}
+ #dns-dash[data-navigation-ready="true"] .toolbar{top:56px}
+ #dns-dash[data-mobile-nav-open="true"] .rail-toggle{background:#E8F0EB;border-color:#AEC7BB;color:#214E5A}
+}
+
+@media(max-width:768px){
+ #dns-dash[data-navigation-ready="true"] .rail-head{gap:7px}
+ #dns-dash[data-navigation-ready="true"] .rail-heading-copy{gap:8px}
+ #dns-dash[data-navigation-ready="true"] .rail-current{padding-left:8px;font-size:12px}
+ #dns-dash[data-navigation-ready="true"] .rail-toggle{gap:4px;padding-left:8px;padding-right:8px}
+ #dns-dash[data-navigation-ready="true"] #dnav{left:18px;right:18px;grid-template-columns:repeat(2,minmax(0,1fr));padding:9px;gap:6px;max-height:min(380px,65dvh)}
+ #dns-dash[data-navigation-ready="true"] .tlink{padding:10px 8px;gap:6px;font-size:13px;line-height:21px}
+ #dns-dash[data-navigation-ready="true"] .tlink .nav-count{display:none}
+ #dns-dash[data-navigation-ready="true"] .toolbar{position:relative;top:auto}
+}
+
+@media(prefers-reduced-motion:reduce){#dns-dash .rail-toggle{transition:none}}
+@media print{#dns-dash .workspace-rail{display:none!important}}
+
 </style>
 <div id="dns-dash">
 <a class="skip-link" href="#workspaceOverview">跳到本页内容</a>
@@ -1272,12 +1423,12 @@ body{background:#F5F6F3}
 </div></header>
 <div class="mline"></div>
 <div class="workspace-layout">
-<aside class="workspace-rail" aria-label="本页研究目录">
-  <div class="rail-head"><span class="rail-title">本页内容</span></div>
+<aside class="workspace-rail" id="workspaceNavigation" aria-label="本页研究目录">
+  <div class="rail-head"><div class="rail-heading-copy"><span class="rail-title">本页目录</span><span class="rail-current" id="navigationCurrent" aria-hidden="true">快速定位板块</span></div><button id="navigationToggle" class="rail-toggle" type="button" aria-expanded="true" aria-controls="dnav" aria-label="收起目录" title="收起目录" hidden><svg class="rail-icon-panel" viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="3" width="15" height="14" rx="2"/><path d="M7 3v14m6-10-3 3 3 3"/></svg><svg class="rail-icon-list" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5h12M4 10h12M4 15h12"/></svg><span class="rail-toggle-label">收起</span></button></div>
   <nav id="dnav" aria-label="看板导航">
     <a class="tlink" href="#mk1"><span class="nav-no">01</span><span class="nav-label">新品与产品情报</span><span class="nav-count" title="本板块模块数（含规划）">6</span></a><a class="tlink" href="#mk2"><span class="nav-no">02</span><span class="nav-label">竞品与品牌观察</span><span class="nav-count" title="本板块模块数（含规划）">25</span></a><a class="tlink" href="#mk3"><span class="nav-no">03</span><span class="nav-label">渠道排名与样本价格</span><span class="nav-count" title="本板块模块数（含规划）">5</span></a><a class="tlink" href="#mk4"><span class="nav-no">04</span><span class="nav-label">需求与市场结构</span><span class="nav-count" title="本板块模块数（含规划）">9</span></a><a class="tlink" href="#mk5"><span class="nav-no">05</span><span class="nav-label">产品机会与营销节点</span><span class="nav-count" title="本板块模块数（含规划）">6</span></a><a class="tlink" href="#mk6"><span class="nav-no">06</span><span class="nav-label">市场研究（规划中）</span><span class="nav-count" title="本板块模块数（含规划）">2</span></a>
   </nav>
-  <div class="rail-foot"><span class="rail-foot-label">数据说明</span><b>外部公开信息</b><p>每项数据附有日期与来源<br>点开卡片可查看依据</p></div>
+  <div class="rail-foot"><span class="rail-foot-label">数据说明</span><b>外部公开信息</b><p>指标附有日期与来源<br>点击文章可查看原文</p></div>
 </aside>
 <div class="workspace-stage">
 <section class="workspace-hero" id="workspaceOverview" aria-label="本页研究概览" tabindex="-1">
@@ -1291,7 +1442,7 @@ body{background:#F5F6F3}
   <span class="tb2"><button id="readingSize" class="reading-size" type="button" aria-pressed="false">放大阅读</button><span class="pctl" title="切换折线图显示周期（仅影响曲线渲染，不改动固化数据）"><i>周期</i><button class="on" type="button" aria-pressed="true">默认</button><button type="button" data-m="3" aria-pressed="false">3月</button><button type="button" data-m="6" aria-pressed="false">6月</button><button type="button" data-m="12" aria-pressed="false">1年</button><button type="button" data-m="36" aria-pressed="false">3年</button><button type="button" data-all="1" aria-pressed="false">全部</button></span>
   <a class="tbtn" href="#appendix" id="provbtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 3a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm4 10 4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>数据溯源</a></span>
 </div></div>
-<section class="focus-section" aria-label="本页精选"><div class="focus-heading"><h2>先看这几项</h2><span>精选现有资料，点击查看完整内容</span></div><div class="focus-grid"><article class="focus-item" data-focus-kind="review" data-focus-module="42_手机厂家新品发布近7天" data-focus-pid="P42"><span class="focus-category">新品</span><h2>终端新品</h2><div class="focus-content"></div><p class="focus-note">已收录的公开发布与产品信息</p><button type="button" class="focus-open" data-detail-module="42_手机厂家新品发布近7天">查看详情<span aria-hidden="true">↗</span></button></article><article class="focus-item" data-focus-kind="top" data-focus-module="66_品牌销量排名Amazon线材榜" data-focus-pid="P66"><span class="focus-category">渠道</span><h2>线材榜单</h2><div class="focus-content"></div><p class="focus-note">Amazon美国站商品样本</p><button type="button" class="focus-open" data-detail-module="66_品牌销量排名Amazon线材榜">查看详情<span aria-hidden="true">↗</span></button></article><article class="focus-item" data-focus-kind="review" data-focus-module="90_充电头网拆解报告" data-focus-pid="P90"><span class="focus-category">产品</span><h2>充电产品拆解</h2><div class="focus-content"></div><p class="focus-note">已有拆解图片与摘要</p><button type="button" class="focus-open" data-detail-module="90_充电头网拆解报告">查看详情<span aria-hidden="true">↗</span></button></article></div></section>
+<section class="focus-section" aria-label="本页精选"><div class="focus-heading"><h2>先看这几项</h2><span>精选现有资料，点击查看完整内容</span></div><div class="focus-grid"><a class="focus-item" data-focus-kind="review" data-focus-module="42_手机厂家新品发布近7天" data-focus-pid="P42"><span class="focus-category">新品</span><h2>终端新品</h2><div class="focus-content"></div><p class="focus-note">已收录的公开发布与产品信息</p><span class="focus-link-label">打开原文 <span aria-hidden="true">↗</span></span></a><article class="focus-item" data-focus-kind="top" data-focus-module="66_品牌销量排名Amazon线材榜" data-focus-pid="P66"><span class="focus-category">渠道</span><h2>线材榜单</h2><div class="focus-content"></div><p class="focus-note">Amazon美国站商品样本</p><button type="button" class="focus-open" data-detail-module="66_品牌销量排名Amazon线材榜">查看详情<span aria-hidden="true">↗</span></button></article><a class="focus-item" data-focus-kind="review" data-focus-module="90_充电头网拆解报告" data-focus-pid="P90"><span class="focus-category">产品</span><h2>充电产品拆解</h2><div class="focus-content"></div><p class="focus-note">已有拆解图片与摘要</p><span class="focus-link-label">打开原文 <span aria-hidden="true">↗</span></span></a></div></section>
 
 
 <main class="d-main">
@@ -1299,20 +1450,20 @@ body{background:#F5F6F3}
   <div class="sec-head"><div class="sec-no">01</div><div><h2>新品与产品情报</h2><p>终端新品、Apple生态与拆解评测；关键词筛选的原文情报，供选题与产品研究</p></div><div class="sec-meta">6个现有模块 · 新品 / 资讯 / 评测</div></div>
   <h3 class="grp">终端新品与生态</h3>
   <div class="row">
-    <div class="card list c12" style="height:500px;grid-column:span 12;grid-row:1" data-card-kind="review" data-mid="41_APPLE相关新闻近7天" data-source-pids="P41" data-k="41"><div class="card-top"><span class="t" title="IT之家苹果生态资讯，图文速览（关键词过滤）">Apple 生态 · 新闻速览</span><span class="dot g" title="已接入：IT之家（苹果生态关键词）"></span></div><div class="revcards" data-review="41"></div><div class="foot"><a href="https://www.ithome.com/" target="_blank" rel="noopener">IT之家 ↗</a><span>每日</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="41_APPLE相关新闻近7天">查看产品与拆解<span aria-hidden="true">↗</span></button></div></div>
+    <div class="card list c12" style="height:500px;grid-column:span 12;grid-row:1" data-card-kind="review" data-article-navigation="external" data-mid="41_APPLE相关新闻近7天" data-source-pids="P41" data-k="41"><div class="card-top"><span class="t" title="IT之家苹果生态资讯，图文速览（关键词过滤）">Apple 生态 · 新闻速览</span><span class="dot g" title="已接入：IT之家（苹果生态关键词）"></span></div><div class="revcards" data-review="41"></div><div class="foot"><a href="https://www.ithome.com/" target="_blank" rel="noopener">IT之家 ↗</a><span>每日</span></div></div>
   </div>
   <div class="row">
-    <div class="card list c12" style="height:500px;grid-column:span 12;grid-row:1" data-card-kind="review" data-mid="42_手机厂家新品发布近7天" data-source-pids="P42" data-k="42"><div class="card-top"><span class="t" title="IT之家手机/快充/新品资讯，图文速览（关键词过滤）">手机厂商 · 新品动态</span><span class="dot g" title="已接入：IT之家（新品关键词）"></span></div><div class="revcards" data-review="42"></div><div class="foot"><a href="https://www.ithome.com/" target="_blank" rel="noopener">IT之家手机 ↗</a><span>每日</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="42_手机厂家新品发布近7天">查看产品与拆解<span aria-hidden="true">↗</span></button></div></div>
+    <div class="card list c12" style="height:500px;grid-column:span 12;grid-row:1" data-card-kind="review" data-article-navigation="external" data-mid="42_手机厂家新品发布近7天" data-source-pids="P42" data-k="42"><div class="card-top"><span class="t" title="IT之家手机/快充/新品资讯，图文速览（关键词过滤）">手机厂商 · 新品动态</span><span class="dot g" title="已接入：IT之家（新品关键词）"></span></div><div class="revcards" data-review="42"></div><div class="foot"><a href="https://www.ithome.com/" target="_blank" rel="noopener">IT之家手机 ↗</a><span>每日</span></div></div>
   </div>
   <h3 class="grp">充电行业资讯</h3>
   <div class="row">
-    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-mid="59_充电头网早报" data-source-pids="P59" data-k="59" data-news="P59"><div class="card-top"><span class="t">充电头网早报</span><span class="dot g" title="已接入：充电头网"></span></div><ul class="feed"></ul><div class="foot"><a href="https://www.chongdiantou.com" target="_blank" rel="noopener">充电头网 ↗</a><span>每日</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="59_充电头网早报">查看资讯与来源<span aria-hidden="true">↗</span></button></div></div>
-    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-card-kind="review" data-mid="61_苹果AVS新品资讯" data-source-pids="P61" data-k="61"><div class="card-top"><span class="t" title="充电头网AVS/苹果关键词资讯，图文速览（低频主题展示库存最近篇目）">苹果 AVS · 资讯</span><span class="dot g" title="已接入：充电头网（AVS/苹果关键词）"></span></div><div class="revcards" data-review="61"></div><div class="foot"><a href="https://www.chongdiantou.com/" target="_blank" rel="noopener">充电头网 ↗</a><span>每日</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="61_苹果AVS新品资讯">查看产品与拆解<span aria-hidden="true">↗</span></button></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-article-navigation="external" data-mid="59_充电头网早报" data-source-pids="P59" data-k="59" data-news="P59"><div class="card-top"><span class="t">充电头网早报</span><span class="dot g" title="已接入：充电头网"></span></div><ul class="feed"></ul><div class="foot"><a href="https://www.chongdiantou.com" target="_blank" rel="noopener">充电头网 ↗</a><span>每日</span></div></div>
+    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-card-kind="review" data-article-navigation="external" data-mid="61_苹果AVS新品资讯" data-source-pids="P61" data-k="61"><div class="card-top"><span class="t" title="充电头网AVS/苹果关键词资讯，图文速览（低频主题展示库存最近篇目）">苹果 AVS · 资讯</span><span class="dot g" title="已接入：充电头网（AVS/苹果关键词）"></span></div><div class="revcards" data-review="61"></div><div class="foot"><a href="https://www.chongdiantou.com/" target="_blank" rel="noopener">充电头网 ↗</a><span>每日</span></div></div>
   </div>
   <h3 class="grp">拆解与使用体验</h3>
   <div class="row">
-    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-card-kind="review" data-mid="90_充电头网拆解报告" data-source-pids="P90" data-k="90"><div class="card-top"><span class="t">充电头网 · 拆解报告</span><span class="dot g" title="已接入：充电头网拆解栏目"></span></div><div class="revcards" data-review="90"></div><div class="foot"><a href="https://www.chongdiantou.com/archives/category/teardowns" target="_blank" rel="noopener">充电头网 ↗</a><span>每日</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="90_充电头网拆解报告">查看产品与拆解<span aria-hidden="true">↗</span></button></div></div>
-    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-card-kind="review" data-mid="91_我爱音频网评测" data-source-pids="P91" data-k="91"><div class="card-top"><span class="t">我爱音频网 · 耳机评测</span><span class="dot g" title="已接入：我爱音频网耳机评测"></span></div><div class="revcards" data-review="91"></div><div class="foot"><a href="https://www.52audio.com/archives/category/reviews/earphone" target="_blank" rel="noopener">我爱音频网 ↗</a><span>每日</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="91_我爱音频网评测">查看产品与拆解<span aria-hidden="true">↗</span></button></div></div>
+    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-card-kind="review" data-article-navigation="external" data-mid="90_充电头网拆解报告" data-source-pids="P90" data-k="90"><div class="card-top"><span class="t">充电头网 · 拆解报告</span><span class="dot g" title="已接入：充电头网拆解栏目"></span></div><div class="revcards" data-review="90"></div><div class="foot"><a href="https://www.chongdiantou.com/archives/category/teardowns" target="_blank" rel="noopener">充电头网 ↗</a><span>每日</span></div></div>
+    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-card-kind="review" data-article-navigation="external" data-mid="91_我爱音频网评测" data-source-pids="P91" data-k="91"><div class="card-top"><span class="t">我爱音频网 · 耳机评测</span><span class="dot g" title="已接入：我爱音频网耳机评测"></span></div><div class="revcards" data-review="91"></div><div class="foot"><a href="https://www.52audio.com/archives/category/reviews/earphone" target="_blank" rel="noopener">我爱音频网 ↗</a><span>每日</span></div></div>
   </div>
 </section>
 <section class="mod" id="mk2">
@@ -1325,8 +1476,8 @@ body{background:#F5F6F3}
     <div class="card kpi c6" style="grid-column:span 6;grid-row:1" data-card-kind="desc" data-mid="79_分业务营收拆分" data-source-pids="P79" data-k="79"><div class="card-top"><span class="t">分业务营收拆分</span><span class="dot g" title="已接入：巨潮年报解析"></span></div><div class="val">50.47<span class="unit">%</span></div><div class="sub">充电储能类收入154.02亿元<br>毛利率 41.25%（2025年报）</div><div class="foot"><span>巨潮资讯网</span><span>每季</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="79_分业务营收拆分">查看说明与来源<span aria-hidden="true">↗</span></button></div></div>
   </div>
   <div class="row">
-    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-mid="78_季度报年报巨潮" data-source-pids="P78" data-k="78" data-news="安克公告"><div class="card-top"><span class="t">季度报/年报（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>实时</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="78_季度报年报巨潮">查看资讯与来源<span aria-hidden="true">↗</span></button></div></div>
-    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-mid="84_专利公告投关监控" data-source-pids="P84" data-k="84" data-news="安克互动"><div class="card-top"><span class="t">专利/公告/投关监控</span><span class="dot y" title="互动易已接入；专利诉讼拟经企查查RPA接入（原产品品类&quot;专利诉讼动态&quot;卡已并板）"></span></div><ul class="feed"></ul><div class="foot"><span>深交所互动易</span><span>每周</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="84_专利公告投关监控">查看资讯与来源<span aria-hidden="true">↗</span></button></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-article-navigation="external" data-mid="78_季度报年报巨潮" data-source-pids="P78" data-k="78" data-news="安克公告"><div class="card-top"><span class="t">季度报/年报（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>实时</span></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-article-navigation="external" data-mid="84_专利公告投关监控" data-source-pids="P84" data-k="84" data-news="安克互动"><div class="card-top"><span class="t">专利/公告/投关监控</span><span class="dot y" title="互动易已接入；专利诉讼拟经企查查RPA接入（原产品品类&quot;专利诉讼动态&quot;卡已并板）"></span></div><ul class="feed"></ul><div class="foot"><span>深交所互动易</span><span>每周</span></div></div>
   </div>
   </div>
   <div class="co-panel" data-copanel="绿联科技" hidden>
@@ -1335,8 +1486,8 @@ body{background:#F5F6F3}
     <div class="card c6" style="grid-column:span 6;grid-row:1" data-card-kind="multi" data-mid="224_主营构成最新报告期" data-source-pids="P224" data-k="224"><div class="card-top"><span class="t">主营构成（最新报告期）</span><span class="dot g" title="已接入：东财F10主营构成"></span></div><ul class="multi" data-multi="P224"></ul><div class="foot"><span>东财F10 · 分产品营收占比</span><span>每季</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="224_主营构成最新报告期">查看趋势与数据<span aria-hidden="true">↗</span></button></div></div>
   </div>
   <div class="row">
-    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-mid="234_最新公告巨潮" data-source-pids="P234" data-k="234" data-news="绿联科技公告"><div class="card-top"><span class="t">最新公告（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>每周</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="234_最新公告巨潮">查看资讯与来源<span aria-hidden="true">↗</span></button></div></div>
-    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-mid="244_互动易问答" data-source-pids="P96" data-news="绿联科技互动"><div class="card-top"><span class="t">互动易问答</span><span class="dot g" title="已接入：互动易接口"></span></div><ul class="feed"></ul><div class="foot"><a href="https://irm.cninfo.com.cn/ircs/index" target="_blank" rel="noopener">深交所互动易 ↗</a><span>每周</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="244_互动易问答">查看资讯与来源<span aria-hidden="true">↗</span></button></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-article-navigation="external" data-mid="234_最新公告巨潮" data-source-pids="P234" data-k="234" data-news="绿联科技公告"><div class="card-top"><span class="t">最新公告（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>每周</span></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-article-navigation="external" data-mid="244_互动易问答" data-source-pids="P96" data-news="绿联科技互动"><div class="card-top"><span class="t">互动易问答</span><span class="dot g" title="已接入：互动易接口"></span></div><ul class="feed"></ul><div class="foot"><a href="https://irm.cninfo.com.cn/ircs/index" target="_blank" rel="noopener">深交所互动易 ↗</a><span>每周</span></div></div>
   </div>
   </div>
   <div class="co-panel" data-copanel="奥海科技" hidden>
@@ -1345,8 +1496,8 @@ body{background:#F5F6F3}
     <div class="card c6" style="grid-column:span 6;grid-row:1" data-card-kind="multi" data-mid="221_主营构成最新报告期" data-source-pids="P221" data-k="221"><div class="card-top"><span class="t">主营构成（最新报告期）</span><span class="dot g" title="已接入：东财F10主营构成"></span></div><ul class="multi" data-multi="P221"></ul><div class="foot"><span>东财F10 · 分产品营收占比</span><span>每季</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="221_主营构成最新报告期">查看趋势与数据<span aria-hidden="true">↗</span></button></div></div>
   </div>
   <div class="row">
-    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-mid="231_最新公告巨潮" data-source-pids="P231" data-k="231" data-news="奥海科技公告"><div class="card-top"><span class="t">最新公告（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>每周</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="231_最新公告巨潮">查看资讯与来源<span aria-hidden="true">↗</span></button></div></div>
-    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-mid="241_互动易问答" data-source-pids="P96" data-news="奥海科技互动"><div class="card-top"><span class="t">互动易问答</span><span class="dot g" title="已接入：互动易接口"></span></div><ul class="feed"></ul><div class="foot"><a href="https://irm.cninfo.com.cn/ircs/index" target="_blank" rel="noopener">深交所互动易 ↗</a><span>每周</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="241_互动易问答">查看资讯与来源<span aria-hidden="true">↗</span></button></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-article-navigation="external" data-mid="231_最新公告巨潮" data-source-pids="P231" data-k="231" data-news="奥海科技公告"><div class="card-top"><span class="t">最新公告（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>每周</span></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-article-navigation="external" data-mid="241_互动易问答" data-source-pids="P96" data-news="奥海科技互动"><div class="card-top"><span class="t">互动易问答</span><span class="dot g" title="已接入：互动易接口"></span></div><ul class="feed"></ul><div class="foot"><a href="https://irm.cninfo.com.cn/ircs/index" target="_blank" rel="noopener">深交所互动易 ↗</a><span>每周</span></div></div>
   </div>
   </div>
   <div class="co-panel" data-copanel="佳禾智能" hidden>
@@ -1355,8 +1506,8 @@ body{background:#F5F6F3}
     <div class="card c6" style="grid-column:span 6;grid-row:1" data-card-kind="multi" data-mid="222_主营构成最新报告期" data-source-pids="P222" data-k="222"><div class="card-top"><span class="t">主营构成（最新报告期）</span><span class="dot g" title="已接入：东财F10主营构成"></span></div><ul class="multi" data-multi="P222"></ul><div class="foot"><span>东财F10 · 分产品营收占比</span><span>每季</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="222_主营构成最新报告期">查看趋势与数据<span aria-hidden="true">↗</span></button></div></div>
   </div>
   <div class="row">
-    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-mid="232_最新公告巨潮" data-source-pids="P232" data-k="232" data-news="佳禾智能公告"><div class="card-top"><span class="t">最新公告（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>每周</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="232_最新公告巨潮">查看资讯与来源<span aria-hidden="true">↗</span></button></div></div>
-    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-mid="242_互动易问答" data-source-pids="P96" data-news="佳禾智能互动"><div class="card-top"><span class="t">互动易问答</span><span class="dot g" title="已接入：互动易接口"></span></div><ul class="feed"></ul><div class="foot"><a href="https://irm.cninfo.com.cn/ircs/index" target="_blank" rel="noopener">深交所互动易 ↗</a><span>每周</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="242_互动易问答">查看资讯与来源<span aria-hidden="true">↗</span></button></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-article-navigation="external" data-mid="232_最新公告巨潮" data-source-pids="P232" data-k="232" data-news="佳禾智能公告"><div class="card-top"><span class="t">最新公告（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>每周</span></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-article-navigation="external" data-mid="242_互动易问答" data-source-pids="P96" data-news="佳禾智能互动"><div class="card-top"><span class="t">互动易问答</span><span class="dot g" title="已接入：互动易接口"></span></div><ul class="feed"></ul><div class="foot"><a href="https://irm.cninfo.com.cn/ircs/index" target="_blank" rel="noopener">深交所互动易 ↗</a><span>每周</span></div></div>
   </div>
   </div>
   <div class="co-panel" data-copanel="海能实业" hidden>
@@ -1365,8 +1516,8 @@ body{background:#F5F6F3}
     <div class="card c6" style="grid-column:span 6;grid-row:1" data-card-kind="multi" data-mid="223_主营构成最新报告期" data-source-pids="P223" data-k="223"><div class="card-top"><span class="t">主营构成（最新报告期）</span><span class="dot g" title="已接入：东财F10主营构成"></span></div><ul class="multi" data-multi="P223"></ul><div class="foot"><span>东财F10 · 分产品营收占比</span><span>每季</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="223_主营构成最新报告期">查看趋势与数据<span aria-hidden="true">↗</span></button></div></div>
   </div>
   <div class="row">
-    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-mid="233_最新公告巨潮" data-source-pids="P233" data-k="233" data-news="海能实业公告"><div class="card-top"><span class="t">最新公告（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>每周</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="233_最新公告巨潮">查看资讯与来源<span aria-hidden="true">↗</span></button></div></div>
-    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-mid="243_互动易问答" data-source-pids="P96" data-news="海能实业互动"><div class="card-top"><span class="t">互动易问答</span><span class="dot g" title="已接入：互动易接口"></span></div><ul class="feed"></ul><div class="foot"><a href="https://irm.cninfo.com.cn/ircs/index" target="_blank" rel="noopener">深交所互动易 ↗</a><span>每周</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="243_互动易问答">查看资讯与来源<span aria-hidden="true">↗</span></button></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-article-navigation="external" data-mid="233_最新公告巨潮" data-source-pids="P233" data-k="233" data-news="海能实业公告"><div class="card-top"><span class="t">最新公告（巨潮）</span><span class="dot g" title="已接入：巨潮公告接口"></span></div><ul class="feed"></ul><div class="foot"><a href="http://www.cninfo.com.cn" target="_blank" rel="noopener">巨潮资讯 ↗</a><span>每周</span></div></div>
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-card-kind="list" data-article-navigation="external" data-mid="243_互动易问答" data-source-pids="P96" data-news="海能实业互动"><div class="card-top"><span class="t">互动易问答</span><span class="dot g" title="已接入：互动易接口"></span></div><ul class="feed"></ul><div class="foot"><a href="https://irm.cninfo.com.cn/ircs/index" target="_blank" rel="noopener">深交所互动易 ↗</a><span>每周</span></div></div>
   </div>
   </div>
   <h3 class="grp">非上市品牌 · 官网与目录入口</h3>
@@ -1421,8 +1572,8 @@ body{background:#F5F6F3}
   <div class="sec-head"><div class="sec-no">05</div><div><h2>产品机会与营销节点</h2><p>众筹、新技术、展会与出海政策；筹资不等于交付销量，认证库占比不等于市场渗透率</p></div><div class="sec-meta">静态节点与政策按原方式维护</div></div>
   <h3 class="grp">众筹产品观察</h3>
   <div class="row">
-    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-card-kind="review" data-mid="93_Kickstarter科技众筹热门" data-source-pids="P93" data-k="93"><div class="card-top"><span class="t">Kickstarter · 科技众筹热门</span><span class="dot g" title="已接入：Kickstarter科技类目（项目图文）"></span></div><div class="revcards" data-review="93"></div><div class="foot"><a href="https://www.kickstarter.com/discover/categories/technology" target="_blank" rel="noopener">Kickstarter ↗</a><span>每日</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="93_Kickstarter科技众筹热门">查看产品与拆解<span aria-hidden="true">↗</span></button></div></div>
-    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-card-kind="review" data-mid="94_摩点众筹热门" data-source-pids="P94" data-k="94"><div class="card-top"><span class="t">摩点 · 众筹热门</span><span class="dot g" title="已接入：摩点（项目图文）"></span></div><div class="revcards" data-review="94"></div><div class="foot"><a href="https://www.modian.me" target="_blank" rel="noopener">摩点 ↗</a><span>每日</span></div><div class="card-action-row"><button type="button" class="detail-open" data-detail-module="94_摩点众筹热门">查看产品与拆解<span aria-hidden="true">↗</span></button></div></div>
+    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-card-kind="review" data-article-navigation="external" data-mid="93_Kickstarter科技众筹热门" data-source-pids="P93" data-k="93"><div class="card-top"><span class="t">Kickstarter · 科技众筹热门</span><span class="dot g" title="已接入：Kickstarter科技类目（项目图文）"></span></div><div class="revcards" data-review="93"></div><div class="foot"><a href="https://www.kickstarter.com/discover/categories/technology" target="_blank" rel="noopener">Kickstarter ↗</a><span>每日</span></div></div>
+    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-card-kind="review" data-article-navigation="external" data-mid="94_摩点众筹热门" data-source-pids="P94" data-k="94"><div class="card-top"><span class="t">摩点 · 众筹热门</span><span class="dot g" title="已接入：摩点（项目图文）"></span></div><div class="revcards" data-review="94"></div><div class="foot"><a href="https://www.modian.me" target="_blank" rel="noopener">摩点 ↗</a><span>每日</span></div></div>
   </div>
   <h3 class="grp">展会与营销日历</h3>
   <div class="row">
@@ -1516,32 +1667,139 @@ function getSeries(pid,col){col=col||1;var d=DDATA[pid];if(!d||!d.rows||!d.rows.
   return rows.length?{rows:rows,col:col,src:d.src}:null;}
 // 累计财报/预测等不可直接以前一观测差值解释为涨跌，卡配置可显式关闭。
 function canCompare(el){return !el.closest('[data-change="none"]');}
-// 05_news.js —— 渲染器：资讯/公告feed（data-news 锚点 ← DDATA._news）
-// v14：日期改为chip样式（i.dchip）
-(function(){
-  var KEY,ITEMS;
-  for(KEY in NEWS){
-    ITEMS=NEWS[KEY];
-    if(!ITEMS||!ITEMS.length)continue;
-    root.querySelectorAll('[data-news]').forEach(function(el){
-      if(el.getAttribute('data-news')!==KEY)return;
-      var ul=el.querySelector('ul.feed');if(!ul)return;
-      ul.innerHTML=ITEMS.map(function(it){
-        var zh=it.title_zh&&it.title_zh!==it.title;
-        var tt=zh?(' title="'+escH(it.title)+'"'):'';
-        return '<li><a class="fi" href="'+escH(it.url||'#')+'" target="_blank" rel="noopener">'
-          +'<i class="dchip">'+escH(it.date||'')+'</i><span'+tt+'>'+escH(zh?it.title_zh:it.title)+'</span></a></li>';
-      }).join('');
-    });
+// 手动分页用于所有资讯、榜单和图文；不监听滚轮或触摸，不截留页面纵向滚动。
+(function () {
+  var instances = new WeakMap(), sequence = 0;
+  function node(tag, cls, text) {
+    var el = document.createElement(tag); if (cls) el.className = cls;
+    if (text != null) el.textContent = String(text); return el;
   }
+  function mount(container, options) {
+    if (!container || !container.parentNode) return null;
+    var existing = instances.get(container);
+    if (existing) { existing.configure(options || {}); return existing; }
+    var settings = Object.assign({ kind: 'news', label: '资讯' }, options || {});
+    var shell = node('div', 'content-pager'), previous = node('button', 'pager-arrow pager-previous');
+    var next = node('button', 'pager-arrow pager-next'), status = node('div', 'pager-status');
+    var page = 0, size = 1, lastWidth = -1, items = [], pending = false;
+    shell.setAttribute('role', 'region');
+    if (!container.id) container.id = 'paged-content-' + (++sequence);
+    container.classList.add('pager-items');
+    container.setAttribute('data-pager-ready', 'true');
+    previous.type = next.type = 'button';
+    previous.setAttribute('aria-controls', container.id); next.setAttribute('aria-controls', container.id);
+    previous.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>';
+    next.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg>';
+    status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite'); status.setAttribute('aria-atomic', 'true');
+    container.parentNode.insertBefore(shell, container);
+    shell.appendChild(previous); shell.appendChild(container); shell.appendChild(next); shell.appendChild(status);
+    function countPages() { return Math.max(1, Math.ceil(items.length / size)); }
+    function safeFocus(el) { if (el && typeof el.focus === 'function') el.focus({ preventScroll: true }); }
+    function focusVisibleItem() {
+      var item = items.find(function (entry) { return !entry.hidden; });
+      if (!item) return;
+      var link = item.matches('a[href],button,[tabindex]') ? item : item.querySelector('a[href],button,[tabindex]');
+      if (link) safeFocus(link);
+      else { item.setAttribute('tabindex', '-1'); safeFocus(item); }
+    }
+    function paint() {
+      var total = countPages(), active = document.activeElement;
+      page = Math.max(0, Math.min(page, total - 1));
+      items.forEach(function (item, index) {
+        item.classList.add('pager-item'); item.hidden = index < page * size || index >= (page + 1) * size;
+      });
+      previous.disabled = page === 0; next.disabled = page >= total - 1;
+      previous.setAttribute('aria-label', settings.label + '：上一页'); next.setAttribute('aria-label', settings.label + '：下一页');
+      previous.title = '上一页'; next.title = '下一页';
+      shell.setAttribute('aria-label', settings.label + '分页浏览'); shell.setAttribute('data-pager-kind', settings.kind);
+      shell.setAttribute('data-page-index', String(page)); shell.setAttribute('data-page-count', String(total));
+      shell.classList.toggle('pager-single', total === 1);
+      shell.style.setProperty('--pager-columns', String(settings.kind === 'review' ? size : 1));
+      var savedCount = items.filter(function (item) { return !item.matches('.feed-empty,.top-empty,.rev-empty'); }).length;
+      status.textContent = !savedCount ? '暂无内容' : total > 1 ? '第 ' + (page + 1) + ' / ' + total + ' 页 · 共 ' + savedCount + ' 条' : '共 ' + savedCount + ' 条';
+      // 显示/收起、换页或窗口改变时，不把键盘焦点留在隐藏条目或刚禁用的按钮上。
+      if (active && container.contains(active) && items.some(function (item) { return item.hidden && item.contains(active); })) focusVisibleItem();
+      else if ((active === next || active === previous) && previous.disabled && next.disabled) focusVisibleItem();
+      else if (active === next && next.disabled && !previous.disabled) safeFocus(previous);
+      else if (active === previous && previous.disabled && !next.disabled) safeFocus(next);
+    }
+    function pageSize(width) {
+      var requested = typeof settings.pageSize === 'function' ? settings.pageSize(width) : settings.pageSize;
+      if (Number.isFinite(requested) && requested > 0) return Math.max(1, Math.floor(requested));
+      if (settings.kind === 'review') return width >= 760 ? 2 : 1;
+      return width < 420 ? 2 : 3;
+    }
+    function refresh() {
+      var before = page * size, active = document.activeElement;
+      items = Array.from(container.children);
+      var focused = items.findIndex(function (item) { return item === active || item.contains(active); });
+      var width = shell.getBoundingClientRect().width;
+      if (width > 0) {
+        var updated = pageSize(width);
+        if (updated !== size) { size = updated; page = Math.floor((focused >= 0 ? focused : before) / size); }
+        shell.classList.toggle('pager-compact', width < 440);
+        shell.classList.toggle('pager-wide', width >= 760);
+        lastWidth = width;
+      }
+      container.classList.remove('faded'); paint();
+    }
+    function schedule() {
+      if (pending) return; pending = true;
+      requestAnimationFrame(function () { pending = false; if (container.isConnected) refresh(); });
+    }
+    previous.addEventListener('click', function () { if (!previous.disabled) { page--; paint(); } });
+    next.addEventListener('click', function () { if (!next.disabled) { page++; paint(); } });
+    var api = {
+      refresh: refresh,
+      goTo: function (index) { if (Number.isFinite(index)) { page = Math.floor(index); paint(); } },
+      configure: function (value) { Object.assign(settings, value); refresh(); }
+    };
+    instances.set(container, api); refresh();
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(function (entries) {
+        if (entries.some(function (entry) { return entry.contentRect.width > 0 && Math.abs(entry.contentRect.width - lastWidth) > .5; })) schedule();
+      }).observe(shell);
+    } else window.addEventListener('resize', schedule, { passive: true });
+    // 公司切换会先显示面板，再由下一帧重新计算页数；不修改公司选择本身。
+    var panel = container.closest('[data-copanel]');
+    if (panel && typeof MutationObserver !== 'undefined') new MutationObserver(schedule).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
+    return api;
+  }
+  window.DNSPager = { mount: mount };
 })();
-// 空feed兜底提示：数据为空时如实显示（不编造条目）
-root.querySelectorAll('[data-news]').forEach(function(el){
-  var ul=el.querySelector('ul.feed');
-  if(ul&&!ul.querySelector('li')){
-    ul.innerHTML='<li><span class="fi"><i class="dchip">--</i><span>当前无可展示资讯 · 更新与异常状态见数据溯源</span></span></li>';
+// 资讯/公告改为可直接打开原文的卡片，用左右按钮分页，数据保持只读。
+(function () {
+  function node(tag, cls, text) {
+    var el = document.createElement(tag); if (cls) el.className = cls;
+    if (text != null) el.textContent = String(text); return el;
   }
-});
+  function webURL(value) {
+    var text = String(value || '').trim(); if (!/^https?:\/\//i.test(text)) return '';
+    try { var url = new URL(text); return /^https?:$/.test(url.protocol) ? url.href : ''; } catch (_) { return ''; }
+  }
+  root.querySelectorAll('[data-news]').forEach(function (el) {
+    var ul = el.matches('ul.feed') ? el : el.querySelector('ul.feed'); if (!ul) return;
+    var items = NEWS[el.getAttribute('data-news')], fragment = document.createDocumentFragment();
+    if (Array.isArray(items)) items.forEach(function (it) {
+      if (!it || typeof it !== 'object') return;
+      var title = String(it.title_zh || it.title || '未记录标题'), url = webURL(it.url);
+      var item = node('li', 'news-item'), link = node(url ? 'a' : 'div', 'fi story-link');
+      if (url) { link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.setAttribute('aria-label', '打开原文：' + title); }
+      var meta = node('span', 'story-meta');
+      meta.appendChild(node('i', 'dchip', it.iso || it.date || '日期未提供'));
+      if (it.source) meta.appendChild(node('span', 'story-source', it.source));
+      meta.appendChild(node('span', 'story-open', url ? '原文 ↗' : '原文链接未提供'));
+      link.appendChild(meta);
+      var heading = node('span', 'story-title', title); heading.title = it.title || title; link.appendChild(heading);
+      if (it.desc || it.summary) link.appendChild(node('span', 'story-summary', it.desc || it.summary));
+      item.appendChild(link); fragment.appendChild(item);
+    });
+    if (!fragment.childNodes.length) fragment.appendChild(node('li', 'feed-empty', '当前无可展示资讯 · 更新与异常状态见数据溯源'));
+    ul.replaceChildren(fragment);
+    var title = el.querySelector('.card-top .t');
+    window.DNSPager.mount(ul, { kind: 'news', label: title ? title.textContent : '资讯' });
+  });
+})();
 // 10_theme.js —— 渲染器：板块主题色（m1-m5 → --acc CSS变量）
 root.querySelectorAll('.mod[id]').forEach(function(s){
   s.style.setProperty('--acc',getComputedStyle(s).getPropertyValue('--section-accent').trim()||ACCENT[s.id]||'#285FAF');
@@ -2077,11 +2335,11 @@ pbtns.forEach(function(b){
     el.textContent=text;
   });
 })();
-// 62_feedfade.js —— 渲染器：滚动feed底部渐隐（内容溢出时提示可下滚，滚到底自动消失）
-root.querySelectorAll('ul.feed').forEach(function(ul){
-  function chk(){ul.classList.toggle('faded',ul.scrollTop+ul.clientHeight<ul.scrollHeight-4)}
-  chk();
-  ul.addEventListener('scroll',chk,{passive:true});
+// 兼容榜单和静态资讯列表：统一分页，不再使用滚动渐隐或内部纵向滚动。
+root.querySelectorAll('ul.feed').forEach(function (ul) {
+  if (ul.getAttribute('data-pager-ready') === 'true') return;
+  var card = ul.closest('.card'), title = card && card.querySelector('.card-top .t');
+  window.DNSPager.mount(ul, { kind: ul.hasAttribute('data-toplist') ? 'toplist' : 'news', label: title ? title.textContent : '资讯' });
 });
 // 65_nav.js —— 渲染器：导航高亮（IntersectionObserver）+ 回顶按钮
 // v21：卡片直接可见，去除滚动入场；导航保留当前位置与键盘语义。
@@ -2107,8 +2365,7 @@ root.addEventListener('click',function(ev){
   var el=ev.target.closest?ev.target.closest('[data-href]'):null;
   if(el){window.open(el.getAttribute('data-href'),'_blank','noopener')}
 });
-// 70_review.js —— 图文预览：卡内阅读与原文外链分开，正文仍来自已有REVIEWS。
-// 详情按钮交由80_details.js委托处理；不把按钮嵌在链接内、不生成不存在的摘要。
+// 图文资讯整卡打开原文，左右按钮切页；图片、摘要及标签均来自已有REVIEWS。
 (function(){
   if(typeof REVIEWS==='undefined')return;
   function webURL(value){
@@ -2143,15 +2400,18 @@ root.addEventListener('click',function(ev){
     var fragment=document.createDocumentFragment();
     d.items.forEach(function(it,index){
       if(!it||typeof it!=='object')return;
-      var card=node('article','revcard'),media=node('div','rmedia'),info=node('div','rinfo');
+      var url=webURL(it.url);
+      var card=node(url?'a':'article','revcard story-link'),media=node('div','rmedia'),info=node('div','rinfo');
       var name=String(it.name||'未命名图文'),src=imageURL(it.img);
+      card.setAttribute('data-article-pid',pid);card.setAttribute('data-article-index',String(index));
+      if(url){card.href=url;card.target='_blank';card.rel='noopener noreferrer';card.setAttribute('aria-label','打开原文：'+name)}
       function placeholder(){media.replaceChildren(node('span','rthumb rnoimg',it.img?'图片待核对':d.noimg||'暂无配图'))}
       if(src){
         var img=node('img','rthumb');img.src=src;img.alt=name;img.loading='lazy';img.decoding='async';
         img.addEventListener('error',placeholder,{once:true});media.appendChild(img);
       }else placeholder();
       var title=node('h4','rname',name);title.title=name;
-      // 完整标题保留在DOM与title中，主页最多两行，详情展示全名。
+      // 完整标题保留在DOM与title中，卡片中按可用空间排版。
       title.style.whiteSpace='normal';title.style.display='-webkit-box';
       title.style.webkitLineClamp='2';title.style.webkitBoxOrient='vertical';title.style.overflow='hidden';
       info.appendChild(title);
@@ -2165,18 +2425,12 @@ root.addEventListener('click',function(ev){
         });info.appendChild(chips);
       }
       if(it.desc)info.appendChild(node('p','rdesc',it.desc));
-      var actions=node('div','review-actions'),preview=node('button','review-preview','查看图文');
-      preview.type='button';preview.setAttribute('data-detail-review',pid);
-      preview.setAttribute('data-detail-index',String(index));
-      preview.setAttribute('aria-label','查看图文：'+name);actions.appendChild(preview);
-      var url=webURL(it.url);
-      if(url){
-        var link=node('a','review-source','原文 ↗');link.href=url;link.target='_blank';link.rel='noopener noreferrer';
-        link.setAttribute('aria-label','打开原文：'+name);actions.appendChild(link);
-      }
-      info.appendChild(actions);card.appendChild(media);card.appendChild(info);fragment.appendChild(card);
+      info.appendChild(node('span','story-open review-open',url?'阅读原文 ↗':'原文链接未提供'));
+      card.appendChild(media);card.appendChild(info);fragment.appendChild(card);
     });
     el.replaceChildren(fragment);
+    var parent=el.closest('.card'),heading=parent&&parent.querySelector('.card-top .t');
+    window.DNSPager.mount(el,{kind:'review',label:heading?heading.textContent:'图文资讯'});
   });
 })();
 // 72_calendar.js —— 渲染器：议息日历动态覆盖（data-cal 锚点 ← CAL，v18.6）
@@ -2185,18 +2439,75 @@ root.addEventListener('click',function(ev){
 // 锚点约定（v18.9统一）：data-cal 与 data-cal-desc 都存完整P号（如"P16"），与 CAL 键同名——
 // v18.6的两套键（锚点存数字/CAL带P前缀）曾致静默失败，现一处同名处处同名。
 (function(){
-  if(typeof CAL==='undefined')return;
+  var calendars=typeof CAL==='undefined'?{}:CAL;
+  function safeUrl(value){
+    try{var u=new URL(value);return /^https?:$/.test(u.protocol)?u.href:''}catch(e){return ''}
+  }
+  var today=new Date(),cutoff=new Date();cutoff.setDate(cutoff.getDate()-30);
+  function localISO(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+  var upper=localISO(today),lower=localISO(cutoff);
+  function itemDate(it){
+    var date=String(it.iso||'').slice(0,10);
+    if(!date&&/^\d{2}-\d{2}$/.test(it.date||'')){
+      date=(today.getFullYear()-(it.date>upper.slice(5)?1:0))+'-'+it.date;
+    }
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return '';
+    var parts=date.split('-').map(Number),parsed=new Date(parts[0],parts[1]-1,parts[2]);
+    return localISO(parsed)===date&&date>=lower&&date<=upper?date:'';
+  }
+  function fallbackNews(pid){
+    var bank=pid==='P16'?/\b(?:fed|fomc|federal reserve)\b|美联储|联邦公开市场/i:/\b(?:ecb|european central bank)\b|欧洲央行/i;
+    var policy=/\b(?:fomc|monetary policy|interest rates?|discount rate|rate (?:cut|hike|decision)s?)\b|货币政策|议息|利率|加息|降息|决议|纪要/i;
+    var seen={},items=[];
+    Object.keys(typeof NEWS==='undefined'?{}:NEWS).forEach(function(key){
+      (NEWS[key]||[]).forEach(function(it){
+        var title=[it.title,it.title_zh].filter(Boolean).join(' '),url=safeUrl(it.url),date=itemDate(it);
+        if(!bank.test(title)||!policy.test(title)||/non-monetary|in addition to decisions setting interest rates|非货币政策/i.test(title)||!url||seen[url]||!date)return;
+        var path=new URL(url).pathname;if(!path.replace(/\//g,'')||/\/$/.test(path)||/\/(?:index|home)(?:\.[^/]+)?$/i.test(path))return;
+        seen[url]=true;items.push(Object.assign({},it,{iso:date,url:url,source:it.source||new URL(url).hostname}));
+      });
+    });
+    return items.sort(function(a,b){return b.iso.localeCompare(a.iso)});
+  }
   root.querySelectorAll('[data-cal]').forEach(function(el){
     var pid=el.getAttribute('data-cal');     // 完整P号，即CAL键
-    var d=CAL[pid];
-    if(!d||!d.时间线||!d.时间线.length)return;
-    el.innerHTML=d.时间线.map(function(it){
-      var cls=it.下一个?' class="next"':'';
-      return '<li'+cls+'><b>'+escH(it.日期)+'</b>'+escH(it.文本||'')+'</li>';
-    }).join('');
+    var d=calendars[pid]||{};
+    if(d.时间线&&d.时间线.length){
+      el.innerHTML=d.时间线.map(function(it){
+        var cls=it.下一个?' class="next"':'';
+        return '<li'+cls+'><b>'+escH(it.日期)+'</b>'+escH(it.文本||'')+'</li>';
+      }).join('');
+    }
     var card=el.closest('.card');   // desc在所在卡内找（多面板同号不漏刷）
     var desc=card&&card.querySelector('[data-cal-desc="'+pid+'"]');
     if(desc&&d.说明)desc.textContent=d.说明;
+    if(!card)return;
+    card.classList.add('calendar-card');
+    var saved=(d.相关新闻||[]).filter(function(it){return it.title&&safeUrl(it.url)&&itemDate(it)});
+    var items=saved.length?saved:fallbackNews(pid),info=d.资讯采集||{};
+    var section=card.querySelector('[data-calendar-news="'+pid+'"]');
+    if(!section){
+      section=document.createElement('section');section.className='calendar-news';section.setAttribute('data-calendar-news',pid);
+      var foot=card.querySelector('.foot');if(foot)card.insertBefore(section,foot);else card.appendChild(section);
+    }
+    section.innerHTML='<h4 class="calendar-news-title">相关新闻 · 近30天</h4><ul class="feed calendar-news-feed"></ul>';
+    var ul=section.querySelector('ul.feed');
+    if(items.length){
+      ul.innerHTML=items.map(function(it){
+        var zh=it.title_zh&&it.title_zh!==it.title;
+        return '<li><a class="fi story-link" href="'+escH(safeUrl(it.url))+'" target="_blank" rel="noopener noreferrer">'
+          +'<i class="dchip">'+escH(it.date||(it.iso||'').slice(5))+'</i><span class="story-body">'
+          +'<span class="story-title"'+(zh?' title="'+escH(it.title)+'"':'')+'>'+escH(zh?it.title_zh:it.title)+'</span>'
+          +'<small class="story-source">'+escH(it.source||'已有资讯')+' · 阅读原文 ↗</small></span></a></li>';
+      }).join('');
+      if(window.DNSPager)window.DNSPager.mount(ul,{label:(pid==='P16'?'美联储':'欧洲央行')+'相关新闻',kind:'news'});
+    }else{
+      ul.innerHTML='<li class="feed-empty"><span class="fi"><span>近30天暂无可展示的相关资讯</span></span></li>';
+    }
+    if(info.状态==='失败'){
+      var notice=document.createElement('p');notice.className='calendar-news-status';
+      notice.textContent=items.length?'官方资讯暂未更新，当前显示已保存条目。':'官方资讯暂未更新；会议日程与决议说明仍保留。';section.appendChild(notice);
+    }
   });
 })();
 // 75_workspace.js —— 本页模块检索与定位；不筛掉卡片，不改数据、布局或溯源。
@@ -2398,6 +2709,129 @@ root.addEventListener('click',function(ev){
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initWorkspaceSearch, { once: true });
   else initWorkspaceSearch();
 })();
+// 可收缩目录：桌面保留编号快捷入口，窄屏使用紧凑的展开菜单。
+(function () {
+  function initNavigation() {
+    var dash = document.getElementById('dns-dash');
+    var rail = document.getElementById('workspaceNavigation');
+    var nav = document.getElementById('dnav');
+    var toggle = document.getElementById('navigationToggle');
+    var current = document.getElementById('navigationCurrent');
+    if (!dash || !rail || !nav || !toggle || dash.dataset.navigationReady) return;
+
+    var storageKey = 'dns.dashboard.navigation.v1';
+    var memoryKey = '__DNS_DASHBOARD_NAVIGATION_V1__';
+    var desktop = window.matchMedia('(min-width: 1280px)');
+    var preference = { desktopCollapsed: false, mobileOpen: false };
+    var links = Array.prototype.slice.call(nav.querySelectorAll('a[href^="#"]'));
+    var label = toggle.querySelector('.rail-toggle-label');
+
+    function readPreference(value) {
+      if (!value || typeof value !== 'object') return;
+      if (typeof value.desktopCollapsed === 'boolean') preference.desktopCollapsed = value.desktopCollapsed;
+      if (typeof value.mobileOpen === 'boolean') preference.mobileOpen = value.mobileOpen;
+    }
+    // file://、受限存储和分享版srcdoc均允许安全降级为当前窗口的内存状态。
+    try { readPreference(JSON.parse(window.localStorage.getItem(storageKey))); } catch (error) {}
+    try { readPreference(window.parent[memoryKey]); } catch (error) {}
+    try { readPreference(window[memoryKey]); } catch (error) {}
+
+    function savePreference() {
+      var saved = { desktopCollapsed: preference.desktopCollapsed, mobileOpen: preference.mobileOpen };
+      try { window.localStorage.setItem(storageKey, JSON.stringify(saved)); } catch (error) {}
+      try { window[memoryKey] = saved; } catch (error) {}
+      // 分享版换部门时iframe会重建，父窗口中的轻量状态仍可复用。
+      try { window.parent[memoryKey] = saved; } catch (error) {}
+    }
+
+    function redrawLayout() {
+      // 使用现有的可见图表重绘与导航更新入口，避免生成第二套图表状态。
+      window.requestAnimationFrame(function () { window.dispatchEvent(new Event('resize')); });
+    }
+
+    function applyState(redraw) {
+      var isDesktop = desktop.matches;
+      var expanded = isDesktop ? !preference.desktopCollapsed : preference.mobileOpen;
+      var activeWasHidden = !isDesktop && !expanded && nav.contains(document.activeElement);
+      dash.setAttribute('data-nav-collapsed', String(isDesktop && preference.desktopCollapsed));
+      dash.setAttribute('data-mobile-nav-open', String(!isDesktop && preference.mobileOpen));
+      nav.hidden = !isDesktop && !expanded;
+      toggle.setAttribute('aria-expanded', String(expanded));
+      toggle.setAttribute('aria-label', expanded ? '收起目录' : '展开目录');
+      toggle.title = expanded ? '收起目录' : '展开目录';
+      label.textContent = isDesktop ? (expanded ? '收起' : '展开') : (expanded ? '收起目录' : '展开目录');
+      if (activeWasHidden) toggle.focus({ preventScroll: true });
+      if (redraw) redrawLayout();
+    }
+
+    function closeMobile(restoreFocus) {
+      if (desktop.matches || !preference.mobileOpen) return;
+      preference.mobileOpen = false;
+      applyState(false);
+      savePreference();
+      if (restoreFocus) toggle.focus({ preventScroll: true });
+    }
+
+    links.forEach(function (link) {
+      var name = link.querySelector('.nav-label');
+      var number = link.querySelector('.nav-no');
+      var count = link.querySelector('.nav-count');
+      var fullName = [number && number.textContent.trim(), name && name.textContent.trim()].filter(Boolean).join(' · ');
+      if (count && count.textContent.trim()) fullName += '（' + count.textContent.trim() + '个模块）';
+      link.setAttribute('aria-label', fullName);
+      link.title = fullName;
+      link.addEventListener('click', function (event) {
+        if (desktop.matches || event.defaultPrevented || event.button > 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        closeMobile(false);
+        // 收起后仍保留原生锚点/历史行为，将键盘焦点交给被定位板块。
+        var target = document.getElementById(link.getAttribute('href').slice(1));
+        if (!target) return;
+        window.requestAnimationFrame(function () {
+          var temporary = !target.hasAttribute('tabindex');
+          if (temporary) target.setAttribute('tabindex', '-1');
+          target.focus({ preventScroll: true });
+          if (temporary) target.addEventListener('blur', function removeTemporaryFocus() {
+            if (target.getAttribute('tabindex') === '-1') target.removeAttribute('tabindex');
+          }, { once: true });
+        });
+      });
+    });
+
+    function updateCurrent() {
+      var active = nav.querySelector('a[aria-current="location"] .nav-label');
+      current.textContent = active ? active.textContent.trim() : '快速定位板块';
+    }
+    var observer = new MutationObserver(updateCurrent);
+    observer.observe(nav, { subtree: true, attributes: true, attributeFilter: ['aria-current'] });
+
+    toggle.addEventListener('click', function () {
+      if (desktop.matches) preference.desktopCollapsed = !preference.desktopCollapsed;
+      else preference.mobileOpen = !preference.mobileOpen;
+      applyState(desktop.matches);
+      savePreference();
+    });
+    document.addEventListener('pointerdown', function (event) {
+      if (!rail.contains(event.target)) closeMobile(false);
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape' || event.isComposing || event.defaultPrevented ||
+          desktop.matches || !preference.mobileOpen || document.querySelector('dialog[open]')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeMobile(true);
+    }, true);
+    function changeViewport() { applyState(true); }
+    if (desktop.addEventListener) desktop.addEventListener('change', changeViewport);
+    else desktop.addListener(changeViewport);
+
+    dash.setAttribute('data-navigation-ready', 'true');
+    toggle.hidden = false;
+    applyState(true);
+    updateCurrent();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initNavigation, { once: true });
+  else initNavigation();
+})();
 // 精选入口只呈现已有观测和原文，不生成事件判断或新的数据源。
 (function(){
   function startReading(){
@@ -2437,16 +2871,18 @@ root.addEventListener('click',function(ev){
       }else if(kind==='review'){
         var reviews=typeof REVIEWS!=='undefined'&&REVIEWS[pid],saved=reviews&&reviews.items||[];
         var item=saved.find(function(it){return imageUrl(it.img)&&it.desc})||saved.find(function(it){return imageUrl(it.img)})||saved[0];
-        if(!item){body.appendChild(node('p','focus-empty','当前没有可展示的图文'));return}
+        if(!item){body.appendChild(node('p','focus-empty','当前没有可展示的图文'));box.querySelector('.focus-link-label').textContent='暂无可用原文';return}
         var src=imageUrl(item.img);
         if(src){var img=node('img','focus-image');img.src=src;img.alt=item.name||'产品图片';img.loading='lazy';body.appendChild(img)}
         else body.appendChild(node('div','focus-image-placeholder','图片待核对'));
         body.appendChild(node('h3','focus-story',item.name));
         body.appendChild(node('p','focus-date',item.date||'发布日期未提供'));
-        box.querySelector('button').textContent='查看图文 ↗';
-        box.querySelector('button').setAttribute('data-detail-review',pid);
-        box.querySelector('button').setAttribute('data-detail-index',String(saved.indexOf(item)));
-        box.querySelector('button').removeAttribute('data-detail-module');
+        box.setAttribute('data-article-pid',pid);
+        box.setAttribute('data-article-index',String(saved.indexOf(item)));
+        var sourceURL='';
+        try{var parsed=new URL(String(item.url||''));if(/^https?:$/.test(parsed.protocol))sourceURL=parsed.href}catch(_){}
+        if(sourceURL){box.href=sourceURL;box.target='_blank';box.rel='noopener noreferrer';box.setAttribute('aria-label','打开原文：'+(item.name||'图文资料'))}
+        else{box.querySelector('.focus-link-label').textContent='原文链接未提供';box.classList.add('source-unavailable')}
       }else if(kind==='top'){
         var top=typeof TOPS!=='undefined'&&TOPS[pid],items=top&&top.items||[];
         if(!items.length){body.appendChild(node('p','focus-empty','当前没有榜单样本'));return}

@@ -403,7 +403,7 @@ async function sharedFrame(page, view) {
   const errors = [], responsesFailed = [], responsiveResults = [], payloads = new Map();
   const contexts = [];
   try {
-    browser = await chromium.launch({ headless: true,
+    browser = await chromium.launch({ headless: true, args: ['--explicitly-allowed-ports=' + new URL(origin).port],
       ...(process.env.DNS_BROWSER_EXECUTABLE ? { executablePath: process.env.DNS_BROWSER_EXECUTABLE } : {}) });
     const context = async (offline = false) => {
       const ctx = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 1000 }, offline });
@@ -493,8 +493,8 @@ async function sharedFrame(page, view) {
       await responsive(sharedPage, frame, label, responsiveResults);
       // 只检查本地图文媒体；榜单第三方图片是可失效的增强信息。
       for (const image of await frame.locator('.rthumb[src]').all()) {
-        await image.scrollIntoViewIfNeeded();
-        await image.evaluate(node => node.decode());
+        // 分页会隐藏其他页的条目；主动加载全部内嵌媒体以验收离线资源，不能滚动隐藏条目。
+        await image.evaluate(node => { node.loading = 'eager'; return node.decode(); });
         assert.ok(await image.evaluate(node => node.complete && node.naturalWidth > 0), label + '分享图文照片必须离线可见');
         assert.match(await image.getAttribute('src'), /^data:image\//, label + '图文不依赖外置媒体目录');
       }

@@ -9,10 +9,14 @@
 import csv
 import datetime
 import io
+import html
 import json
 import os
 import re
 import sys
+import xml.etree.ElementTree as ET
+from email.utils import parsedate_to_datetime
+from urllib.parse import urlsplit, urlunsplit
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
@@ -25,6 +29,12 @@ UA = ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
 MONTHS = {'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
           'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12}
 TODAY = datetime.date.today()
+NEWS_DAYS = 30
+NEWS_FEEDS = {
+    'P16': ('美联储官方货币政策资讯', 'https://www.federalreserve.gov/feeds/press_monetary.xml',
+            'www.federalreserve.gov'),
+    'P20': ('欧洲央行官方新闻', 'https://www.ecb.europa.eu/rss/press.html', 'www.ecb.europa.eu'),
+}
 
 
 def _get(url, **kw):
@@ -194,15 +204,162 @@ def ecb_build():
     return {'时间线': tl, '说明': desc}
 
 
-def run():
-    p16, p20 = fed_build(), ecb_build()
-    data = {'updated': TODAY.isoformat(), 'P16': p16, 'P20': p20}
+def _news_relevant(pid, title, official=False):
+    """按原题明确命中银行及货币政策；不从宏观报道或摘要推导关联。"""
+    if re.search(r'non-monetary|in addition to decisions setting interest rates|非货币政策', title, re.I):
+        return False
+    bank = (r'\b(?:fed|fomc|federal reserve)\b|美联储|联邦公开市场' if pid == 'P16'
+            else r'\b(?:ecb|european central bank)\b|欧洲央行')
+    policy = r'\b(?:fomc|monetary policy|interest rates?|discount rate|rate (?:cut|hike|decision)s?)\b|货币政策|议息|利率|加息|降息|决议|纪要'
+    return bool(re.search(policy, title, re.I) and (official or re.search(bank, title, re.I)))
+
+
+def _date_iso(item):
+    value = item.get('iso') or ''
+    if value:
+        return value[:10]
+    md = item.get('date') or ''
+    try:
+        year = TODAY.year - (md > TODAY.strftime('%m-%d'))
+        return datetime.date.fromisoformat(f'{year}-{md}').isoformat()
+    except (TypeError, ValueError):
+        return ''
+
+
+def _recent(items):
+    cutoff = (TODAY - datetime.timedelta(days=NEWS_DAYS)).isoformat()
+    return [it for it in items if cutoff <= _date_iso(it) <= TODAY.isoformat()]
+
+
+def parse_policy_feed(text, pid):
+    """官方RSS原题/原文URL/发布日期，近30天、去重；不把来源入口当新闻。"""
+    root_xml = ET.fromstring(text)
+    nodes = root_xml.findall('.//item')
+    if not nodes:
+        raise RuntimeError('官方RSS未解析到item，保留上次资讯')
+    source, _, expected_host = NEWS_FEEDS[pid]
+    items, seen = [], set()
+    for node in nodes:
+        title = html.unescape(re.sub(r'\s+', ' ', node.findtext('title') or '')).strip()
+        raw_url = html.unescape((node.findtext('link') or '').strip())
+        url = urlsplit(raw_url)
+        path = re.sub(r'/{2,}', '/', url.path)
+        if (url.scheme != 'https' or url.netloc.lower() != expected_host
+                or not path.startswith(('/newsevents/pressreleases/', '/press/'))
+                or not path.endswith(('.htm', '.html')) or not title
+                or not _news_relevant(pid, title, official=True)):
+            continue
+        try:
+            published = parsedate_to_datetime(node.findtext('pubDate') or '').date().isoformat()
+        except (TypeError, ValueError):
+            continue
+        link = urlunsplit((url.scheme, url.netloc, path, url.query, ''))
+        if link in seen:
+            continue
+        seen.add(link)
+        items.append({'date': published[5:], 'iso': published, 'title': title, 'title_zh': '',
+                      'url': link, 'source': source})
+    return sorted(_recent(items), key=lambda it: (it['iso'], it['url']), reverse=True)
+
+
+def _fallback_news(pid):
+    """仅复用现有财经新闻的精确相关标题，明确保留其二手来源身份。"""
+    fp = os.path.join(BASE, '资讯数据', '财经新闻.json')
+    try:
+        with open(fp, encoding='utf-8') as f:
+            feed = json.load(f)
+    except (OSError, ValueError):
+        return []
+    items = []
+    for it in _recent(feed.get('items') or []):
+        link = urlsplit(it.get('url') or '')
+        if (not _news_relevant(pid, ' '.join([it.get('title', ''), it.get('title_zh', '')]))
+                or link.scheme not in ('http', 'https') or not link.netloc
+                or not link.path.strip('/') or link.path.endswith('/')
+                or re.search(r'/(?:index|home)(?:\.[^/]+)?$', link.path, re.I)):
+            continue
+        items.append({**it, 'iso': _date_iso(it), 'source': feed.get('source') or '已有财经资讯'})
+    return sorted(items, key=lambda it: it['iso'], reverse=True)
+
+
+def collect_news(pid, previous=None):
+    source, feed_url, _ = NEWS_FEEDS[pid]
+    info = {'来源': source, '来源URL': feed_url, '窗口天数': NEWS_DAYS,
+            '抓取时间': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')}
+    try:
+        items = parse_policy_feed(_get(feed_url), pid)
+        info['状态'] = '成功' if items else '静默'
+        info['说明'] = '官方RSS原题与原文链接' if items else '官方RSS近30天无符合货币政策主题的条目'
+    except Exception as e:  # noqa: BLE001
+        items = _recent((previous or {}).get('相关新闻') or [])
+        info['状态'], info['说明'] = '失败', str(e)[:200]
+        # 缓存保留原抓取日期，避免把失败重试伪装为新内容。
+        if items:
+            info['沿用抓取时间'] = ((previous or {}).get('资讯采集') or {}).get('抓取时间', '')
+    if not items:
+        items = _fallback_news(pid)
+        if items:
+            info['说明'] += '；回退已有财经资讯的精确相关原题'
+    # 只读项目现有翻译缓存；同URL、同原题继承已有译题，避免每日刷新覆盖人工校译。
+    try:
+        with open(os.path.join(BASE, '资讯数据', '翻译缓存.json'), encoding='utf-8') as f:
+            title_cache = json.load(f)
+    except (OSError, ValueError):
+        title_cache = {}
+    previous_titles = {(it.get('url'), it.get('title')): it.get('title_zh')
+                       for it in (previous or {}).get('相关新闻') or [] if it.get('title_zh')}
+    for it in items:
+        zh = previous_titles.get((it.get('url'), it.get('title'))) or it.get('title_zh') or title_cache.get(it.get('title'))
+        if zh:
+            it['title_zh'] = zh
+    info['条数'] = len(items)
+    return {'相关新闻': items, '资讯采集': info}
+
+
+def _existing():
+    try:
+        with open(OUT, encoding='utf-8') as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def _write(data):
     tmp = OUT + '.tmp'
     with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
     os.replace(tmp, OUT)
-    return '成功', (f"P16时间线[{';'.join(x['日期'] for x in p16['时间线'])}]"
-                  f" P20时间线[{';'.join(x['日期'] for x in p20['时间线'])}] 说明行各1条 已写议息日历.json")
+
+
+def refresh_news_only():
+    """仅更新相关资讯，保留当前会议、决议及其他日历字段。"""
+    data = _existing()
+    for pid in NEWS_FEEDS:
+        previous = data.get(pid) or {}
+        data[pid] = {**previous, **collect_news(pid, previous)}
+    _write(data)
+    failed = [p for p in NEWS_FEEDS if data[p]['资讯采集']['状态'] == '失败']
+    return ('失败' if failed else '成功'), '；'.join(
+        f"{pid}资讯{len(data[pid]['相关新闻'])}条({data[pid]['资讯采集']['状态']})" for pid in NEWS_FEEDS)
+
+
+def run():
+    if '--news-only' in sys.argv:
+        return refresh_news_only()
+    data = _existing()
+    p16, p20 = fed_build(), ecb_build()
+    for pid, calendar in [('P16', p16), ('P20', p20)]:
+        previous = data.get(pid) or {}
+        data[pid] = {**previous, **calendar, **collect_news(pid, previous)}
+    data['updated'] = TODAY.isoformat()
+    _write(data)
+    failed = [p for p in NEWS_FEEDS if data[p]['资讯采集']['状态'] == '失败']
+    detail = (f"P16时间线[{';'.join(x['日期'] for x in p16['时间线'])}]"
+              f" P20时间线[{';'.join(x['日期'] for x in p20['时间线'])}] 说明行各1条"
+              f" 相关资讯P16={len(data['P16']['相关新闻'])}条/P20={len(data['P20']['相关新闻'])}条 已写议息日历.json")
+    if failed:
+        detail += '；日历已更新，官方资讯采集失败：' + '/'.join(failed)
+    return ('失败' if failed else '成功'), detail
 
 
 if __name__ == '__main__':

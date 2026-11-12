@@ -13,7 +13,34 @@
     "文本": "2027年第一次议息"
    }
   ],
-  "说明": "最近决议：10月27-28日会议维持联邦基金目标区间 3.75%-4.00% 不变（上次调整：9月17日上调25bp）。下一次：12-08/09，2026年内最后一次议息（附带更新经济预测与点阵图）。会议声明与纪要见官网链接；纪要通常于决议三周后公布。"
+  "说明": "最近决议：10月27-28日会议维持联邦基金目标区间 3.75%-4.00% 不变（上次调整：9月17日上调25bp）。下一次：12-08/09，2026年内最后一次议息（附带更新经济预测与点阵图）。会议声明与纪要见官网链接；纪要通常于决议三周后公布。",
+  "相关新闻": [
+   {
+    "date": "10-28",
+    "iso": "2026-10-28",
+    "title": "Federal Reserve issues FOMC statement",
+    "title_zh": "美联储发布联邦公开市场委员会（FOMC）声明",
+    "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
+    "source": "美联储官方货币政策资讯"
+   },
+   {
+    "date": "10-13",
+    "iso": "2026-10-13",
+    "title": "Minutes of the Board's discount rate meetings on August 17, September 9, and September 16, 2026",
+    "title_zh": "美联储理事会公布2026年8月17日、9月9日和9月16日贴现率会议纪要",
+    "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261013a.htm",
+    "source": "美联储官方货币政策资讯"
+   }
+  ],
+  "资讯采集": {
+   "来源": "美联储官方货币政策资讯",
+   "来源URL": "https://www.federalreserve.gov/feeds/press_monetary.xml",
+   "窗口天数": 30,
+   "抓取时间": "2026-11-12T08:16:28+00:00",
+   "状态": "成功",
+   "说明": "官方RSS原题与原文链接",
+   "条数": 2
+  }
  },
  "P20": {
   "时间线": [
@@ -28,6 +55,49 @@
     "文本": "2027年第一次议息（4日新闻发布）"
    }
   ],
-  "说明": "最近决议：存款便利利率现为 2.50%（最近一次调整为9月16日生效，上调25bp），其后的议息会议未再调整利率。决议于会议第二日14:15 CET新闻稿发布、拉加德记者会解读。下一次：12-16/17，2026年最后一次议息（17日新闻发布·含员工预测更新）。"
+  "说明": "最近决议：存款便利利率现为 2.50%（最近一次调整为9月16日生效，上调25bp），其后的议息会议未再调整利率。决议于会议第二日14:15 CET新闻稿发布、拉加德记者会解读。下一次：12-16/17，2026年最后一次议息（17日新闻发布·含员工预测更新）。",
+  "相关新闻": [
+   {
+    "date": "11-10",
+    "iso": "2026-11-10",
+    "title": "Philip R. Lane: The science and practice of monetary policy communication: the ECB experience",
+    "title_zh": "菲利普·莱恩：货币政策沟通的科学与实践——欧洲央行的经验",
+    "url": "https://www.ecb.europa.eu/press/key/date/2026/html/ecb.sp261110_1~9725b7aa07.en.html",
+    "source": "欧洲央行官方新闻"
+   },
+   {
+    "date": "11-05",
+    "iso": "2026-11-05",
+    "title": "Isabel Schnabel: Navigating stormy waters: reflections on monetary policy",
+    "title_zh": "伊莎贝尔·施纳贝尔：在风浪中前行——对货币政策的思考",
+    "url": "https://www.ecb.europa.eu/press/key/date/2026/html/ecb.sp261105_1~5e97d9d5a0.en.html",
+    "source": "欧洲央行官方新闻"
+   },
+   {
+    "date": "10-29",
+    "iso": "2026-10-29",
+    "title": "Christine Lagarde, Boris Vujčić: Monetary policy statement (with Q&A)",
+    "title_zh": "克里斯蒂娜·拉加德、鲍里斯·武伊契奇：货币政策声明（含问答）",
+    "url": "https://www.ecb.europa.eu/press/press_conference/monetary-policy-statement/2026/html/ecb.is261029~5c5ffe99e5.en.html",
+    "source": "欧洲央行官方新闻"
+   },
+   {
+    "date": "10-29",
+    "iso": "2026-10-29",
+    "title": "Monetary policy decisions",
+    "title_zh": "货币政策决议",
+    "url": "https://www.ecb.europa.eu/press/pr/date/2026/html/ecb.mp261029~9a493adf17.en.html",
+    "source": "欧洲央行官方新闻"
+   }
+  ],
+  "资讯采集": {
+   "来源": "欧洲央行官方新闻",
+   "来源URL": "https://www.ecb.europa.eu/rss/press.html",
+   "窗口天数": 30,
+   "抓取时间": "2026-11-12T08:16:30+00:00",
+   "状态": "成功",
+   "说明": "官方RSS原题与原文链接",
+   "条数": 4
+  }
  }
 }

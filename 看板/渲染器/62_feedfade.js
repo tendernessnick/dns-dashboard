@@ -1,6 +1,6 @@
-// 62_feedfade.js —— 渲染器：滚动feed底部渐隐（内容溢出时提示可下滚，滚到底自动消失）
-root.querySelectorAll('ul.feed').forEach(function(ul){
-  function chk(){ul.classList.toggle('faded',ul.scrollTop+ul.clientHeight<ul.scrollHeight-4)}
-  chk();
-  ul.addEventListener('scroll',chk,{passive:true});
+// 兼容榜单和静态资讯列表：统一分页，不再使用滚动渐隐或内部纵向滚动。
+root.querySelectorAll('ul.feed').forEach(function (ul) {
+  if (ul.getAttribute('data-pager-ready') === 'true') return;
+  var card = ul.closest('.card'), title = card && card.querySelector('.card-top .t');
+  window.DNSPager.mount(ul, { kind: ul.hasAttribute('data-toplist') ? 'toplist' : 'news', label: title ? title.textContent : '资讯' });
 });

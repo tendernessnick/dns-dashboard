@@ -487,6 +487,11 @@ body{background:#F5F6F3}
 #dns-dash .focus-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:16px}
 #dns-dash .focus-item{min-width:0;display:flex;flex-direction:column;padding:20px;background:#FFF;border:1px solid #D7E0DA;border-radius:8px}
 #dns-dash .focus-item:first-child{border-top:3px solid #347F77;padding-top:18px}
+#dns-dash a.focus-item{color:inherit;text-decoration:none;transition:border-color .18s,box-shadow .18s}
+#dns-dash a.focus-item[href]:hover{border-color:#81A69D;box-shadow:0 5px 18px rgba(29,65,59,.08)}
+#dns-dash a.focus-item[href]:focus-visible{outline:3px solid #347F77;outline-offset:3px}
+#dns-dash .focus-link-label{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin-top:16px;padding-top:12px;border-top:1px solid #E0E7DF;font-size:14px;font-weight:550;color:#245B65}
+#dns-dash .focus-item.source-unavailable .focus-link-label{color:#607272}
 #dns-dash .focus-category{font-size:12px;line-height:22px;color:#4E7774;font-weight:500;margin-bottom:5px}
 #dns-dash .focus-item h2{font-size:20px;line-height:30px;font-weight:600;color:#203B44}
 #dns-dash .focus-content{margin-top:14px;flex:1;min-width:0}
@@ -591,6 +596,9 @@ body{background:#F5F6F3}
 #dns-dash .cotab{min-height:44px;font-size:14px}
 #dns-dash .cotab small{font-size:12px}
 #dns-dash .cco .cn{font-size:16px;line-height:27px}
+#dns-dash .cco .chead{flex-wrap:wrap}
+#dns-dash .cco .chead>span:not(.mono):not(.chip){min-width:0;flex:1 1 96px}
+#dns-dash .cco .cs{overflow-wrap:anywhere}
 #dns-dash .cco .cd{font-size:14px;line-height:25px}
 #dns-dash .plan-purpose{font-size:15px;line-height:28px}
 #dns-dash .plan-content{font-size:14px;line-height:26px}

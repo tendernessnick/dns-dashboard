@@ -1,5 +1,4 @@
-// 70_review.js —— 图文预览：卡内阅读与原文外链分开，正文仍来自已有REVIEWS。
-// 详情按钮交由80_details.js委托处理；不把按钮嵌在链接内、不生成不存在的摘要。
+// 图文资讯整卡打开原文，左右按钮切页；图片、摘要及标签均来自已有REVIEWS。
 (function(){
   if(typeof REVIEWS==='undefined')return;
   function webURL(value){
@@ -34,15 +33,18 @@
     var fragment=document.createDocumentFragment();
     d.items.forEach(function(it,index){
       if(!it||typeof it!=='object')return;
-      var card=node('article','revcard'),media=node('div','rmedia'),info=node('div','rinfo');
+      var url=webURL(it.url);
+      var card=node(url?'a':'article','revcard story-link'),media=node('div','rmedia'),info=node('div','rinfo');
       var name=String(it.name||'未命名图文'),src=imageURL(it.img);
+      card.setAttribute('data-article-pid',pid);card.setAttribute('data-article-index',String(index));
+      if(url){card.href=url;card.target='_blank';card.rel='noopener noreferrer';card.setAttribute('aria-label','打开原文：'+name)}
       function placeholder(){media.replaceChildren(node('span','rthumb rnoimg',it.img?'图片待核对':d.noimg||'暂无配图'))}
       if(src){
         var img=node('img','rthumb');img.src=src;img.alt=name;img.loading='lazy';img.decoding='async';
         img.addEventListener('error',placeholder,{once:true});media.appendChild(img);
       }else placeholder();
       var title=node('h4','rname',name);title.title=name;
-      // 完整标题保留在DOM与title中，主页最多两行，详情展示全名。
+      // 完整标题保留在DOM与title中，卡片中按可用空间排版。
       title.style.whiteSpace='normal';title.style.display='-webkit-box';
       title.style.webkitLineClamp='2';title.style.webkitBoxOrient='vertical';title.style.overflow='hidden';
       info.appendChild(title);
@@ -56,17 +58,11 @@
         });info.appendChild(chips);
       }
       if(it.desc)info.appendChild(node('p','rdesc',it.desc));
-      var actions=node('div','review-actions'),preview=node('button','review-preview','查看图文');
-      preview.type='button';preview.setAttribute('data-detail-review',pid);
-      preview.setAttribute('data-detail-index',String(index));
-      preview.setAttribute('aria-label','查看图文：'+name);actions.appendChild(preview);
-      var url=webURL(it.url);
-      if(url){
-        var link=node('a','review-source','原文 ↗');link.href=url;link.target='_blank';link.rel='noopener noreferrer';
-        link.setAttribute('aria-label','打开原文：'+name);actions.appendChild(link);
-      }
-      info.appendChild(actions);card.appendChild(media);card.appendChild(info);fragment.appendChild(card);
+      info.appendChild(node('span','story-open review-open',url?'阅读原文 ↗':'原文链接未提供'));
+      card.appendChild(media);card.appendChild(info);fragment.appendChild(card);
     });
     el.replaceChildren(fragment);
+    var parent=el.closest('.card'),heading=parent&&parent.querySelector('.card-top .t');
+    window.DNSPager.mount(el,{kind:'review',label:heading?heading.textContent:'图文资讯'});
   });
 })();

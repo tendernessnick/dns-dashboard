@@ -37,16 +37,18 @@
       }else if(kind==='review'){
         var reviews=typeof REVIEWS!=='undefined'&&REVIEWS[pid],saved=reviews&&reviews.items||[];
         var item=saved.find(function(it){return imageUrl(it.img)&&it.desc})||saved.find(function(it){return imageUrl(it.img)})||saved[0];
-        if(!item){body.appendChild(node('p','focus-empty','当前没有可展示的图文'));return}
+        if(!item){body.appendChild(node('p','focus-empty','当前没有可展示的图文'));box.querySelector('.focus-link-label').textContent='暂无可用原文';return}
         var src=imageUrl(item.img);
         if(src){var img=node('img','focus-image');img.src=src;img.alt=item.name||'产品图片';img.loading='lazy';body.appendChild(img)}
         else body.appendChild(node('div','focus-image-placeholder','图片待核对'));
         body.appendChild(node('h3','focus-story',item.name));
         body.appendChild(node('p','focus-date',item.date||'发布日期未提供'));
-        box.querySelector('button').textContent='查看图文 ↗';
-        box.querySelector('button').setAttribute('data-detail-review',pid);
-        box.querySelector('button').setAttribute('data-detail-index',String(saved.indexOf(item)));
-        box.querySelector('button').removeAttribute('data-detail-module');
+        box.setAttribute('data-article-pid',pid);
+        box.setAttribute('data-article-index',String(saved.indexOf(item)));
+        var sourceURL='';
+        try{var parsed=new URL(String(item.url||''));if(/^https?:$/.test(parsed.protocol))sourceURL=parsed.href}catch(_){}
+        if(sourceURL){box.href=sourceURL;box.target='_blank';box.rel='noopener noreferrer';box.setAttribute('aria-label','打开原文：'+(item.name||'图文资料'))}
+        else{box.querySelector('.focus-link-label').textContent='原文链接未提供';box.classList.add('source-unavailable')}
       }else if(kind==='top'){
         var top=typeof TOPS!=='undefined'&&TOPS[pid],items=top&&top.items||[];
         if(!items.length){body.appendChild(node('p','focus-empty','当前没有榜单样本'));return}

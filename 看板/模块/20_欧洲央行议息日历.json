@@ -7,7 +7,7 @@
  "关联数据": [],
  "标题提示": "",
  "状态点": "g",
- "状态说明": "已接入：ECB官网（每日自动采集）",
+ "状态说明": "已接入：ECB日历与官方新闻RSS",
  "卡片样式": "flex:1",
  "动态日历": true,
  "脚注": [
@@ -47,16 +47,6 @@
   {
    "文本": "关键利率历史（ECB数据门户） ↗",
    "链接": "https://data.ecb.europa.eu/data/datasets/FM/FM.B.U2.EUR.4F.KR.DFR.LEV",
-   "P": "P20"
-  },
-  {
-   "文本": "中文快讯·金十 ↗",
-   "链接": "https://www.jin10.com/",
-   "P": "P20"
-  },
-  {
-   "文本": "英文解读·CNBC ECB ↗",
-   "链接": "https://www.cnbc.com/european-central-bank/",
    "P": "P20"
   }
  ],

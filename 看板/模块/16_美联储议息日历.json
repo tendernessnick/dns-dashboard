@@ -7,7 +7,7 @@
  "关联数据": [],
  "标题提示": "",
  "状态点": "g",
- "状态说明": "已接入：美联储官网（每日自动采集）",
+ "状态说明": "已接入：美联储日历与官方货币政策RSS",
  "卡片样式": "flex:1",
  "动态日历": true,
  "脚注": [
@@ -47,16 +47,6 @@
   {
    "文本": "声明原文（10月） ↗",
    "链接": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
-   "P": "P16"
-  },
-  {
-   "文本": "中文快讯·金十 ↗",
-   "链接": "https://www.jin10.com/",
-   "P": "P16"
-  },
-  {
-   "文本": "英文解读·CNBC Fed ↗",
-   "链接": "https://www.cnbc.com/federal-reserve/",
    "P": "P16"
   }
  ],

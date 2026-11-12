@@ -168,12 +168,10 @@ async function latestShare(scope, label) {
 async function mediaPolicy(scope, label) {
   const problems = await scope.evaluate(() => {
     const omitted = typeof MEDIA_OMISSIONS === 'undefined' ? [] : MEDIA_OMISSIONS;
-    return [...document.querySelectorAll('button[data-detail-review]')].flatMap(button => {
-      const pid = button.dataset.detailReview.replace(/^P?/, 'P');
-      const item = REVIEWS[pid]?.items[Number(button.dataset.detailIndex)];
+    return [...document.querySelectorAll('[data-article-pid][data-article-index]')].flatMap(article => {
+      const pid = article.dataset.articlePid;
+      const item = REVIEWS[pid]?.items[Number(article.dataset.articleIndex)];
       if (!item?.img) return [];
-      const article = button.closest('article.revcard,article.focus-item');
-      if (!article) return ['图文按钮缺少独立article:' + pid];
       if (omitted.includes(item.img)) return article.querySelector('img') || !article.textContent.includes('图片待核对')
         ? ['重复配图未明确拦截:' + pid + '/' + item.name] : [];
       return article.querySelector('img') ? [] : ['安全图文配图不应无故消失:' + pid + '/' + item.name];
@@ -203,8 +201,8 @@ async function assertDetails(scope, page, view, label) {
   await announcementSemantics(scope, page, label);
   assert.equal(beforeModules.length, await scope.evaluate(() => PAGE_INFO.moduleCount));
   const missingActions = await scope.locator('[data-mid]').evaluateAll(cards => cards
-    .filter(card => card.querySelectorAll('button[data-detail-module]').length !== 1).map(card => card.dataset.mid));
-  assert.deepEqual(missingActions, [], label + '每个模块卡底有唯一明确详情动作（精选另作复用）');
+    .filter(card => card.querySelectorAll('button[data-detail-module]').length !== (card.dataset.articleNavigation === 'external' ? 0 : 1)).map(card => card.dataset.mid));
+  assert.deepEqual(missingActions, [], label + '数值和说明保留详情，资讯图文整卡直达原文且不再重复预览入口');
   const reading = scope.locator('#readingSize');
   assert.equal(await reading.count(), 1, label + '提供主动放大阅读');
   assert.equal(await reading.getAttribute('aria-pressed'), 'false');
@@ -229,7 +227,7 @@ async function assertDetails(scope, page, view, label) {
     await modalKeyboard(scope, page, numericButton, label + ':数值键盘');
   } else {
     const description = await scope.locator('[data-mid]').evaluateAll(cards => cards
-      .filter(card => card.dataset.moduleStatus !== 'planned' && !card.closest('[data-copanel][hidden]'))
+      .filter(card => card.dataset.moduleStatus !== 'planned' && card.querySelector('button[data-detail-module]') && !card.closest('[data-copanel][hidden]'))
       .map(card => ({ id: card.dataset.mid, pids: (card.dataset.sourcePids || '').split(/\s+/).filter(Boolean) }))
       .find(card => !card.pids.some(pid => DDATA[pid]?.rows?.length)));
     assert.ok(description, label + '无数值页保留真实说明或资讯入口');
@@ -265,30 +263,15 @@ async function assertDetails(scope, page, view, label) {
     await close(scope, page, topButton, 'close', label + ':榜单');
   }
 
-  const reviewButton = scope.locator('button[data-detail-review]').first();
-  if (await reviewButton.count()) {
-    const pid = (await reviewButton.getAttribute('data-detail-review')).replace(/^P?/, 'P');
-    const index = Number(await reviewButton.getAttribute('data-detail-index'));
-    const item = await scope.evaluate(({ pid, index }) => REVIEWS[pid].items[index], { pid, index });
-    const dialog = await open(scope, reviewButton, label + ':图文');
-    const text = await dialog.innerText();
-    assert.ok(text.includes(item.name) && text.includes(item.date), label + '图文详情保留原标题及日期');
-    if (item.desc) assert.ok(text.includes(item.desc), label + '详情可读完整摘要');
-    for (const chip of item.chips || []) assert.ok(text.includes(chip), label + '公开参数原样保留');
-    if (/^https?:\/\//.test(item.url)) {
-      const hrefs = await dialog.locator('a[href]').evaluateAll(nodes => nodes.map(node => node.href));
-      assert.ok(hrefs.includes(item.url), label + '图文提供原文链接');
-    }
-    assert.ok(await dialog.locator('article.detail-review-item').count(), label + '图文以可读内容呈现');
-    if (item.img) {
-      const omitted = await scope.evaluate(img => typeof MEDIA_OMISSIONS !== 'undefined' && MEDIA_OMISSIONS.includes(img), item.img);
-      if (omitted) {
-        assert.equal(await dialog.locator('.detail-review-item img').count(), 0, label + '详情不放大待核对重复图片');
-        assert.ok(text.includes('图片待核对'));
-      } else assert.ok(await dialog.locator('.detail-review-item img').count(), label + '有效配图在图文详情中保留');
-    }
-    await close(scope, page, reviewButton, 'close', label + ':图文');
-  }
+  assert.equal(await scope.locator('button[data-detail-review],.review-preview,.review-source').count(), 0,
+    label + '图文使用整卡原文链接，不保留双操作');
+  const articleProblems = await scope.locator('a[data-article-pid][data-article-index]').evaluateAll(links => links.flatMap(link => {
+    const item = REVIEWS[link.dataset.articlePid]?.items[Number(link.dataset.articleIndex)];
+    return !item || link.href !== new URL(item.url).href || !link.textContent.includes(item.name)
+      || link.target !== '_blank' || !link.rel.includes('noopener') || link.querySelector('a,button,input')
+      ? [link.dataset.articlePid + ':' + link.dataset.articleIndex] : [];
+  }));
+  assert.deepEqual(articleProblems, [], label + '图文原题与原文逐项对应，整卡外链不嵌套交互');
   const plannedButton = scope.locator('.planned-card button[data-detail-module]').first();
   assert.ok(await plannedButton.count(), label + '本部门保留规划模块');
   const planCard = plannedButton.locator('xpath=ancestor::*[@data-mid][1]');
@@ -305,7 +288,7 @@ async function assertDetails(scope, page, view, label) {
 
   // 只在浏览器内临时注入坏URL，关闭后恢复；不写业务文件、不访问恶意来源。
   const sourceTarget = await scope.locator('[data-mid][data-source-pids]').evaluateAll(cards => cards
-    .filter(card => !card.closest('[data-copanel][hidden]'))
+    .filter(card => !card.closest('[data-copanel][hidden]') && card.querySelector('button[data-detail-module]'))
     .map(card => ({ id: card.dataset.mid, pids: card.dataset.sourcePids.split(/\s+/) }))
     .find(card => card.pids.some(pid => PROV.some(source => 'P' + source.id === pid))));
   if (sourceTarget) {
@@ -325,24 +308,6 @@ async function assertDetails(scope, page, view, label) {
     } finally {
       await scope.evaluate(() => { const old = window.__readingSavedSource; if (old) old.source.url = old.url;
         delete window.__readingSavedSource; delete window.__readingBadLinkExecuted; });
-    }
-  }
-  if (await reviewButton.count()) {
-    const reviewPid = (await reviewButton.getAttribute('data-detail-review')).replace(/^P?/, 'P');
-    const index = Number(await reviewButton.getAttribute('data-detail-index'));
-    await scope.evaluate(({ id, index }) => {
-      window.__readingSavedReview = { item: REVIEWS[id].items[index], url: REVIEWS[id].items[index].url };
-      REVIEWS[id].items[index].url = 'data:text/html,<script>window.__readingBadLinkExecuted=true</script>';
-    }, { id: reviewPid, index });
-    try {
-      await open(scope, reviewButton, label + ':图文恶链');
-      const invalid = await scope.locator('#moduleDetail a[href]').evaluateAll(nodes => nodes
-        .filter(node => !/^https?:$/.test(new URL(node.href).protocol)).map(node => node.href));
-      assert.deepEqual(invalid, [], label + '图文拒绝data文档链接');
-      await close(scope, page, reviewButton, 'close', label + ':图文恶链');
-    } finally {
-      await scope.evaluate(() => { const old = window.__readingSavedReview; if (old) old.item.url = old.url;
-        delete window.__readingSavedReview; delete window.__readingBadLinkExecuted; });
     }
   }
   assert.deepEqual(await ids(scope), beforeModules, label + '打开详情不能增加或复制模块');
@@ -488,7 +453,7 @@ async function serve() {
   let browser;
   const contexts = [], errors = [], layouts = [];
   try {
-    browser = await chromium.launch({ headless: true,
+    browser = await chromium.launch({ headless: true, args: ['--explicitly-allowed-ports=' + new URL(origin).port],
       ...(process.env.DNS_BROWSER_EXECUTABLE ? { executablePath: process.env.DNS_BROWSER_EXECUTABLE } : {}) });
     async function makeContext(offline) {
       const context = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 1000 }, offline });

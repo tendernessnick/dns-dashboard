@@ -33,7 +33,8 @@ CSS = os.path.join(BASE, '_style.css')
 
 # ============ 读入 ============
 skeleton = open(SKEL, encoding='utf-8').read()
-css = open(CSS, encoding='utf-8').read() + '\n' + open(os.path.join(BASE, '_workspace.css'), encoding='utf-8').read()
+css = '\n'.join(open(os.path.join(BASE, name), encoding='utf-8').read()
+                for name in ('_style.css', '_workspace.css', '_pagination.css', '_navigation.css'))
 MEDIA_OMISSIONS = []
 media_root = os.path.join(BASE, '媒体')
 if os.path.isdir(media_root):
@@ -356,6 +357,7 @@ def card_html(c, slot=None):
     css = ';'.join(p for p in [(c.get('卡片样式') or '').rstrip(';'), slot or ''] if p)
     attrs = (st(css)
              + ' data-card-kind="' + atattr(t) + '"'
+             + (' data-article-navigation="external"' if t == 'review' or c.get('资讯键') else '')
              + (f' data-mid="{atattr(c["ID"])}"' if c.get('ID') else '')
              + source_attrs(c)
              + (f' data-k="{dk}"' if dk else '')
@@ -389,7 +391,7 @@ def card_html(c, slot=None):
         raise SystemExit(f'{c["ID"]}：无法渲染的卡型 {t}')
     if c.get('使用提示') and t != 'planned':
         inner += '<p class="research-note">' + escape(c['使用提示']) + '</p>'
-    if t != 'planned':
+    if t != 'planned' and t != 'review' and not c.get('资讯键'):
         label = ('查看产品与拆解' if t == 'review' else '查看榜单样本' if c.get('榜单')
                  else '查看趋势与数据' if (c.get('图表组') or c.get('多品类') or t in {'share', 'ring', 'strip'})
                  else '查看资讯与来源' if c.get('资讯键') else '查看说明与来源')
@@ -670,11 +672,14 @@ def build_page(page):
     for cid, kind, pid, category, title, note in focus_map.get(page['ID'], []):
         if cid not in used:
             continue
-        focus.append('<article class="focus-item" data-focus-kind="' + kind + '" data-focus-module="'
+        tag = 'a' if kind == 'review' else 'article'
+        action = ('<span class="focus-link-label">打开原文 <span aria-hidden="true">↗</span></span>' if kind == 'review'
+                  else '<button type="button" class="focus-open" data-detail-module="' + atattr(cid)
+                  + '">查看详情<span aria-hidden="true">↗</span></button>')
+        focus.append('<' + tag + ' class="focus-item" data-focus-kind="' + kind + '" data-focus-module="'
                      + atattr(cid) + '" data-focus-pid="' + pid + '"><span class="focus-category">'
                      + escape(category) + '</span><h2>' + escape(title) + '</h2><div class="focus-content"></div>'
-                     + '<p class="focus-note">' + escape(note) + '</p><button type="button" class="focus-open" data-detail-module="'
-                     + atattr(cid) + '">查看详情<span aria-hidden="true">↗</span></button></article>')
+                     + '<p class="focus-note">' + escape(note) + '</p>' + action + '</' + tag + '>')
     featured = '<section class="focus-section" aria-label="本页精选"><div class="focus-heading"><h2>先看这几项</h2><span>精选现有资料，点击查看完整内容</span></div><div class="focus-grid">' + ''.join(focus) + '</div></section>'
     replacements = {
         '<!--__PAGE_TABS__-->': tabs,
