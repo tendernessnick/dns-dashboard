@@ -1,0 +1,433 @@
+/* v24 · 工作台布局与统一视觉层。基础卡型在_style.css，数据语义由原渲染器保持。 */
+html{scroll-padding-top:0;scroll-behavior:smooth}
+body{margin:0;background:#F5F7FB}
+#dns-dash{
+ --brand:#235BCC;--brand-700:#1949AF;--brand-ink:#173C78;--brand-300:#9BB6E5;--brand-100:#EDF3FF;
+ --n0:#FFF;--n25:#F8FAFD;--n50:#F5F7FB;--n100:#EAF0F6;--n200:#DCE4EF;--n300:#B8C7DA;
+ --n500:#65758B;--n700:#3B4E68;--n900:#14263F;--ok:#466D9C;
+ --up:#B64036;--upbg:#FDF1EF;--down:#237B60;--downbg:#EDF7F2;--warn:#956018;--warnbg:#FCF6E9;
+ --section-accent:#235BCC;--sh0:0 1px 3px rgba(22,45,81,.025);--sh1:0 4px 14px rgba(22,45,81,.055);--sh2:0 12px 40px rgba(22,45,81,.14);
+ --el-rest:var(--sh0);--el-hover:var(--sh1);--el-pop:var(--sh2);
+ --fn:"Microsoft YaHei UI","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+ --fnnum:"Bahnschrift","Segoe UI",Arial,"Microsoft YaHei",sans-serif;
+ font-family:var(--fn);font-size:14px;line-height:1.65;min-height:100vh;overflow-wrap:break-word;
+ -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+#dns-dash :where(a,button,input,select,summary){-webkit-tap-highlight-color:transparent}
+#dns-dash :where(a,button,input,select,summary):focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+#dns-dash .skip-link{position:fixed;left:20px;top:-60px;z-index:200;background:var(--brand);color:#FFF;padding:10px 18px;border-radius:5px}
+#dns-dash .skip-link:focus{top:12px}
+#dns-dash .rule3{height:3px;background:var(--brand)}
+#dns-dash .mast{background:#FFF;border-bottom:1px solid var(--n200)}
+#dns-dash .mast-in{width:100%;max-width:1760px;margin:0 auto;padding:17px 40px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:nowrap}
+#dns-dash .m-brand{display:flex;align-items:center;gap:12px;min-width:0}
+#dns-dash .mark{width:40px;height:42px;border-radius:7px;flex:none;display:flex;flex-direction:column;gap:2px;background:var(--brand-100);border:1px solid #D8E4FA;color:var(--brand);font-size:8px;letter-spacing:.14em}
+#dns-dash .mark svg{width:20px;height:20px}
+#dns-dash .brand-title{font-size:14px;font-weight:650;line-height:22px;color:var(--n900)}
+#dns-dash .brand-caption{font-size:10.5px;line-height:17px;letter-spacing:.08em;color:var(--n500)}
+#dns-dash .m-right{display:block;min-width:0;padding:0;text-align:left;flex:none}
+#dns-dash .header-department-switch{display:flex;align-items:center;gap:14px;min-width:0}
+#dns-dash .department-label{font-size:10.5px;color:var(--n500);white-space:nowrap;flex:none}
+#dns-dash .department-links{display:flex;align-items:center;gap:4px;padding:3px;border:1px solid var(--n200);border-radius:7px;background:var(--n25);min-width:0}
+#dns-dash .department-link{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:6px 13px;border-radius:4px;border:1px solid transparent;font:550 12px/20px var(--fn);text-decoration:none;color:var(--n500);white-space:nowrap;transition:background .12s,color .12s}
+#dns-dash .department-link:hover{background:#FFF;color:var(--brand)}
+#dns-dash .department-link.on{background:var(--brand);color:#FFF;border-color:var(--brand);box-shadow:none}
+#dns-dash .mline{display:none}
+/* 流式分析区与桌面目录 */
+#dns-dash .workspace-layout{display:grid;grid-template-columns:188px minmax(0,1fr);gap:32px;width:100%;max-width:1760px;margin:0 auto;padding:30px 40px 20px;align-items:start}
+#dns-dash .workspace-stage{min-width:0}
+#dns-dash .workspace-rail{position:sticky;top:24px;min-width:0;max-height:calc(100dvh - 48px);overflow:auto;padding:4px 16px 20px 0;border-right:1px solid var(--n200);scrollbar-width:thin}
+#dns-dash .rail-head{padding:6px 12px 20px}
+#dns-dash .rail-overline{display:block;font:500 9px/16px var(--fnnum);letter-spacing:.16em;color:var(--n500);margin-bottom:4px}
+#dns-dash .rail-title{font-size:12px;font-weight:600;color:var(--n900)}
+#dns-dash #dnav{display:flex;flex-direction:column;align-items:stretch;gap:5px;min-width:0;overflow:visible;width:100%}
+#dns-dash .tlink{display:flex;position:relative;align-items:center;gap:10px;height:auto;min-height:43px;padding:10px 11px;font:500 12px/20px var(--fn);letter-spacing:0;border-radius:5px;color:var(--n500);text-decoration:none;white-space:normal}
+#dns-dash .nav-no{display:block;flex:none;font:500 10px/20px var(--fnnum);color:#7A8BA4}
+#dns-dash .nav-label{min-width:0;flex:1}
+#dns-dash .nav-count{flex:none;min-width:17px;text-align:right;font:400 10px/18px var(--fnnum);color:#8190A6}
+#dns-dash .tlink:hover{background:#EDF2FA;color:var(--brand)}
+#dns-dash .tlink.on{background:#E8EFFC;color:var(--brand);font-weight:600}
+#dns-dash .tlink.on .nav-no,#dns-dash .tlink.on .nav-count{color:var(--brand)}
+#dns-dash .tlink.on::after{content:"";position:absolute;left:0;top:12px;bottom:12px;right:auto;width:2px;height:auto;background:var(--brand);border-radius:2px}
+#dns-dash .rail-foot{margin:28px 12px 0;padding-top:20px;border-top:1px solid var(--n200)}
+#dns-dash .rail-foot-label{display:block;font-size:10px;line-height:18px;color:var(--n500);margin-bottom:4px}
+#dns-dash .rail-foot b{font-size:11px;font-weight:550;color:var(--n700)}
+#dns-dash .rail-foot p{font-size:10px;line-height:19px;color:var(--n500);margin-top:6px}
+/* 覆盖、状态和真实时点 */
+#dns-dash .workspace-hero{margin-bottom:22px;min-width:0;scroll-margin-top:72px}
+#dns-dash .hero-topline{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+#dns-dash .hero-eyebrow{font:500 10px/16px var(--fnnum);letter-spacing:.17em;color:var(--brand)}
+#dns-dash .workbench-tag{font:400 10px/18px var(--fn);color:var(--n500);padding:0 7px;border:1px solid var(--n200);border-radius:3px;white-space:nowrap}
+#dns-dash .hero-heading{display:flex;justify-content:space-between;align-items:center;gap:24px}
+#dns-dash .hero-heading>div:first-child{min-width:0}
+#dns-dash .hero-heading h1{font-size:30px;line-height:42px;font-weight:650;letter-spacing:.025em;color:var(--n900)}
+#dns-dash .m-sub{font-size:12px;line-height:21px;margin-top:5px;color:var(--n500);letter-spacing:.02em}
+#dns-dash .hero-date{flex:none;text-align:right;border-left:1px solid var(--n200);padding-left:24px}
+#dns-dash .hero-date>span{display:block;font-size:10px;line-height:17px;color:var(--n500);margin-bottom:5px}
+#dns-dash .hero-date b{font:500 17px/24px var(--fnnum);color:var(--n700);white-space:nowrap;font-variant-numeric:tabular-nums}
+#dns-dash .hero-description{font-size:11px;line-height:20px;color:var(--n500);margin:13px 0 18px;max-width:920px}
+#dns-dash .workspace-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#dns-dash .workspace-metric{padding:13px 16px;border:1px solid var(--n200);background:#FFF;border-radius:7px;position:relative;min-width:0;box-shadow:var(--sh0)}
+#dns-dash .workspace-metric::before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:2px;background:#A9BFE8}
+#dns-dash .workspace-metric>span{display:block;font-size:10px;line-height:17px;color:var(--n500);margin-bottom:3px}
+#dns-dash .workspace-metric>div{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+#dns-dash .workspace-metric b{font:550 27px/33px var(--fnnum);letter-spacing:-.02em;color:var(--n900);font-variant-numeric:tabular-nums}
+#dns-dash .workspace-metric small{font:400 10px/17px var(--fn);color:var(--n500)}
+/* 搜索只定位，不隐藏模块 */
+#dns-dash .toolbar{position:sticky;top:0;z-index:60;background:rgba(245,247,251,.97);border-top:1px solid var(--n200);border-bottom:1px solid var(--n200);backdrop-filter:blur(12px);box-shadow:none;margin:0 0 24px}
+#dns-dash .toolbar-in{max-width:none;width:100%;margin:0;padding:12px 0;display:flex;align-items:center;gap:16px;height:auto;min-height:62px}
+#dns-dash .module-search{position:relative;display:flex;align-items:center;flex:1;min-width:0;gap:7px}
+#dns-dash .module-search-field{display:flex;align-items:center;gap:9px;border:1px solid var(--n200);background:#FFF;border-radius:5px;height:36px;padding:0 11px;min-width:0;flex:1}
+#dns-dash .module-search-field:focus-within{border-color:var(--brand);box-shadow:0 0 0 2px #E4ECFF}
+#dns-dash .module-search-field svg{width:16px;height:16px;fill:none;stroke:#6B7E99;stroke-width:1.4;flex:none}
+#dns-dash #moduleSearch{border:0;background:transparent;outline:none;box-shadow:none;width:100%;min-width:0;font:400 12px/20px var(--fn);color:var(--n900);padding:0;appearance:none}
+#dns-dash #moduleSearch::placeholder{color:#7C8BA1}
+#dns-dash #moduleSearch::-webkit-search-cancel-button{display:none}
+#dns-dash .module-search kbd{font:400 11px/18px var(--fnnum);border:1px solid var(--n200);padding:0 5px;border-radius:3px;color:var(--n500);flex:none;background:var(--n25)}
+#dns-dash #clearModuleSearch{font:400 11px/20px var(--fn);border:0;padding:5px;background:transparent;color:var(--brand);cursor:pointer;flex:none}
+#dns-dash .workspace-search-results{position:absolute;left:0;right:0;top:calc(100% + 8px);max-height:min(65vh,440px);overflow:auto;z-index:80;border:1px solid #C5D5EE;border-radius:7px;background:#FFF;box-shadow:var(--sh2);padding:5px}
+#dns-dash [hidden]{display:none!important}
+#dns-dash .workspace-search-summary,#dns-dash .workspace-search-empty{padding:8px 10px;font-size:11px;line-height:19px;color:var(--n500)}
+#dns-dash .workspace-search-list{list-style:none;margin:0;padding:0}
+#dns-dash .workspace-search-result{display:block;width:100%;background:transparent;border:0;border-top:1px solid var(--n100);padding:10px;text-align:left;cursor:pointer;border-radius:3px;color:var(--n900);font-family:var(--fn)}
+#dns-dash .workspace-search-result:hover,#dns-dash .workspace-search-result:focus-visible{background:var(--brand-100)}
+#dns-dash .workspace-result-title{display:block;font-size:12px;line-height:21px;font-weight:550;overflow-wrap:anywhere}
+#dns-dash .workspace-result-meta{display:block;font-size:10px;line-height:18px;margin-top:3px;color:var(--n500);overflow-wrap:anywhere}
+#dns-dash .workspace-highlight{outline:2px solid #6E96DE;outline-offset:4px;box-shadow:0 0 0 5px #EDF3FF!important}
+#dns-dash .tb2{display:flex;align-items:center;gap:10px;flex:none;min-width:0}
+#dns-dash .pctl{display:inline-flex;gap:1px;align-items:center;border:1px solid var(--n200);border-radius:5px;padding:3px;background:#EEF2F8;margin:0;flex:none}
+#dns-dash .pctl i{display:none}
+#dns-dash .pctl button{appearance:none;border:1px solid transparent;background:transparent;font:400 11px/24px var(--fn);padding:0 8px;min-width:32px;border-radius:3px;color:var(--n500);cursor:pointer;white-space:nowrap}
+#dns-dash .pctl button:hover{background:#FFF;color:var(--brand)}
+#dns-dash .pctl button.on{background:#FFF;border-color:var(--n200);color:var(--brand);box-shadow:0 1px 2px #DFE6F1}
+#dns-dash .tbtn{height:34px;padding:0 11px;border-radius:5px;font-size:11px;color:var(--n700);margin:0;white-space:nowrap;flex:none;background:#FFF;border:1px solid var(--n200)}
+#dns-dash .tbtn svg{width:14px;height:14px}
+/* 关键指标 */
+#dns-dash .ticker{background:transparent;border:0}
+#dns-dash .ticker-wrap,#dns-dash .d-main,#dns-dash .prov-app,#dns-dash .d-foot{width:100%;max-width:none;margin-left:0;margin-right:0;padding-left:0;padding-right:0;min-width:0}
+#dns-dash .ticker-wrap{padding-top:0;padding-bottom:0}
+#dns-dash .snapshot-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:13px}
+#dns-dash .section-kicker{display:block;font:500 9px/14px var(--fnnum);letter-spacing:.16em;color:var(--n500);margin-bottom:3px}
+#dns-dash .snapshot-head h2{font-size:14px;line-height:22px;color:var(--n900);font-weight:600}
+#dns-dash .snapshot-head p{font-size:10.5px;line-height:18px;color:var(--n500)}
+#dns-dash .snapshot-head p span{padding:0 8px;color:var(--n300)}
+#dns-dash .ticker-in{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0;padding:0;max-width:none;min-height:0}
+#dns-dash .ticker-in::before{display:none}
+#dns-dash .tk{min-width:0;padding:15px 17px 13px;border:1px solid var(--n200);border-radius:7px;background:#FFF;box-shadow:var(--sh0);position:relative}
+#dns-dash .tk::before{content:"";position:absolute;left:17px;right:17px;top:0;height:2px;background:#B5C7E8}
+#dns-dash .tk .k{font-size:11px;line-height:18px;font-weight:500;white-space:normal;color:var(--n500)}
+#dns-dash .tk .v{display:flex;align-items:baseline;gap:3px;flex-wrap:wrap;margin:7px 0 5px;font:550 27px/33px var(--fnnum);color:var(--n900);letter-spacing:-.025em;font-variant-numeric:tabular-nums;white-space:normal}
+#dns-dash .tk .v small{font:400 11px/1 var(--fn);color:var(--n500);letter-spacing:0}
+#dns-dash .tk .s{font-size:10px;line-height:17px;color:var(--n500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 模块层级及卡型 */
+#dns-dash .d-main{padding-top:0;padding-bottom:0}
+#dns-dash .mod{margin-top:32px;scroll-margin-top:86px}
+#dns-dash .sec-head{display:flex;align-items:center;gap:12px;padding:0 0 15px;border-bottom:1px solid #CCD9EC;margin-bottom:18px;position:relative}
+#dns-dash .sec-head::after{content:"";position:absolute;left:0;bottom:-1px;width:34px;height:2px;background:var(--brand)}
+#dns-dash .sec-no{font:500 12px/32px var(--fnnum);width:32px;height:32px;border-radius:5px;border:1px solid #D8E2F2;background:#EFF4FD;color:var(--brand);text-align:center;letter-spacing:0;opacity:1;flex:none}
+#dns-dash .sec-head>div:nth-child(2){min-width:0;flex:1}
+#dns-dash .sec-head h2{font-size:20px;line-height:29px;font-weight:600;letter-spacing:.025em;color:var(--n900)}
+#dns-dash .sec-head p{font-size:11px;line-height:20px;color:var(--n500);margin-top:4px;max-width:850px}
+#dns-dash .sec-meta{font-size:10.5px;line-height:19px;color:var(--n500);text-align:right;flex:0 1 200px;max-width:28%}
+#dns-dash .sec-meta .ok{color:var(--n700)}
+#dns-dash .grp{font-size:12px;line-height:20px;color:var(--n700);font-weight:550;margin:22px 0 11px;letter-spacing:.025em}
+#dns-dash .grp::before{width:4px;height:4px;border-radius:1px;background:#8AA7D5}
+#dns-dash .row{gap:14px;margin-bottom:14px;grid-template-columns:repeat(12,minmax(0,1fr))}
+#dns-dash .row>*,#dns-dash .card,#dns-dash .cco,#dns-dash .co-panel{min-width:0}
+#dns-dash .card{padding:19px 20px 15px;border-radius:8px;border:1px solid var(--n200);background:#FFF;box-shadow:var(--sh0);animation:none;transition:border-color .12s,box-shadow .12s;opacity:1;transform:none}
+#dns-dash .card:hover{border-color:#BACDE8;box-shadow:var(--sh1);transform:none}
+#dns-dash .card-top{gap:7px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+#dns-dash .card-top .t{font-size:14px;line-height:22px;font-weight:600;color:var(--n900);flex:1;min-width:120px}
+#dns-dash .chip{height:20px;padding:0 6px;border-radius:3px;font-size:10px;font-weight:500;gap:4px;flex:none;margin-left:auto}
+#dns-dash .chip .cdot{width:4px;height:4px;border-radius:1px}
+#dns-dash .chip.c-ok{color:#4E6F9B;background:#F4F7FC;border-color:#DDE6F4}
+#dns-dash .chip.c-warn{color:var(--warn);background:var(--warnbg);border-color:#EDDDBA}
+#dns-dash .rlbadge{font-size:9px;height:18px;line-height:16px;padding:0 4px;border-radius:3px;margin-left:0;flex:none}
+#dns-dash .rlbadge.a,#dns-dash .rlbadge.b{color:#617C9F;background:#F5F8FC;border-color:#DFE8F4}
+#dns-dash .rlbadge.c{color:var(--warn);background:var(--warnbg);border-color:#EBDDBD}
+#dns-dash .kbflag,#dns-dash .warn-tag{font-size:10px;line-height:17px;border-radius:3px;letter-spacing:0}
+#dns-dash .kpi .val,#dns-dash .kpi.lg .val{font:550 35px/43px var(--fnnum);letter-spacing:-.035em;color:var(--n900);font-variant-numeric:tabular-nums}
+#dns-dash .kpi .val .unit{font:400 13px/1 var(--fn);color:var(--n500);margin-left:5px;letter-spacing:0}
+#dns-dash .kpi .sub{font-size:11.5px;line-height:20px;margin-top:6px;gap:7px}
+#dns-dash .dpill{font-size:10.5px;line-height:17px;border-radius:3px;padding:0 5px;font-weight:500}
+#dns-dash .foot{font-size:10.5px;line-height:18px;border-top:1px solid var(--n100);padding-top:10px;gap:8px;flex-wrap:wrap;color:var(--n500)}
+#dns-dash .foot a{color:var(--n500)}
+#dns-dash .src-ref{font-size:9px;font-weight:500;border-radius:3px;background:#F7F9FD;border-color:var(--n200)}
+#dns-dash .desc{font-size:12px;line-height:1.9;color:var(--n500)}
+#dns-dash .btn-ext{font-size:11px;border-radius:4px;padding:8px 11px;border-color:#C8D7EE;color:var(--brand);background:#F8FAFF}
+#dns-dash .btn-ext:hover{background:var(--brand-100);color:var(--brand);border-color:var(--brand-300)}
+#dns-dash .chips a{border-radius:4px;font-size:11.5px;line-height:18px;padding:7px 11px}
+#dns-dash .research-note{border-top:1px solid var(--n100);padding-top:9px;margin-top:11px;font-size:10.5px;line-height:1.8;color:var(--n500)}
+/* 静态分析画布 */
+#dns-dash .chart{height:166px;margin-top:14px}
+#dns-dash .chart text{font-size:10px;fill:var(--n500)}
+#dns-dash .chart .grid{stroke:#EDF1F7;stroke-width:1}
+#dns-dash .chart .baseline{stroke:#CDD8E8;stroke-dasharray:3,4}
+#dns-dash .chart .baselabel{font-size:9px;fill:#8796AC}
+#dns-dash .chart .minmax{stroke-width:1.3;fill:#FFF}
+#dns-dash .chart .mmlabel{font-size:9px;font-weight:500;fill:var(--n500)}
+#dns-dash .chart .chiptext{font-weight:550}
+#dns-dash .chart .guide{stroke:#B7CAE8;stroke-dasharray:3,3}
+#dns-dash .chart .nodata{background:#F8FAFD;border:1px dashed var(--n200);border-radius:5px;color:var(--n500);font-size:11px;gap:7px}
+#dns-dash .line-a{animation:none;stroke-dasharray:none;stroke-dashoffset:0}
+#dns-dash .area-a,#dns-dash .chip-a{animation:none;opacity:1}
+#dns-dash .ctool{border-radius:6px;border:1px solid #BBCFEF;background:#FFF;color:var(--n700);box-shadow:var(--sh2);padding:10px 12px;font-size:11px;line-height:19px}
+#dns-dash .ctool b,#dns-dash .ct-value{color:var(--n900);font:550 14px/22px var(--fnnum)}
+#dns-dash .ct-date{display:block;color:var(--n500);font-size:10px;margin-bottom:3px}
+#dns-dash .ct-unit{font-size:10px;font-weight:400;color:var(--n500);margin-left:4px}
+#dns-dash .ctool .d.up{color:var(--up);font-weight:550}
+#dns-dash .ctool .d.down{color:var(--down);font-weight:550}
+/* 图文及资讯 */
+#dns-dash .card.list{height:300px}
+#dns-dash .feed{margin-top:1px;padding-right:3px;scrollbar-color:#CDD8E8 transparent}
+#dns-dash .feed .fi{padding:10px 7px;gap:10px;font-size:12px;line-height:21px;min-width:0}
+#dns-dash .feed .fi span{min-width:0}
+#dns-dash .feed .fi:hover{background:#F5F8FE;color:var(--n900)}
+#dns-dash .feed .fi i.dchip{font:400 10px/19px var(--fnnum);border:1px solid var(--n100);border-radius:3px;background:var(--n25);color:var(--n500);padding:0 4px;min-width:38px;text-align:center}
+#dns-dash .feed .lthumb{width:42px;height:42px;object-fit:contain;background:#FFF;border:1px solid var(--n100);border-radius:4px}
+#dns-dash .ptag{font-size:10px;border-radius:3px;background:#F2F6FC;color:#526F95}
+#dns-dash .ankertag{font-size:8px;background:#EEF4FF;color:var(--brand)}
+#dns-dash .revcards{gap:10px;padding-right:3px;margin-top:0;min-width:0}
+#dns-dash .revcard{height:111px;padding:11px;gap:12px;border-radius:6px;border:1px solid var(--n100);background:#FAFCFF;min-width:0;box-shadow:none}
+#dns-dash .revcard:hover{border-color:#B7CCEB;background:#F6F9FF;box-shadow:none}
+#dns-dash .rthumb{width:82px;height:87px;border-radius:4px;background:#EDF2F8}
+#dns-dash .rname{font-size:12px;line-height:19px;font-weight:550}
+#dns-dash .rdate{font-size:10px;line-height:17px;color:var(--n500)}
+#dns-dash .rtag{font-size:9px;line-height:15px;border-radius:3px;padding:1px 5px}
+#dns-dash .rchips{gap:5px;margin-top:5px;min-width:0}
+#dns-dash .rchip{font-size:9px;line-height:17px;padding:0 5px;border-radius:3px}
+#dns-dash .rchip.hot{background:#E6EEFD;color:var(--brand)}
+#dns-dash .rdesc{font-size:10.5px;line-height:18px;margin-top:5px;-webkit-line-clamp:2}
+#dns-dash [data-review="41"].revcards,#dns-dash [data-review="42"].revcards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#dns-dash [data-review="41"] .revcard,#dns-dash [data-review="42"] .revcard{height:141px;padding:12px;gap:12px;border-radius:6px}
+#dns-dash [data-review="41"] .rthumb,#dns-dash [data-review="42"] .rthumb{width:102px;height:115px}
+#dns-dash [data-review="41"] .rname,#dns-dash [data-review="42"] .rname{font-size:13px;line-height:21px}
+#dns-dash [data-review="41"] .rdesc,#dns-dash [data-review="42"] .rdesc{font-size:11px;line-height:18px;-webkit-line-clamp:3}
+/* 公司、结构和日历 */
+#dns-dash .co-tabs{display:flex;gap:5px;padding:5px;background:#EBF0F8;border:1px solid var(--n200);border-radius:6px;margin-bottom:18px;flex-wrap:wrap}
+#dns-dash .cotab{font:500 12px/20px var(--fn);border:1px solid transparent;border-radius:4px;padding:7px 13px;color:var(--n500);background:transparent;flex:1;white-space:nowrap}
+#dns-dash .cotab small{font-size:9px;line-height:17px}
+#dns-dash .cotab.on{color:var(--brand);background:#FFF;border-color:#D5E1F3;box-shadow:var(--sh0)}
+#dns-dash .co-panel[hidden]{display:none!important}
+#dns-dash .crow{gap:12px}
+#dns-dash .cco{border:1px solid var(--n200);border-radius:7px;background:#FFF;box-shadow:none;padding:16px;transition:border-color .12s;animation:none;transform:none;opacity:1}
+#dns-dash .cco:hover{border-color:#B9CDEB;box-shadow:none;transform:none}
+#dns-dash .cco .mono{font-size:12px;border-radius:4px;background:#EFF4FC;color:#5478AC;border-color:#D8E3F3}
+#dns-dash .cco .cn{font-size:13px;line-height:21px;color:var(--n900)}
+#dns-dash .cco .cd{font-size:11px;line-height:20px}
+#dns-dash .multi{font-size:12px}
+#dns-dash .multi li{padding:8px 0;border-color:var(--n100);gap:12px;min-width:0}
+#dns-dash .multi .mv{font-size:13px;line-height:20px;color:var(--n900)}
+#dns-dash .card div[data-multi]{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0 14px;min-width:0}
+#dns-dash .card div[data-multi] .sc{min-width:0;padding-left:10px;padding-right:8px}
+#dns-dash .card div[data-multi] .sc .k{white-space:normal;font-size:10.5px;line-height:18px}
+#dns-dash .card div[data-multi] .sc .v{font-size:21px;line-height:29px;flex-wrap:wrap}
+#dns-dash .card.strip{padding:16px 12px;gap:0}
+#dns-dash .sc{min-width:0;padding:3px 16px;border-color:var(--n100)}
+#dns-dash .sc .k{font-size:10px;line-height:18px;white-space:normal;color:var(--n500)}
+#dns-dash .sc .v{font-size:24px;line-height:32px;white-space:normal;font-weight:550;color:var(--n900)}
+#dns-dash .sc .v small{font-size:10px}
+#dns-dash .sc .s{font-size:9px;line-height:16px;white-space:normal}
+#dns-dash .statline{font-size:11px;line-height:20px;border-color:var(--n100);padding:9px 0}
+#dns-dash .statline b{font-size:16px;font-weight:550;color:var(--n900)}
+#dns-dash .ringwrap{gap:20px}
+#dns-dash .ring .rf{stroke:var(--brand);transition:none;stroke-linecap:butt}
+#dns-dash .ring .rf.ralt{stroke:#789AC5}
+#dns-dash .ring .rb{stroke:#E9EFF8}
+#dns-dash .ringinfo .rv{font-size:13px;line-height:22px}
+#dns-dash .ringinfo .rs{font-size:11px;line-height:19px}
+#dns-dash .tl-list{border-left-width:1px;border-color:#DAE4F1;padding-left:15px}
+#dns-dash .tl-list li{font-size:12px;line-height:21px;padding-top:7px;padding-bottom:7px}
+#dns-dash .tl-list li::before{width:6px;height:6px;left:-19px;top:14px;border-width:1px}
+#dns-dash .tl-list b{font-size:11px;line-height:20px;font-weight:500}
+#dns-dash .hlines{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#dns-dash .hln{padding:11px 12px 11px 16px;border:0;border-left:1px solid var(--n200);min-width:0}
+#dns-dash .hln .hd{font-size:17px;line-height:24px;font-weight:550}
+#dns-dash .hln .hn{font-size:12px;line-height:19px}
+#dns-dash .hln .hs{font-size:10px;line-height:18px}
+/* 溯源目录 */
+#dns-dash .prov-app{margin-top:32px;scroll-margin-top:86px}
+#dns-dash .prov-toggle{font-size:13px;font-weight:550;padding:17px 18px;border:1px solid var(--n200);border-radius:7px;background:#FFF;box-shadow:none;gap:10px;flex-wrap:wrap}
+#dns-dash .prov-toggle .sum{font-size:10px;line-height:18px}
+#dns-dash .prov-app[data-open="true"] .prov-toggle{border-radius:7px 7px 0 0}
+#dns-dash .prov-body{padding:18px;border-radius:0 0 7px 7px;border-color:var(--n200)}
+#dns-dash .prov-note{font-size:11px;line-height:20px;margin-bottom:14px}
+#dns-dash .prov-tools{padding:12px;background:var(--n25);border:1px solid var(--n100);border-radius:5px;gap:8px}
+#dns-dash .prov-tools input,#dns-dash .prov-tools select{height:34px;font-size:12px;border-radius:4px}
+#dns-dash .twrap{max-height:600px;overflow:auto;overscroll-behavior:contain;border:1px solid var(--n100);border-radius:4px;min-width:0}
+#dns-dash .ptable th{position:sticky;top:0;z-index:1;background:#F1F5FB;font-size:10px;font-weight:550;padding:11px 10px;color:#506884}
+#dns-dash .ptable td{font-size:11px;line-height:19px;padding:11px 10px;border-color:var(--n100)}
+#dns-dash .ptable tbody tr:nth-child(even){background:#FAFCFF}
+#dns-dash .ptable tbody tr:hover{background:#F0F5FD}
+#dns-dash .pchip{font-size:9px;border-radius:3px;font-weight:400}
+#dns-dash .prov-tip{background:#FFF;color:var(--n700);border:1px solid #C3D4EF;border-radius:6px;box-shadow:var(--sh2)}
+#dns-dash .prov-tip .pt-t{color:var(--n900);border-color:var(--n100)}
+#dns-dash .prov-tip .pt-k{color:var(--n500)}
+#dns-dash .prov-tip .pt-v a{color:var(--brand)}
+#dns-dash .d-foot{font-size:10px;line-height:19px;margin-top:24px;padding-top:19px;padding-bottom:16px;gap:8px 16px;border-color:var(--n200)}
+#dns-dash .d-foot .footer-note{flex-basis:100%;font-size:10px;color:var(--n500)}
+#dns-dash #toTop{width:36px;height:36px;border-radius:5px;background:#FFF;color:var(--brand);border-color:#CCD9ED;box-shadow:var(--sh1)}
+/* 规划状态 */
+#dns-dash .planned-card{background:#FBFCFE;border:1px dashed #BCCDE5;box-shadow:none}
+#dns-dash .c-planned,#dns-dash .c-static{color:#5C728E;background:#EDF2F8;border:1px solid #D8E3EF;white-space:nowrap;flex:none}
+#dns-dash .plan-purpose{font-size:12px;line-height:1.85;color:var(--n700);margin-bottom:8px}
+#dns-dash .plan-content{font-size:11.5px;line-height:1.9;color:var(--n500);margin-bottom:13px}
+#dns-dash .plan-fields{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+#dns-dash .plan-fields>span{font-size:10px;line-height:18px;padding:2px 7px;border-radius:3px;background:#EEF3F9;color:#5A7395;overflow-wrap:anywhere}
+#dns-dash .plan-details{font-size:10.5px;line-height:1.9;color:var(--n500);margin-bottom:12px}
+#dns-dash .plan-details summary{cursor:pointer;color:#47699B;padding:4px 0}
+#dns-dash .plan-details p{margin:7px 0;overflow-wrap:anywhere}
+#dns-dash .plan-details b{color:var(--n700);font-weight:550}
+#dns-dash .plan-foot{padding-top:11px;margin-top:auto;gap:12px;flex-wrap:wrap}
+#dns-dash .plan-number{font:500 10px/18px var(--fnnum);color:#5278B0}
+#dns-dash .static-review{font-size:10px;color:#5C728E}
+@media(min-width:1440px){
+ #dns-dash .ticker-in{grid-template-columns:repeat(6,minmax(0,1fr))}
+ #dns-dash .tk{padding-left:13px;padding-right:13px}
+ #dns-dash .tk::before{left:13px;right:13px}
+ #dns-dash .tk .v{font-size:24px}
+}
+@media(min-width:1680px){#dns-dash .tk .v{font-size:27px}}
+@media(max-width:1279px){
+ #dns-dash .mast-in{padding:16px 28px}
+ #dns-dash .workspace-layout{display:block;padding:0 28px 20px}
+ #dns-dash .workspace-rail{position:sticky;top:0;z-index:70;margin:0 -28px 24px;padding:0 28px;border:0;border-bottom:1px solid var(--n200);background:rgba(245,247,251,.98);max-height:none;overflow:visible}
+ #dns-dash .rail-head,#dns-dash .rail-foot{display:none}
+ #dns-dash #dnav{flex-direction:row;align-items:center;gap:5px;height:48px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none;max-width:100%}
+ #dns-dash #dnav::-webkit-scrollbar{display:none}
+ #dns-dash .tlink{min-height:36px;height:36px;padding:7px 10px;gap:7px;flex:none;white-space:nowrap}
+ #dns-dash .tlink.on::after{left:10px;right:10px;bottom:0;top:auto;width:auto;height:2px}
+ #dns-dash .nav-label{flex:none}
+ #dns-dash .nav-count{display:none}
+ #dns-dash .toolbar{top:48px}
+ #dns-dash .mod,#dns-dash .prov-app{scroll-margin-top:136px}
+}
+@media(max-width:960px){
+ #dns-dash .mast-in{flex-wrap:wrap;gap:13px}
+ #dns-dash .m-right{width:100%;margin:0;padding:0;border:0}
+ #dns-dash .header-department-switch{justify-content:space-between}
+ #dns-dash .department-links{flex:1;justify-content:space-between}
+ #dns-dash .department-link{flex:1;padding-left:10px;padding-right:10px}
+ #dns-dash .sec-meta{max-width:30%;flex-basis:150px}
+ #dns-dash .toolbar-in{gap:12px}
+ #dns-dash .pctl button{padding:0 6px;min-width:30px}
+}
+@media(max-width:768px){
+ #dns-dash .mast-in{padding:15px 18px;gap:13px}
+ #dns-dash .m-brand{gap:11px;width:100%}
+ #dns-dash .mark{width:36px;height:39px}
+ #dns-dash .brand-title{font-size:13px}
+ #dns-dash .brand-caption{font-size:10px}
+ #dns-dash .header-department-switch{align-items:flex-start;gap:9px}
+ #dns-dash .department-label{font-size:10px;line-height:36px}
+ #dns-dash .department-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex:1 1 0;gap:4px}
+ #dns-dash .department-link{font-size:10px;line-height:19px;min-height:32px;padding:5px 4px;min-width:0}
+ #dns-dash .workspace-layout{padding:0 18px 18px}
+ #dns-dash .workspace-rail{margin:0 -18px 20px;padding:0 18px}
+ #dns-dash .workspace-hero{margin-bottom:18px}
+ #dns-dash .hero-topline{gap:8px;margin-bottom:9px}
+ #dns-dash .hero-eyebrow{font-size:9px;letter-spacing:.1em}
+ #dns-dash .workbench-tag{font-size:9px}
+ #dns-dash .hero-heading{gap:12px;align-items:flex-start;flex-wrap:wrap}
+ #dns-dash .hero-heading h1{font-size:24px;line-height:34px}
+ #dns-dash .m-sub{font-size:10.5px;line-height:19px;margin-top:4px}
+ #dns-dash .hero-date{width:100%;display:flex;align-items:center;gap:12px;border:0;padding:0;text-align:left}
+ #dns-dash .hero-date>span{font-size:9px;line-height:18px;margin:0}
+ #dns-dash .hero-date b{font-size:13px;line-height:20px}
+ #dns-dash .hero-description{font-size:10.5px;line-height:19px;margin:11px 0 14px}
+ #dns-dash .workspace-metrics{gap:8px}
+ #dns-dash .workspace-metric{padding:10px 11px;border-radius:5px}
+ #dns-dash .workspace-metric>span{font-size:9px;line-height:17px}
+ #dns-dash .workspace-metric>div{display:block}
+ #dns-dash .workspace-metric b{font-size:23px;line-height:30px}
+ #dns-dash .workspace-metric small{display:block;font-size:8px;line-height:15px;white-space:nowrap}
+ #dns-dash .toolbar-in{flex-wrap:wrap;padding:10px 0;gap:9px;min-height:0}
+ #dns-dash .module-search{flex:1 1 100%;width:100%}
+ #dns-dash #moduleSearch{font-size:16px;line-height:22px}
+ #dns-dash .module-search kbd{display:none}
+ #dns-dash .tb2{display:flex;flex:1 1 100%;max-width:100%;overflow-x:auto;gap:8px;margin:0;padding:0 0 1px}
+ #dns-dash .pctl button{font-size:10px;line-height:23px;min-width:27px;padding:0 6px}
+ #dns-dash .tbtn{height:31px;font-size:10px;padding:0 9px}
+ #dns-dash .workspace-search-results{max-height:55vh}
+ #dns-dash .snapshot-head{gap:12px;align-items:flex-start}
+ #dns-dash .snapshot-head h2{font-size:13px}
+ #dns-dash .snapshot-head p{font-size:9px;line-height:17px;max-width:140px;text-align:right}
+ #dns-dash .snapshot-head p span{display:none}
+ #dns-dash .ticker-in{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #dns-dash .tk{padding:12px 12px 10px}
+ #dns-dash .tk::before{left:12px;right:12px}
+ #dns-dash .tk .k{font-size:10px;line-height:17px}
+ #dns-dash .tk .v{font-size:23px;line-height:29px;row-gap:0;margin:6px 0 4px}
+ #dns-dash .tk .v small{font-size:9px}
+ #dns-dash .tk .s{font-size:9px;line-height:16px}
+ #dns-dash .mod{margin-top:27px;scroll-margin-top:174px}
+ #dns-dash .prov-app{scroll-margin-top:174px}
+ #dns-dash .sec-head{gap:10px;flex-wrap:wrap;padding-bottom:13px;margin-bottom:15px}
+ #dns-dash .sec-no{width:29px;height:29px;font-size:11px;line-height:29px}
+ #dns-dash .sec-head h2{font-size:18px;line-height:26px}
+ #dns-dash .sec-head p{font-size:10px;line-height:19px}
+ #dns-dash .sec-meta{margin-left:39px;max-width:none;flex-basis:calc(100% - 39px);text-align:left;font-size:10px;margin-top:-3px}
+ #dns-dash .grp{font-size:11px;margin-top:19px}
+ #dns-dash .row{grid-template-columns:minmax(0,1fr);gap:12px;margin-bottom:12px}
+ #dns-dash .row>*{grid-column:auto!important;grid-row:auto!important;min-width:0}
+ #dns-dash .card{padding:16px 15px 13px;border-radius:6px}
+ #dns-dash .card-top{gap:6px;margin-bottom:12px}
+ #dns-dash .card-top .t{font-size:13px;line-height:21px}
+ #dns-dash .kpi .val,#dns-dash .kpi.lg .val{font-size:33px;line-height:40px}
+ #dns-dash .kpi .val .unit{font-size:12px}
+ #dns-dash .chart{height:155px}
+ #dns-dash .foot{font-size:10px;line-height:18px}
+ #dns-dash .card div[data-multi]{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+ #dns-dash .card div[data-multi] .sc{padding-left:0;padding-right:0}
+ #dns-dash .ringwrap{flex-wrap:wrap;gap:16px}
+ #dns-dash .rings2{gap:18px;flex:0 1 auto}
+ #dns-dash .card.strip{flex-direction:column;align-items:stretch}
+ #dns-dash .sc{padding:9px 0;border-left:0;border-top:1px solid var(--n100)}
+ #dns-dash .sc:first-child{border-top:0}
+ #dns-dash .revcard{height:108px;padding:10px;gap:10px}
+ #dns-dash .rthumb{width:69px;height:86px}
+ #dns-dash .rname{font-size:11.5px;line-height:18px}
+ #dns-dash .rtag{display:none}
+ #dns-dash [data-review="41"].revcards,#dns-dash [data-review="42"].revcards{grid-template-columns:minmax(0,1fr);gap:9px}
+ #dns-dash [data-review="41"] .revcard,#dns-dash [data-review="42"] .revcard{height:130px;padding:10px;gap:10px}
+ #dns-dash [data-review="41"] .rthumb,#dns-dash [data-review="42"] .rthumb{width:82px;height:108px}
+ #dns-dash [data-review="41"] .rname,#dns-dash [data-review="42"] .rname{font-size:12px;line-height:19px}
+ #dns-dash [data-review="41"] .rdesc,#dns-dash [data-review="42"] .rdesc{font-size:10.5px;line-height:17px;-webkit-line-clamp:2}
+ #dns-dash .co-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:5px}
+ #dns-dash .cotab{font-size:11px;min-height:39px;padding:7px}
+ #dns-dash .cotab small{font-size:9px}
+ #dns-dash .crow{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ #dns-dash .cco{padding:12px}
+ #dns-dash .cco .chead{gap:6px;flex-wrap:wrap}
+ #dns-dash .cco .cn{font-size:12px}
+ #dns-dash .hlines{grid-template-columns:minmax(0,1fr)}
+ #dns-dash .hln+.hln{border-top:1px solid var(--n100)}
+ #dns-dash .prov-toggle{padding:14px;font-size:12px}
+ #dns-dash .prov-toggle .sum{margin-left:0;flex:1;min-width:100px}
+ #dns-dash .prov-body{padding:13px}
+ #dns-dash .prov-tools{padding:10px;gap:8px;min-width:0}
+ #dns-dash .prov-tools input,#dns-dash .prov-tools select{font-size:16px;min-width:0;max-width:100%}
+ #dns-dash .prov-tools select{flex:1 1 40%;padding-left:6px;padding-right:6px}
+ #dns-dash .prov-tools input{flex:1 1 100%;width:0}
+ #dns-dash .twrap{max-height:60vh}
+ #dns-dash .pcount{font-size:10px;line-height:18px;margin:0}
+ #dns-dash .d-foot{font-size:9px;gap:8px;padding-top:17px}
+ #dns-dash .plan-purpose{font-size:11.5px}
+}
+@media(max-width:380px){
+ #dns-dash .hero-heading h1{font-size:22px}
+ #dns-dash .workspace-metric{padding:9px}
+ #dns-dash .workspace-metric small{font-size:7.5px}
+ #dns-dash .department-label{display:none}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}#dns-dash *{animation:none!important;transition:none!important}}
+@media print{
+ html{scroll-behavior:auto}
+ body,#dns-dash{background:#FFF}
+ #dns-dash .workspace-layout{display:block;max-width:none;padding:12px}
+ #dns-dash .workspace-rail,#dns-dash .toolbar,#dns-dash .header-department-switch,#dns-dash #toTop,#dns-dash .skip-link{display:none!important}
+ #dns-dash .mast-in{padding:10px 12px;max-width:none}
+ #dns-dash .card,#dns-dash .cco{box-shadow:none;break-inside:avoid}
+ #dns-dash .twrap{max-height:none;overflow:visible}
+ #dns-dash .workspace-highlight{outline:none;box-shadow:none!important}
+}

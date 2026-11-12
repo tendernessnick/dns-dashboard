@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-生成看板（组装器）：看板骨架.html + 布局.csv + 模块/*.json + 渲染器/*.js + _style.css
+生成看板（组装器）：看板骨架.html + 布局.csv + 模块/*.json + 渲染器/*.js + _style.css + _workspace.css
     → 页面.json登记的各部门HTML（页面壳，不含数据）
 
 v13 模块化改造（2026-10-29），取代 v12 的「看板模板.html + 字符串补丁」机制：
@@ -32,7 +32,7 @@ CSS = os.path.join(BASE, '_style.css')
 
 # ============ 读入 ============
 skeleton = open(SKEL, encoding='utf-8').read()
-css = open(CSS, encoding='utf-8').read()
+css = open(CSS, encoding='utf-8').read() + '\n' + open(os.path.join(BASE, '_workspace.css'), encoding='utf-8').read()
 DEFAULT_PAGE, PAGES = load_pages(BASE)
 
 CARDS = {}
@@ -567,6 +567,7 @@ def read_layout(page):
         layout = list(reader)
     seen_cards, seen_sections = set(), set()
     fixed_ids = {'dns-dash', 'appendix', 'dnav', 'provbtn', 'asof', 'toTop',
+                 'workspaceOverview', 'moduleSearch', 'moduleSearchResults', 'clearModuleSearch',
                  'pfCat', 'pfStatus', 'pfQ', 'provRows', 'provToggle', 'provSum', 'pfCount'}
     for row in layout:
         if None in row or any(value is None for value in row.values()):
@@ -613,7 +614,14 @@ def build_page(page):
                    + '>' + escape(other['名称']) + '</a>' for other in PAGES)
     nav = ''.join('<a class="tlink" href="#' + escape(section['meta']['引用'], quote=True)
                   + '"><span class="nav-no">' + escape(section['meta']['编号']) + '</span>'
-                  + escape(section['meta']['标题']) + '</a>' for section in sections)
+                  + '<span class="nav-label">' + escape(section['meta']['标题']) + '</span>'
+                  + '<span class="nav-count" title="本板块模块数（含规划）">'
+                  + str(sum(row['类型'] == 'C' for row in section['body'])) + '</span></a>' for section in sections)
+    metrics = ''.join('<div class="workspace-metric"><span>' + label + '</span><div><b>'
+                      + str(value) + '</b><small>' + note + '</small></div></div>'
+                      for label, value, note in [('来源词条', len(sources), '本页溯源范围'),
+                                                 ('已建模块', active_count, '含原有受限项'),
+                                                 ('规划预留', planned_count, '尚未接入数据')])
     replacements = {
         '<!--__PAGE_TABS__-->': tabs,
         '<!--__SECTION_NAV__-->': nav,
@@ -622,8 +630,7 @@ def build_page(page):
         '<!--__PAGE_EYEBROW__-->': escape(page['眉标']),
         '<!--__PAGE_TAG__-->': escape(page['定位']),
         '<!--__PAGE_DESCRIPTION__-->': escape(page['说明']),
-        '<!--__PAGE_SCOPE__-->': str(len(sources)) + ' <span>项词条 · ' + str(active_count) + ' 个已建模块'
-                               + (' · ' + str(planned_count) + ' 个规划' if planned_count else '') + '</span>',
+        '<!--__PAGE_METRICS__-->': metrics,
         '<!--__SECTIONS__-->': body,
         '<!--__DATA_JS__-->': '<script src="data.js"></script>',
         '<!--__ENGINE__-->': '<script>\n' + ENGINE + '</script>',
