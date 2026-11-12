@@ -909,3 +909,34 @@ html{scroll-padding-top:0}
   #dns-dash .department-links{gap:4px;flex:1;min-width:0}
 }
 @media print{#dns-dash .header-department-switch{display:none}}
+
+/* ===== v23 · 外部情报部门视图与真实空态 ===== */
+#dns-dash .header-department-switch{max-width:100%}
+#dns-dash .department-links{flex:0 1 auto;flex-wrap:wrap;justify-content:flex-end;min-width:0}
+#dns-dash .m-meta b>span{white-space:normal}
+#dns-dash .planned-card{border:1px dashed #C7D5E5;background:#FCFDFE;min-width:0}
+#dns-dash .planned-card .card-top{align-items:flex-start}
+#dns-dash .planned-card .card-top .t{min-width:0;flex:1}
+#dns-dash .c-planned,#dns-dash .c-static{color:#52667D;background:#EDF2F7;border:1px solid #DCE5EF;white-space:nowrap;flex:none}
+#dns-dash .plan-purpose{font-size:13px;line-height:1.8;color:var(--n700);margin-bottom:8px}
+#dns-dash .plan-content{font-size:12px;line-height:1.85;color:var(--n500);margin-bottom:13px}
+#dns-dash .plan-fields{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+#dns-dash .plan-fields>span{font-size:11px;line-height:18px;padding:3px 8px;border-radius:4px;background:#F0F4F8;color:#52667D;overflow-wrap:anywhere}
+#dns-dash .plan-details{font-size:11.5px;line-height:1.85;color:var(--n500);margin-bottom:12px}
+#dns-dash .plan-details summary{cursor:pointer;color:#45658B;padding:4px 0}
+#dns-dash .plan-details p{margin:7px 0;overflow-wrap:anywhere}
+#dns-dash .plan-details b{color:var(--n700);font-weight:550}
+#dns-dash .plan-foot{border-top:1px solid #E4EBF3;padding-top:10px;margin-top:auto;gap:12px;flex-wrap:wrap}
+#dns-dash .plan-number{font-family:var(--fnnum);font-weight:650;color:#45658B}
+#dns-dash .research-note{font-size:11px;line-height:1.8;color:var(--n500);border-top:1px solid var(--n100);padding-top:9px;margin-top:10px}
+#dns-dash .static-review{font-size:11px;color:#52667D}
+@media(max-width:1100px){
+  #dns-dash .m-right{flex-wrap:wrap;max-width:100%}
+}
+@media(max-width:768px){
+  #dns-dash .header-department-switch{align-items:flex-start;justify-content:flex-start;gap:8px}
+  #dns-dash .department-label{line-height:38px}
+  #dns-dash .department-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex:1 1 0;gap:4px}
+  #dns-dash .department-link{padding:6px 4px;font-size:10.5px;min-width:0;min-height:34px}
+  #dns-dash .plan-purpose{font-size:12px}
+}

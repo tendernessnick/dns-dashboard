@@ -16,5 +16,5 @@ root.querySelectorAll('[data-toplist]').forEach(function(el){
 root.querySelectorAll('[data-topsub]').forEach(function(el){
   var tp=(typeof TOPS!=='undefined')&&TOPS[el.getAttribute('data-topsub')];
   if(!tp)return;
-  el.textContent='TOP'+tp.total+' · Anker '+tp.anker+'席'+(tp.avg?(' · 均价$'+tp.avg):'')+' · 快照'+tp.date+' · '+tp.label;
+  el.textContent='TOP'+tp.total+' · Anker '+tp.anker+'席'+(tp.avg?(' · 均价$'+tp.avg):'')+' · 快照'+tp.date+' · '+(el.getAttribute('data-top-label')||tp.label);
 });

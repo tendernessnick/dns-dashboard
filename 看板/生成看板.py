@@ -47,10 +47,45 @@ for fp in sorted(glob.glob(os.path.join(MOD_DIR, '*.json'))):
         raise SystemExit(f'卡片ID重复：{cid}（{fp}）')
     CARDS[cid] = cfg
 
-TYPES = {'kpi', 'desc', 'list', 'strip', 'share', 'ring', 'hlines', 'multi', 'cco', 'review'}
+TYPES = {'kpi', 'desc', 'list', 'strip', 'share', 'ring', 'hlines', 'multi', 'cco', 'review', 'planned'}
+
+
+def validate_planned(config):
+    """预留模块只描述未来能力；不得绑定尚不存在的数据或伪装成已接入。"""
+    cid = config.get('ID', '')
+    number = config.get('预留编号', '')
+    if (not isinstance(number, str) or not re.fullmatch(r'M[1-9]\d*', number)
+            or not isinstance(cid, str) or cid.split('_', 1)[0] != number[1:]):
+        raise ValueError(f'{cid}预留编号须为M+模块数字编号')
+    if config.get('主数据') or config.get('关联数据'):
+        raise ValueError(f'{cid}规划模块不能绑定数据P号')
+    bindings = {'资讯键', '榜单', '榜单统计', '图表组', '多品类', '份额图', '环形',
+                '横排', '指标条', '指标行', '动态日历', '数值占位', '状态点', '按钮', '链接组'}
+    if bindings.intersection(config):
+        raise ValueError(f'{cid}规划模块不能包含数据绑定、数值或已接入状态')
+    plan = config.get('规划对象')
+    if not isinstance(plan, dict):
+        raise ValueError(f'{cid}缺少规划对象')
+    for key in ('用途', '计划内容', '使用边界'):
+        if not isinstance(plan.get(key), str) or not plan[key].strip():
+            raise ValueError(f'{cid}规划对象缺少{key}')
+    for key in ('展示字段', '候选来源'):
+        values = plan.get(key)
+        if not isinstance(values, list) or not values or any(not isinstance(v, str) or not v.strip() for v in values):
+            raise ValueError(f'{cid}规划对象{key}须为非空文本列表')
+    if not isinstance(config.get('卡名'), str) or not config['卡名'].strip():
+        raise ValueError(f'{cid}缺少卡名')
+
+
+planned_numbers = set()
 for cid, cfg in CARDS.items():
     if cfg['类型'] not in TYPES:
         raise SystemExit(f'{cid}：未知卡型 {cfg["类型"]}（允许：{sorted(TYPES)}）')
+    if cfg['类型'] == 'planned':
+        validate_planned(cfg)
+        if cfg['预留编号'] in planned_numbers:
+            raise ValueError(f'预留编号重复：{cfg["预留编号"]}')
+        planned_numbers.add(cfg['预留编号'])
 
 
 def Pn(p):
@@ -76,7 +111,8 @@ def b_top(c):
         return ''
     dot = ''
     if c.get('状态点'):
-        dot = f'<span class="dot {c["状态点"]}"{ti(c.get("状态说明"))}></span>'
+        label = f' data-status-label="{atattr(c["状态文案"])}"' if c.get('状态文案') else ''
+        dot = f'<span class="dot {c["状态点"]}"{label}{ti(c.get("状态说明"))}></span>'
     return f'<div class="card-top"><span class="t"{ti(c.get("标题提示"))}>{c["卡名"]}</span>{dot}</div>'
 
 
@@ -187,7 +223,9 @@ def b_topsub(c):
     t = c.get('榜单统计')
     if not t:
         return ''
-    return f'<div class="sub" data-topsub="{t["P"]}"{st(t.get("样式"))}>{t.get("占位", "")}</div>'
+    label = next((row.get('榜单标签', '') for row in REGISTRY if row['P号'] == t['P']), '')
+    label_attr = f' data-top-label="{atattr(label)}"' if label else ''
+    return f'<div class="sub" data-topsub="{t["P"]}"{label_attr}{st(t.get("样式"))}>{t.get("占位", "")}</div>'
 
 
 def b_tllist(c):
@@ -273,11 +311,28 @@ def b_cco(c):
     return f'<div class="cco" data-mid="{atattr(c["ID"])}" data-k="{Pn(c["主数据"])}"{source_attrs(c)}>{head}{cd}{b_btn(c)}</div>'
 
 
+def b_planned(c):
+    plan = c['规划对象']
+    fields = ''.join('<span>' + escape(value) + '</span>' for value in plan['展示字段'])
+    return ('<div class="card-top"><span class="t">' + escape(c['卡名']) + '</span>'
+            '<span class="chip c-planned">规划中</span></div>'
+            '<p class="plan-purpose">' + escape(plan['用途']) + '</p>'
+            '<p class="plan-content">' + escape(plan['计划内容']) + '</p>'
+            '<div class="plan-fields" aria-label="计划展示字段">' + fields + '</div>'
+            '<details class="plan-details"><summary>候选来源与使用边界</summary>'
+            '<p><b>候选公开来源</b> ' + escape(' / '.join(plan['候选来源'])) + '</p>'
+            '<p><b>使用边界</b> ' + escape(plan['使用边界']) + '</p></details>'
+            '<div class="foot plan-foot"><span class="plan-number">' + escape(c['预留编号']) + '</span>'
+            '<span>尚未接入数据 · 当前仅为功能预留</span></div>')
+
+
 def card_html(c, slot=None):
     t = c['类型']
     if t == 'cco':
         return b_cco(c)
     cls = ['card'] + (c.get('类修饰') or []) + ([f'c{c["跨列"]}'] if c.get('跨列') else [])
+    if t == 'planned':
+        cls.append('planned-card')
     dk = ' '.join(Pn(p) for p in [c['主数据']] + (c.get('关联数据') or []) if p)
     css = ';'.join(p for p in [(c.get('卡片样式') or '').rstrip(';'), slot or ''] if p)
     attrs = (st(css)
@@ -286,8 +341,11 @@ def card_html(c, slot=None):
              + (f' data-k="{dk}"' if dk else '')
              + (' data-change="none"' if c.get('显示前值变化') is False else '')
              + (' data-trend="none"' if c.get('显示趋势') is False else '')
+             + (' data-module-status="planned" data-planned-id="' + atattr(c['预留编号']) + '"' if t == 'planned' else '')
              + (f' data-news="{atattr(c["资讯键"])}"' if c.get('资讯键') else ''))
-    if t == 'strip':
+    if t == 'planned':
+        inner = b_planned(c)
+    elif t == 'strip':
         inner = b_strip(c)
     elif t == 'hlines':
         inner = b_hlines(c)
@@ -309,6 +367,8 @@ def card_html(c, slot=None):
         inner = b_top(c) + b_ring(c) + b_foot(c)
     else:
         raise SystemExit(f'{c["ID"]}：无法渲染的卡型 {t}')
+    if c.get('使用提示') and t != 'planned':
+        inner += '<p class="research-note">' + escape(c['使用提示']) + '</p>'
     return f'<div class="{" ".join(cls)}"{attrs}>{inner}</div>'
 
 # ============ 板块拼装 ============
@@ -453,6 +513,10 @@ def normalize_pid(value):
 REG_PATH = os.path.join(os.path.dirname(BASE), '看板数据固化', '词条注册表.csv')
 with open(REG_PATH, encoding='utf-8-sig', newline='') as f:
     REGISTRY = list(csv.DictReader(f))
+STATIC_PIDS = {record['P号'] for record in REGISTRY if record.get('状态') == '静态维护'}
+for source in PROV:
+    if 'P' + str(source['id']) in STATIC_PIDS:
+        source['status'] = '静态维护'
 NEWS_PIDS = {}
 for record in REGISTRY:
     for key in (record.get('资讯key') or '').split(';'):
@@ -462,6 +526,8 @@ for record in REGISTRY:
 
 def module_pids(config):
     """数据键来自原模块嵌套配置及资讯键映射，不能把模块编号误当数据P号。"""
+    if config.get('类型') == 'planned':
+        return set()
     found = set()
     def visit(value):
         if isinstance(value, dict):
@@ -530,8 +596,11 @@ def build_page(page):
     pids = set().union(*(CARD_PIDS[cid] for cid in used))
     full_provenance = page.get('完整溯源', page['ID'] == DEFAULT_PAGE)
     sources = PROV if full_provenance else [r for r in PROV if 'P' + str(r['id']) in pids]
+    planned_count = sum(CARDS[cid]['类型'] == 'planned' for cid in used)
+    active_count = len(used) - planned_count
     page_info = {'id': page['ID'], 'label': page['名称'], 'file': page['文件'],
-                 'moduleCount': len(used), 'sourceCount': len(sources)}
+                 'moduleCount': len(used), 'sourceCount': len(sources),
+                 'plannedCount': planned_count, 'activeModuleCount': active_count}
     tabs = ''.join('<a class="department-link' + (' on' if other['ID'] == page['ID'] else '')
                    + '" data-dashboard-page="' + escape(other['ID'], quote=True)
                    + '" href="' + escape(other['文件'], quote=True) + '"'
@@ -548,7 +617,8 @@ def build_page(page):
         '<!--__PAGE_EYEBROW__-->': escape(page['眉标']),
         '<!--__PAGE_TAG__-->': escape(page['定位']),
         '<!--__PAGE_DESCRIPTION__-->': escape(page['说明']),
-        '<!--__PAGE_SCOPE__-->': str(len(sources)) + ' <span>项词条 · ' + str(len(used)) + ' 个模块</span>',
+        '<!--__PAGE_SCOPE__-->': str(len(sources)) + ' <span>项词条 · ' + str(active_count) + ' 个已建模块'
+                               + (' · ' + str(planned_count) + ' 个规划' if planned_count else '') + '</span>',
         '<!--__SECTIONS__-->': body,
         '<!--__DATA_JS__-->': '<script src="data.js"></script>',
         '<!--__ENGINE__-->': '<script>\n' + ENGINE + '</script>',

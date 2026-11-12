@@ -14,9 +14,12 @@ const config = JSON.parse(fs.readFileSync(path.join(dashboardDir, '页面.json')
 const views = config['页面'];
 const defaultView = views.find(view => view.ID === config['默认页面']);
 const marketView = views.find(view => view.ID === 'marketing');
+const orderedViews = [defaultView, ...views.filter(view => view !== defaultView)];
+const expectedPageIds = ['strategy', 'marketing', 'design', 'product', 'hr'];
 const shareFile = '数据看板-单文件版.html';
 const widths = [320, 390, 768, 1440, 1920];
 assert.ok(defaultView && marketView && defaultView.ID !== marketView.ID, '页面配置必须含默认战略页和市场页');
+assert.deepEqual(views.map(view => view.ID).sort(), [...expectedPageIds].sort(), '五部门入口必须完整登记');
 
 function csvRows(filename) {
   const input = fs.readFileSync(filename, 'utf8').replace(/^\uFEFF/, '');
@@ -49,12 +52,21 @@ function manifest(directory, extension) {
 
 const moduleDir = path.join(dashboardDir, '模块');
 const originalModules = manifest(moduleDir, '.json');
-assert.equal(originalModules.length, 98, '本次只复用现有98个模块，不新增模块');
 const modules = new Map(originalModules.map(({ name }) => {
   const card = JSON.parse(fs.readFileSync(path.join(moduleDir, name), 'utf8'));
   return [card.ID || name.slice(0, -5), card];
 }));
 assert.equal(modules.size, originalModules.length, '模块配置ID唯一');
+const plannedModules = new Map([...modules].filter(([, card]) => card['类型'] === 'planned'));
+const activeModules = new Map([...modules].filter(([, card]) => card['类型'] !== 'planned'));
+assert.equal(activeModules.size, 98, '原有98个真实模块完整保留');
+assert.equal(plannedModules.size, 11, '新增11个规划卡，不伪装成真实数据模块');
+assert.deepEqual([...plannedModules.values()].map(card => card['预留编号']).sort(),
+  Array.from({ length: 11 }, (_, i) => 'M' + (301 + i)).sort(), '规划编号独立于P号');
+for (const [id, card] of plannedModules) {
+  assert.equal(card['预留编号'].slice(1), id.split('_')[0], '规划编号与模块ID一致');
+  assert.ok(!card['主数据'] && !(card['关联数据'] || []).length, id + '不绑定假P号');
+}
 const fixedDir = path.join(root, '看板数据固化');
 const originalCsvs = manifest(path.join(fixedDir, 'CSV数据'), '.csv');
 const originalCollectors = manifest(path.join(fixedDir, '采集脚本'), '.py');
@@ -83,7 +95,10 @@ function dependencies(refs) {
       }
     }
   };
-  for (const ref of refs) visit(modules.get(ref));
+  for (const ref of refs) {
+    const card = modules.get(ref);
+    if (card['类型'] !== 'planned') visit(card);
+  }
   return [...result].filter(pid => sourceIds.has(pid)).sort();
 }
 
@@ -94,12 +109,21 @@ for (const view of views) {
   view.refs = view.layout.filter(row => row['类型'] === 'C').map(row => row['引用']);
   assert.equal(new Set(view.refs).size, view.refs.length, view.ID + '不能在同页重复引用同一模块');
   for (const ref of view.refs) assert.ok(modules.has(ref), view.ID + '引用不存在模块：' + ref);
-  view.expectedSources = dependencies(view.refs);
+  view.activeRefs = view.refs.filter(ref => activeModules.has(ref));
+  view.plannedRefs = view.refs.filter(ref => plannedModules.has(ref));
+  view.companies = view.layout.filter(row => row['类型'] === 'P').map(row => row['引用']);
+  assert.equal(new Set(view.companies).size, view.companies.length, view.ID + '公司面板不重复');
+  view.expectedSources = (view['完整溯源'] ?? (view.ID === defaultView.ID))
+    ? [...sourceIds].sort() : dependencies(view.refs);
   assert.ok(fs.existsSync(path.join(dashboardDir, view['文件'])), '先由生产构建器生成：' + view['文件']);
 }
-assert.deepEqual([...defaultView.refs].sort(), [...modules.keys()].sort(), '主看板完整保留原有98个模块');
-assert.ok(marketView.refs.length > 0 && marketView.refs.length < defaultView.refs.length,
-  '市场页从现有模块取子集，不复制或扩充模块');
+assert.deepEqual([...defaultView.activeRefs].sort(), [...activeModules.keys()].sort(), '主看板完整保留原有98个真实模块');
+assert.deepEqual(defaultView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['M301', 'M302', 'M303']);
+assert.equal(marketView.activeRefs.length, 51, '市场页保留原有51个真实模块');
+assert.deepEqual(marketView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['M304', 'M308']);
+assert.deepEqual([...new Set(views.flatMap(view => view.plannedRefs))].sort(), [...plannedModules.keys()].sort(),
+  '11个规划卡都应出现在已登记页面中');
+for (const ref of plannedModules.keys()) assert.deepEqual(dependencies([ref]), [], ref + '不得生成假溯源依赖');
 assert.equal(new Set(views.map(view => view.ID)).size, views.length, '页面ID唯一');
 assert.equal(new Set(views.map(view => view['文件'])).size, views.length, '输出文件唯一');
 
@@ -149,10 +173,53 @@ async function assertUniqueIds(scope, label) {
   assert.deepEqual(duplicates, [], label + '存在重复DOM id');
 }
 
+async function assertPlannedCards(scope, view, label) {
+  const cards = scope.locator('.planned-card[data-module-status="planned"]');
+  assert.equal(await cards.count(), view.plannedRefs.length, label + '规划卡数量与布局一致');
+  for (const ref of view.plannedRefs) {
+    const expected = modules.get(ref)['预留编号'];
+    const card = scope.locator(`[data-mid="${ref}"]`);
+    assert.equal(await card.count(), 1, label + '规划卡必须唯一：' + ref);
+    assert.equal(await card.getAttribute('data-module-status'), 'planned');
+    assert.equal(await card.getAttribute('data-planned-id'), expected);
+    assert.ok((await card.getAttribute('class')).split(/\s+/).includes('planned-card'));
+    assert.equal(await card.locator('.chip.c-planned').count(), 1);
+    assert.equal((await card.locator('.chip.c-planned').innerText()).trim(), '规划中');
+    const violations = await card.evaluate(root => {
+      const forbidden = ['data-k', 'data-source-pids', 'data-news', 'data-review', 'data-toplist',
+        'data-topsub', 'data-ring', 'data-multi', 'data-cal', 'data-cal-desc', 'data-vk', 'data-tk', 'data-ref'];
+      return [root, ...root.querySelectorAll('*')].flatMap(node => forbidden
+        .filter(name => node.hasAttribute(name)).map(name => node.tagName + ':' + name));
+    });
+    assert.deepEqual(violations, [], label + '规划卡不能绑定数据或来源：' + ref);
+    assert.equal(await card.locator('.val,.vnum,.chart,.sparkrow,.dpill,.statline,.revcards,.src-ref,' +
+      '.chip.c-ok,.chip.c-warn,script,iframe,object,embed,canvas').count(), 0,
+    label + '规划卡不能渲染假值、趋势或已接入状态：' + ref);
+    const boundary = modules.get(ref)['规划对象']['使用边界'];
+    assert.ok((await card.textContent()).includes(boundary), label + '规划卡保留使用边界（可置于展开详情）');
+  }
+  const falseSources = await scope.evaluate(ids => {
+    const stores = { DDATA, BIND, META, NEWS, TOPS,
+      CAL: typeof CAL === 'undefined' ? {} : CAL,
+      REVIEWS: typeof REVIEWS === 'undefined' ? {} : REVIEWS };
+    return ids.flatMap(pid => [
+      ...Object.entries(stores).filter(([, store]) => Object.hasOwn(store, pid)).map(([name]) => name + ':' + pid),
+      ...(PROV.some(item => 'P' + item.id === pid) ? ['PROV:' + pid] : []),
+    ]);
+  }, [...plannedModules.values()].map(card => 'P' + card['预留编号'].slice(1)));
+  assert.deepEqual(falseSources, [], label + 'M编号不得伪造成业务P号或来源');
+}
+
 async function assertView(scope, view, label) {
   await ready(scope);
   const rendered = await scope.locator('[data-mid]').evaluateAll(nodes => nodes.map(node => node.dataset.mid).sort());
   assert.deepEqual(rendered, [...view.refs].sort(), label + '模块必须逐一对应配置引用');
+  const info = await scope.evaluate(() => PAGE_INFO);
+  assert.equal(info.id, view.ID, label + '页面身份与路由一致');
+  assert.equal(info.moduleCount, view.refs.length);
+  assert.equal(info.activeModuleCount, view.activeRefs.length);
+  assert.equal(info.plannedCount, view.plannedRefs.length);
+  await assertPlannedCards(scope, view, label);
   await assertUniqueIds(scope, label);
   const brokenAnchors = await scope.evaluate(() => [...document.querySelectorAll('#dnav a,#provbtn')]
     .filter(node => !node.getAttribute('href')?.startsWith('#') ||
@@ -164,14 +231,21 @@ async function assertView(scope, view, label) {
   for (const target of views) {
     assert.ok(pageLinks.some(link => link.id === target.ID && link.href), label + '缺少页面入口：' + target.ID);
   }
-  if (view.ID === marketView.ID) {
-    const actual = await scope.evaluate(() => PROV.map(item => 'P' + Number(String(item.id).replace(/^P/, ''))).sort());
-    assert.deepEqual(actual, view.expectedSources, label + '市场页PROV只包含本页模块及依赖');
-  }
+  const actual = await scope.evaluate(() => PROV.map(item => String(item.id)));
+  assert.deepEqual(actual.map(normalizePid).sort(), view.expectedSources, label + 'PROV按本页模块和依赖过滤');
 }
 
 async function assertBusinessInvariants(scope, view, label) {
   const page = typeof scope.page === 'function' ? scope.page() : scope;
+  const planDetails = scope.locator('.planned-card details').first();
+  if (await planDetails.count()) {
+    await planDetails.locator('summary').focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await planDetails.evaluate(node => node.open), true, label + '规划说明支持键盘展开');
+    assert.ok((await planDetails.innerText()).includes('使用边界'));
+    await page.keyboard.press('Enter');
+    assert.equal(await planDetails.evaluate(node => node.open), false);
+  }
   await scope.locator('.pctl button[data-m="3"]').focus();
   await page.keyboard.press('Enter');
   assert.equal(await scope.evaluate(() => PSEL.months), 3, label + '周期支持键盘');
@@ -197,17 +271,54 @@ async function assertBusinessInvariants(scope, view, label) {
     assert.equal(await card.locator('.val .vnum').count(), 0, label + '受限项不能生成数值');
   }
 
+  for (const pid of ['P17', 'P18']) {
+    const ref = view.activeRefs.find(item => modules.get(item)['主数据'] === pid);
+    if (!ref) continue;
+    const card = scope.locator(`[data-mid="${ref}"]`);
+    assert.equal(await card.locator('.chip').filter({ hasText: '静态维护' }).count(), 1,
+      label + '静态政策入口应明确维护状态：' + pid);
+    assert.equal(await card.locator('.chip').filter({ hasText: '已接入' }).count(), 0);
+    await scope.locator('#provbtn').click();
+    const status = await scope.locator(`#prov-${pid} .pchip`).innerText();
+    assert.equal(status.trim(), '静态维护', label + '附录不把静态入口当作持续接入');
+    assert.ok(!status.includes('已接入'));
+  }
+  for (const prefix of ['66_', '68_']) {
+    const ref = view.activeRefs.find(item => item.startsWith(prefix));
+    if (!ref) continue;
+    const title = await scope.locator(`[data-mid="${ref}"] .card-top .t`).innerText();
+    assert.ok(!title.includes('销量'), label + 'Amazon排名不能标作销量：' + title);
+    if (prefix === '68_') {
+      const stats = await scope.locator(`[data-mid="${ref}"] [data-topsub]`).innerText();
+      assert.ok(stats.includes('手机配件榜') && !stats.includes('充电榜'),
+        label + '榜单副标题与手机配件大类口径一致');
+    }
+  }
+  const customer = view.activeRefs.find(item => item.startsWith('80_'));
+  if (customer) assert.ok(!(await scope.locator(`[data-mid="${customer}"]`).innerText()).includes('议价健康'),
+    label + '大客户集中度不能冒充议价健康结论');
+  assert.equal(await scope.getByText('暂无新稿', { exact: false }).count(), 0,
+    label + '空feed不能擅自推断源站没有新稿');
+
   const buttons = scope.locator('[data-cotab]');
-  const companies = view.layout.filter(row => row['类型'] === 'P').map(row => row['引用']);
-  assert.equal(companies.length, 5, label + '保留五家公司面板');
+  const companies = view.companies;
   assert.equal(await buttons.count(), companies.length);
+  assert.equal(await scope.locator('[data-copanel]').count(), companies.length);
+  if (!companies.length) return;
   for (const company of companies) {
     await scope.locator(`[data-cotab="${company}"]`).click();
     const visible = scope.locator('[data-copanel]:not([hidden])');
     assert.equal(await visible.count(), 1, label + '公司切换只能显示一个面板');
     assert.equal(await visible.getAttribute('data-copanel'), company);
     assert.equal(await scope.locator('[data-cotab].on').count(), 1);
-    const cumulative = visible.locator('.card[data-change="none"]').first();
+    const cumulativeRef = view.activeRefs.find(ref => {
+      const card = modules.get(ref);
+      return card['面板'] === company && /^P20[1-5]$/.test(card['主数据'] || '');
+    });
+    if (!cumulativeRef) continue;
+    const cumulative = visible.locator(`[data-mid="${cumulativeRef}"]`);
+    assert.equal(await cumulative.count(), 1, label + '已配置的累计营收卡必须保留');
+    assert.equal(await cumulative.getAttribute('data-change'), 'none');
     assert.match(await cumulative.innerText(), /年初累计|年初至报告期累计/);
     assert.equal(await cumulative.locator('.dpill').count(), 0);
     const chart = cumulative.locator('.chart').first();
@@ -222,6 +333,7 @@ async function assertBusinessInvariants(scope, view, label) {
 
   await buttons.first().click();
   const hiddenCard = scope.locator('[data-copanel][hidden] .card[data-change="none"]').first();
+  if (!(await hiddenCard.count())) return;
   const targetId = await hiddenCard.getAttribute('id');
   const targetPid = 'P' + (await hiddenCard.getAttribute('data-k')).split(/\s+/)[0];
   const targetCompany = await hiddenCard.evaluate(node => node.closest('[data-copanel]').dataset.copanel);
@@ -312,8 +424,9 @@ async function sharedFrame(page, view) {
         await assertView(page, to, mode + ':' + to.ID);
       };
       await page.goto(urlFor(defaultView), { waitUntil: 'load' });
-      for (const view of [defaultView, marketView]) {
-        if (view !== defaultView) await navigate(defaultView, view);
+      let previousView = defaultView;
+      for (const view of orderedViews) {
+        if (view !== previousView) await navigate(previousView, view);
         const label = mode + ':' + view.ID;
         await assertView(page, view, label);
         const scripts = await page.locator('script[src]').evaluateAll(nodes => nodes.map(node => node.src));
@@ -323,19 +436,22 @@ async function sharedFrame(page, view) {
         else payloads.set(view.ID, currentPayload);
         await assertBusinessInvariants(page, view, label);
         await responsive(page, page, label, responsiveResults);
+        previousView = view;
       }
-      assert.equal(payloads.get(defaultView.ID), payloads.get(marketView.ID), '主看板与市场页复用同一份数据与绑定');
+      for (const view of views) assert.equal(payloads.get(defaultView.ID), payloads.get(view.ID),
+        view.ID + '复用同一份业务数据与绑定');
       // 附录链接会产生页内锚点历史；从明确的页面入口重新建立本组前进/后退路径。
       await page.goto(urlFor(defaultView), { waitUntil: 'load' });
       await assertView(page, defaultView, mode + ':历史起点');
-      await navigate(defaultView, marketView);
+      const historyView = orderedViews.at(-1);
+      await navigate(defaultView, historyView);
       await page.reload({ waitUntil: 'load' });
-      await assertView(page, marketView, mode + ':市场页刷新');
+      await assertView(page, historyView, mode + ':新增部门刷新');
       await page.goBack({ waitUntil: 'load' });
       await assertView(page, defaultView, mode + ':后退战略页');
       await page.goForward({ waitUntil: 'load' });
-      await assertView(page, marketView, mode + ':前进市场页');
-      await navigate(marketView, defaultView);
+      await assertView(page, historyView, mode + ':前进新增部门');
+      await navigate(historyView, defaultView);
     }
 
     // 分享版的父文档仅负责路由；业务全局变量必须从iframe读取。
@@ -344,15 +460,17 @@ async function sharedFrame(page, view) {
     const shareUrl = pathToFileURL(path.join(dashboardDir, shareFile)).href;
     await sharedPage.goto(shareUrl + '#page=' + defaultView.ID, { waitUntil: 'load' });
     assert.equal(await sharedPage.evaluate(() => typeof DDATA), 'undefined', '分享父壳不假设拥有内页数据全局量');
-    for (const view of [defaultView, marketView]) {
-      if (view === marketView) {
-        const frame = await sharedFrame(sharedPage, defaultView);
+    let previousSharedView = defaultView;
+    for (const view of orderedViews) {
+      if (view !== previousSharedView) {
+        const frame = await sharedFrame(sharedPage, previousSharedView);
         await frame.locator(`a[data-dashboard-page="${view.ID}"]`).first().click();
         await sharedPage.waitForURL(url => new URLSearchParams(url.hash.slice(1)).get('page') === view.ID);
       }
       const frame = await sharedFrame(sharedPage, view);
       const label = 'offline-share:' + view.ID;
       await assertView(frame, view, label);
+      assert.equal(await frame.locator('script[src]').count(), 0, label + '离线分享不依赖外置脚本');
       assert.equal(await payload(frame), payloads.get(view.ID), label + '内联后业务数据保持一致');
       assert.equal(await sharedPage.locator('[data-dashboard-frame]').count(), 1, label + '保留唯一分享iframe');
       assert.ok(decodeURIComponent(new URL(sharedPage.url()).pathname).endsWith('/' + shareFile), '内页导航不能离开分享壳');
@@ -365,22 +483,28 @@ async function sharedFrame(page, view) {
         assert.ok(await image.evaluate(node => node.complete && node.naturalWidth > 0), label + '分享图文照片必须离线可见');
         assert.match(await image.getAttribute('src'), /^data:image\//, label + '图文不依赖外置媒体目录');
       }
+      previousSharedView = view;
     }
     // 排除前面附录在iframe内产生的锚点历史，只测试部门路由本身的浏览器历史。
     await sharedPage.goto(shareUrl + '#page=' + defaultView.ID, { waitUntil: 'load' });
     const historyStart = await sharedFrame(sharedPage, defaultView);
-    await historyStart.locator(`a[data-dashboard-page="${marketView.ID}"]`).first().click();
-    await sharedFrame(sharedPage, marketView);
+    const sharedHistoryView = orderedViews.at(-1);
+    await historyStart.locator(`a[data-dashboard-page="${sharedHistoryView.ID}"]`).first().click();
+    await sharedFrame(sharedPage, sharedHistoryView);
     await sharedPage.reload({ waitUntil: 'load' });
-    await assertView(await sharedFrame(sharedPage, marketView), marketView, 'offline-share:刷新保留市场页');
+    await assertView(await sharedFrame(sharedPage, sharedHistoryView), sharedHistoryView, 'offline-share:刷新保留新增部门');
     await sharedPage.goBack({ waitUntil: 'load' });
     await assertView(await sharedFrame(sharedPage, defaultView), defaultView, 'offline-share:后退战略页');
     await sharedPage.goForward({ waitUntil: 'load' });
-    await assertView(await sharedFrame(sharedPage, marketView), marketView, 'offline-share:前进市场页');
-    const finalFrame = await sharedFrame(sharedPage, marketView);
+    await assertView(await sharedFrame(sharedPage, sharedHistoryView), sharedHistoryView, 'offline-share:前进新增部门');
+    const finalFrame = await sharedFrame(sharedPage, sharedHistoryView);
     await finalFrame.locator(`a[data-dashboard-page="${defaultView.ID}"]`).first().click();
     await assertView(await sharedFrame(sharedPage, defaultView), defaultView, 'offline-share:内页返回战略');
     assert.equal(await sharedPage.locator('[data-dashboard-frame]').count(), 1);
+    for (const invalid of ['__proto__', 'https://example.invalid/', 'unregistered']) {
+      await sharedPage.goto(shareUrl + '#page=' + encodeURIComponent(invalid), { waitUntil: 'load' });
+      await assertView(await sharedFrame(sharedPage, defaultView), defaultView, 'offline-share:未知部门回退');
+    }
 
     assert.deepEqual(manifest(moduleDir, '.json'), originalModules, '所有模块文件清单与哈希保持不变');
     assert.deepEqual(manifest(path.join(fixedDir, 'CSV数据'), '.csv'), originalCsvs, '切页面不新增或改写CSV');
@@ -388,8 +512,9 @@ async function sharedFrame(page, view) {
     assert.deepEqual(responsesFailed, [], '本地HTTP资源全部正常');
     assert.deepEqual(errors, [], '各页/iframe/切换流程零JS异常');
     console.log(JSON.stringify({ result: 'PASS', modules: originalModules.length,
-      pages: views.map(view => ({ id: view.ID, modules: view.refs.length })),
-      regularModes: ['file', 'http'], offlineSharing: true, companies: 5,
+      pages: views.map(view => ({ id: view.ID, modules: view.refs.length,
+        active: view.activeRefs.length, planned: view.plannedRefs.length, companies: view.companies.length })),
+      regularModes: ['file', 'http'], offlineSharing: true, plannedModules: plannedModules.size,
       browserHistory: true, duplicateIds: 0, pageErrors: errors.length,
       responsive: responsiveResults }));
   } finally {

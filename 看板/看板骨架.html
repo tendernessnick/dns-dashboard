@@ -53,7 +53,7 @@
     <p class="prov-note">按词条追溯来源、统计口径与有效数据日期。点击词条回到对应卡片，点击来源链接查看原文；不同指标的观测期与更新频率可能不同。</p>
     <div class="prov-tools">
       <select id="pfCat" aria-label="筛选板块"><option value="">全部板块</option></select>
-      <select id="pfStatus" aria-label="筛选状态"><option value="">全部状态</option><option>成功</option><option>部分成功</option></select>
+      <select id="pfStatus" aria-label="筛选状态"><option value="">全部状态</option><option>成功</option><option>部分成功</option><option>静态维护</option></select>
       <input id="pfQ" aria-label="搜索数据来源" placeholder="搜索词条、来源或网址…">
       <span class="pcount" id="pfCount"></span>
     </div>
@@ -83,12 +83,13 @@ var root=document.getElementById('dns-dash');
 if(!root)throw new Error('dns-dash root missing');
 var PROV=/*__PROV__*/[];
 var PAGE_INFO=/*__PAGE_INFO__*/{};
-var STATMAP={'成功':['c-ok','已接入'],'部分成功':['c-warn','受限/接入中'],'失败':['c-warn','失败']};
+var STATMAP={'成功':['c-ok','已接入'],'部分成功':['c-warn','受限/接入中'],'失败':['c-warn','失败'],'静态维护':['c-static','静态维护']};
 // 状态点 → 文字chip
 root.querySelectorAll('span.dot.g,span.dot.y').forEach(function(d){
-  var c=document.createElement('span');c.className='chip '+(d.classList.contains('g')?'c-ok':'c-warn');
+  var label=d.getAttribute('data-status-label')||(d.classList.contains('g')?'已接入':'受限/接入中');
+  var c=document.createElement('span');c.className='chip '+(label==='静态维护'?'c-static':(d.classList.contains('g')?'c-ok':'c-warn'));
   if(d.title)c.title=d.title;
-  c.innerHTML='<span class="cdot"></span>'+(d.classList.contains('g')?'已接入':'受限/接入中');
+  var dot=document.createElement('span');dot.className='cdot';c.appendChild(dot);c.appendChild(document.createTextNode(label));
   d.replaceWith(c);
 });
 // 卡片实例与数据P号分离：允许同P多卡/嵌套指标，不制造重复DOM ID。
@@ -201,6 +202,8 @@ function vrfHTML(pid){
   return ' <span class="'+cls+'" title="'+escH((v.x||'')+' · '+v.d)+'">'+txt+' '+escH(v.d)+'</span>';
 }
 function freshHTML(pid){
+  var source=provById(pid);
+  if(source&&source.status==='静态维护')return '<span class="static-review">静态说明 · 待人工核查</span>';
   if(typeof DDATA==='undefined')return '—';
   var d=DDATA[pid];
   if(!d||!d.rows||!d.rows.length){
@@ -273,8 +276,9 @@ document.getElementById('provRows').addEventListener('keydown',function(e){
   var sel=document.getElementById('pfCat');
   Object.keys(cats).forEach(function(c){var o=document.createElement('option');o.textContent=c;sel.appendChild(o)});
   var srcs={};PROV.forEach(function(p){srcs[p.source]=1});
-  var lim=PROV.filter(function(p){return p.status!=='成功'}).length;
-  document.getElementById('provSum').textContent='本页 '+PROV.length+' 条 · '+Object.keys(srcs).length+' 个来源 · '+lim+' 项受限/接入中';
+  var lim=PROV.filter(function(p){return p.status!=='成功'&&p.status!=='静态维护'}).length;
+  var manual=PROV.filter(function(p){return p.status==='静态维护'}).length;
+  document.getElementById('provSum').textContent='本页 '+PROV.length+' 条 · '+Object.keys(srcs).length+' 个来源 · '+lim+' 项受限/接入中'+(manual?' · '+manual+' 项静态维护':'');
   window.__provOK=true;
 })();</script>
 </body>

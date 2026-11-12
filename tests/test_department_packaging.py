@@ -22,7 +22,10 @@ SPEC = importlib.util.spec_from_file_location('department_packaging_under_test',
 pack = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(pack)
 PAGES = [{'ID': 'strategy', '名称': '战略部', '文件': 'index.html'},
-         {'ID': 'marketing', '名称': '市场部', '文件': 'marketing.html'}]
+         {'ID': 'marketing', '名称': '市场部', '文件': 'marketing.html'},
+         {'ID': 'design', '名称': '设计部', '文件': 'design.html'},
+         {'ID': 'product', '名称': '产品部', '文件': 'product.html'},
+         {'ID': 'hr', '名称': '人力资源部', '文件': 'hr.html'}]
 PNG = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=')
 
 
@@ -38,8 +41,8 @@ class PackagingTests(unittest.TestCase):
         for page in PAGES:
             html = ('<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">'
                     '<title>' + page['名称'] + '</title></head><body>'
-                    '<a id="to-strategy" data-dashboard-page="strategy" href="index.html">战略</a>'
-                    '<a id="to-marketing" data-dashboard-page="marketing" href="marketing.html">市场</a>'
+                    + ''.join(f'<a id="to-{target["ID"]}" data-dashboard-page="{target["ID"]}" '
+                              f'href="{target["文件"]}">{target["名称"]}</a>' for target in PAGES) +
                     '<a id="local-anchor" href="#target">本页锚点</a>'
                     '<a id="bad-page" data-dashboard-page="https://example.invalid/" href="https://example.invalid/">未知</a>'
                     '<div id="duplicate-id">' + page['名称'] + '</div><div id="target">目标</div>'
@@ -58,13 +61,13 @@ class PackagingTests(unittest.TestCase):
         self.assertIsNotNone(match)
         return json.loads(match[1]), source
 
-    def test_embeds_two_isolated_documents_and_shared_data_only_once(self):
+    def test_embeds_five_isolated_documents_and_shared_data_only_once(self):
         report = self.build()
         payload, source = self.payload()
         data = base64.b64decode(payload['data']).decode('utf-8')
-        self.assertEqual(report['部门数'], 2)
+        self.assertEqual(report['部门数'], len(PAGES))
         self.assertEqual(report['媒体数'], 1)
-        self.assertEqual([page['id'] for page in payload['pages']], ['strategy', 'marketing'])
+        self.assertEqual([page['id'] for page in payload['pages']], [page['ID'] for page in PAGES])
         self.assertIn('data:image/png;base64,', data)
         self.assertNotIn('媒体/P41/', data)
         self.assertIn('https://example.invalid/amazon.jpg', data)
@@ -79,7 +82,7 @@ class PackagingTests(unittest.TestCase):
     def test_missing_registered_page_preserves_previous_share(self):
         old = self.base / pack.OUTPUT_NAME
         old.write_bytes(b'previous-good-release')
-        (self.base / 'marketing.html').unlink()
+        (self.base / 'hr.html').unlink()
         with self.assertRaises(FileNotFoundError):
             self.build()
         self.assertEqual(old.read_bytes(), b'previous-good-release')
@@ -93,7 +96,7 @@ class PackagingTests(unittest.TestCase):
         self.assertEqual(old.read_bytes(), b'previous-good-release')
 
     def test_page_without_data_script_is_rejected(self):
-        (self.base / 'marketing.html').write_text('<html><body>不完整页面</body></html>', encoding='utf-8')
+        (self.base / 'product.html').write_text('<html><body>不完整页面</body></html>', encoding='utf-8')
         with self.assertRaisesRegex(RuntimeError, 'data.js引用缺失'):
             self.build()
         self.assertFalse((self.base / pack.OUTPUT_NAME).exists())
@@ -128,7 +131,7 @@ class PackagingTests(unittest.TestCase):
     def test_configuration_loader_is_used_for_default_cli_inputs(self):
         with mock.patch.object(pack, '_load_page_registry', return_value=('strategy', PAGES)) as load:
             report = pack.build_bundle(base=self.base)
-        self.assertEqual(report['部门数'], 2)
+        self.assertEqual(report['部门数'], len(PAGES))
         load.assert_called_once_with(self.base)
 
     def test_offline_browser_switch_refresh_history_and_anchors(self):
@@ -143,6 +146,7 @@ class PackagingTests(unittest.TestCase):
 const {chromium}=require(process.argv[2]);
 const assert=require('assert/strict');
 const fs=require('fs'),{fileURLToPath}=require('url');
+const pages=JSON.parse(process.argv[4]);
 (async()=>{
   const browser=await chromium.launch({headless:true,executablePath:process.argv[3]});
   try{
@@ -159,6 +163,13 @@ const fs=require('fs'),{fileURLToPath}=require('url');
       assert.equal(await page.locator('[data-dashboard-frame]').getAttribute('title'),name+' · 数据看板');
     };
     await page.goto(process.argv[1]);await expectName('战略部');
+    for(const target of pages.slice(1)){
+      await frame().locator('#to-'+target.ID).click();
+      await expectName(target.名称);
+      assert.equal(new URL(page.url()).hash,'#page='+target.ID);
+      assert.equal(await page.locator('[data-dashboard-frame]').count(),1);
+    }
+    await frame().locator('#to-strategy').click();await expectName('战略部');
     await frame().locator('#to-marketing').click();await expectName('市场部');
     assert.equal(new URL(page.url()).hash,'#page=marketing');
     await frame().locator('#to-strategy').click();await expectName('战略部');
@@ -173,12 +184,15 @@ const fs=require('fs'),{fileURLToPath}=require('url');
     await page.goto(process.argv[1]+'#page='+encodeURIComponent('https://example.invalid/'));
     await expectName('战略部');
     await page.goto(process.argv[1]+'#page=__proto__');await expectName('战略部');
+    // 新增部门也必须支持直接进入与刷新，不仅能由原市场页路径访问。
+    await page.goto(process.argv[1]+'#page=hr');await expectName('人力资源部');
+    await page.reload();await expectName('人力资源部');
     // HTTP同样走浏览器路由，但所有响应在本地mock，不访问网络。
     await context.route('http://dashboard.test/**',route=>route.fulfill({
       status:200,contentType:'text/html; charset=utf-8',
       body:fs.readFileSync(fileURLToPath(process.argv[1]),'utf8')
     }));
-    await page.goto('http://dashboard.test/offline.html#page=marketing');await expectName('市场部');
+    await page.goto('http://dashboard.test/offline.html#page=product');await expectName('产品部');
     await frame().locator('#to-strategy').click();await expectName('战略部');
     assert.equal(page.url(),'http://dashboard.test/offline.html#page=strategy');
     assert.equal(errors.length,0,JSON.stringify(errors));
@@ -186,7 +200,8 @@ const fs=require('fs'),{fileURLToPath}=require('url');
   }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
 """
-        result = subprocess.run([node, '-e', script, (self.base / pack.OUTPUT_NAME).as_uri(), module, chrome],
+        result = subprocess.run([node, '-e', script, (self.base / pack.OUTPUT_NAME).as_uri(), module, chrome,
+                                 json.dumps(PAGES, ensure_ascii=False)],
                                 capture_output=True, text=True, encoding='utf-8', timeout=55)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn('offline-browser-ok', result.stdout)

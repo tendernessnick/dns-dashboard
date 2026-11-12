@@ -21,6 +21,6 @@
 root.querySelectorAll('[data-news]').forEach(function(el){
   var ul=el.querySelector('ul.feed');
   if(ul&&!ul.querySelector('li')){
-    ul.innerHTML='<li><a class="fi"><i class="dchip">--</i><span>近7天暂无新稿 · 采集器每次运行自动更新</span></a></li>';
+    ul.innerHTML='<li><span class="fi"><i class="dchip">--</i><span>当前无可展示资讯 · 更新与异常状态见数据溯源</span></span></li>';
   }
 });

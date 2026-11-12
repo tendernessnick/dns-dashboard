@@ -1,0 +1,1879 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DNS · 设计部看板</title>
+</head>
+<body>
+<style>
+#dns-dash{
+  --brand:#0065B0;--brand-700:#005A9E;--brand-ink:#063D66;--brand-300:#7FB3D8;--brand-100:#E5F0F8;
+  --n0:#FFFFFF;--n25:#F7F9FA;--n50:#F1F4F6;--n100:#E6EBEF;--n200:#D7DEE4;--n300:#BFC9D1;
+  --n500:#61707C;--n700:#333F49;--n900:#0F1820;
+  --up:#B42318;--upbg:#FBEFED;--down:#0E7A54;--downbg:#EAF5F0;--warn:#B54708;--warnbg:#FFF6E8;
+  --ok:#0B5FA5;
+  --sh0:0 1px 2px rgba(15,24,32,.04);
+  --sh1:0 2px 4px rgba(15,24,32,.05),0 8px 16px -4px rgba(15,24,32,.08);
+  --sh2:0 4px 8px -2px rgba(15,24,32,.08),0 16px 32px -8px rgba(15,24,32,.12);
+  --fn:"Microsoft YaHei","PingFang SC",Arial,sans-serif;
+  --fnnum:"Segoe UI",Arial,"Microsoft YaHei",sans-serif;
+  font-family:var(--fn);color:var(--n700);background:var(--n50);font-size:14px;line-height:1.55;
+}
+:where(#dns-dash) *{box-sizing:border-box;margin:0;padding:0}
+.num{font-family:var(--fnnum);font-variant-numeric:tabular-nums}
+/* ===== 报头 ===== */
+.rule3{height:4px;background:linear-gradient(90deg,#0065B0 0%,#B45309 25%,#0F766E 50%,#6D28D9 75%,#BE123C 100%)}
+.mast{background:var(--n0)}
+.mast-in{max-width:1440px;margin:0 auto;padding:24px 32px 20px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.m-brand{display:flex;align-items:center;gap:14px}
+.mark{width:48px;height:48px;border-radius:11px;background:var(--brand-ink);color:#fff;font:700 14px/1 var(--fnnum);display:flex;align-items:center;justify-content:center;letter-spacing:1px}
+.m-eyebrow{font:600 11px/16px var(--fn);color:var(--n500);letter-spacing:.18em;margin-bottom:4px}
+.mast h1{font:700 26px/32px var(--fn);color:var(--n900);letter-spacing:.02em}
+.m-sub{font:400 12.5px/18px var(--fn);color:var(--n500);margin-top:4px}
+.m-right{display:flex;gap:32px;text-align:right}
+.m-meta .m-k{display:block;font:600 10.5px/16px var(--fn);color:var(--n500);letter-spacing:.1em}
+.m-meta b{font:600 13.5px/20px var(--fnnum);color:var(--n700);font-variant-numeric:tabular-nums}
+.mline{border-top:1px solid var(--n200);border-bottom:3px solid var(--brand-ink)}
+/* ===== 工具条 ===== */
+.toolbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--n200)}
+.toolbar-in{max-width:1440px;margin:0 auto;padding:0 32px;display:flex;align-items:center;height:48px}
+.tlink{position:relative;padding:0 18px;height:48px;display:flex;align-items:center;font:600 13px/1 var(--fn);color:var(--n500);text-decoration:none;letter-spacing:.06em;white-space:nowrap;transition:color .12s}
+.tlink:hover{color:var(--brand)}
+.tlink.on{color:var(--brand)}
+.tlink.on::after{content:"";position:absolute;left:16px;right:16px;bottom:0;height:2.5px;background:var(--brand)}
+.tspace{flex:1}
+.tbtn{font:600 12.5px/1 var(--fn);color:var(--n500);border:1px solid var(--n200);background:var(--n0);border-radius:7px;padding:8px 14px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-left:8px;cursor:pointer;transition:all .12s}
+.tbtn:hover{color:var(--brand);border-color:var(--brand)}
+/* ===== 今日焦点 ===== */
+.ticker{background:var(--n0);border-bottom:1px solid var(--n100)}
+.ticker-in{max-width:1440px;margin:0 auto;padding:12px 32px;display:flex;flex-wrap:wrap;gap:10px 0;align-items:center}
+.tk-eyebrow{font:600 11.5px/16px var(--fn);color:var(--brand);letter-spacing:.14em;padding-right:20px;border-right:1px solid var(--n200);margin-right:4px;align-self:center;white-space:nowrap}
+.tk{flex:1 1 190px;min-width:180px;padding:3px 18px;border-left:1px solid var(--n100)}
+.tk .k{display:block;font:500 11.5px/17px var(--fn);color:var(--n500);white-space:nowrap}
+.tk .v{font:700 19px/26px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tk .v small{font:400 11.5px/1 var(--fn);color:var(--n500);margin-left:2px;font-weight:400}
+.tk .s{display:block;font:400 11px/16px var(--fn);color:var(--n500);white-space:nowrap}
+/* ===== 版块 ===== */
+.d-main{max-width:1440px;margin:0 auto;padding:0 32px 8px}
+.mod{margin-top:44px;scroll-margin-top:76px}
+#m1,#m2,#m3,#m4,#m5{--acc:#0065B0}
+#m2{--acc:#B45309}
+#m3{--acc:#0F766E}
+#m4{--acc:#6D28D9}
+#m5{--acc:#BE123C}
+.sec-head{display:flex;align-items:baseline;gap:16px;padding:0 2px 14px;border-bottom:2px solid var(--acc);margin-bottom:20px}
+.sec-no{font:800 46px/1 var(--fnnum);color:var(--acc);opacity:.22;letter-spacing:2px}
+.sec-head h2{font:800 21px/28px var(--fn);color:var(--n900);letter-spacing:.04em}
+.sec-head p{font:400 12.5px/19px var(--fn);color:var(--n500);margin-top:4px}
+.sec-meta{margin-left:auto;flex:none;font:500 12.5px/19px var(--fn);color:var(--n500)}
+.sec-meta .ok{color:var(--ok)}
+.grp{display:flex;align-items:center;gap:8px;font:700 13px/19px var(--fn);color:var(--n700);margin:26px 2px 12px;letter-spacing:.1em}
+.grp::before{content:"";width:4px;height:14px;background:var(--acc);border-radius:2px}
+/* ===== Bento ===== */
+.row{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-bottom:14px;align-items:stretch}
+.c2{grid-column:span 2}.c3{grid-column:span 3}.c4{grid-column:span 4}.c5{grid-column:span 5}
+.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}.c9{grid-column:span 9}.c12{grid-column:span 12}
+@media (max-width:1100px){
+  #dns-dash .c3,#dns-dash .c4,#dns-dash .c5{grid-column:span 6!important;grid-row:auto!important}
+  #dns-dash .c6,#dns-dash .c7,#dns-dash .c8,#dns-dash .c9{grid-column:span 12!important;grid-row:auto!important}
+  #dns-dash .crow{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+}
+@media (max-width:768px){
+  #dns-dash .row{grid-template-columns:1fr}
+  #dns-dash .row>*{grid-column:auto!important;grid-row:auto!important}
+  #dns-dash .strip{flex-direction:column;align-items:stretch}
+  #dns-dash .sc{border-left:none;border-top:1px solid var(--n100)}
+  #dns-dash .sc:first-child{border-top:none}
+  #dns-dash .mast-in,#dns-dash .ticker-in,#dns-dash .toolbar-in,#dns-dash .d-main,#dns-dash .d-foot{padding-left:18px;padding-right:18px}
+}
+/* ===== 卡片（v14：去顶部色条改全边框，圆角加大，入场浮起） ===== */
+.card{background:var(--n0);border:1px solid var(--n200);border-radius:14px;padding:16px 18px 12px;display:flex;flex-direction:column;min-height:112px;box-shadow:var(--sh0);transition:box-shadow .12s ease-out,transform .12s ease-out,border-color .12s ease-out;animation:v8rise .4s ease-out both}
+.card:hover{border-color:var(--n300);box-shadow:var(--sh1);transform:translateY(-1px)}
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.card-top .t{font:600 14.5px/21px var(--fn);color:var(--n900);letter-spacing:.01em}
+.card-top .t small{font:400 11.5px/1 var(--fnnum);color:var(--n500)}
+.chip{display:inline-flex;align-items:center;gap:5px;height:21px;padding:0 8px;border-radius:5px;font:600 11.5px/1 var(--fn);margin-left:auto;flex:none;white-space:nowrap}
+.chip .cdot{width:6px;height:6px;border-radius:50%}
+.chip.c-ok{color:var(--ok);background:#E9F2F9;border:1px solid #BBD6EA}
+.chip.c-ok .cdot{background:var(--ok)}
+.chip.c-warn{color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4}
+.chip.c-warn .cdot{background:var(--warn)}
+/* 深色焦点卡 */
+.card.tint{background:var(--brand-100);border-color:#C9DFF2}
+/* KPI */
+.kpi .val{font:800 30px/36px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.kpi.lg .val{font-size:34px}
+.kpi .val .vnum{font-variant-numeric:tabular-nums}
+.kpi .val .unit{font-size:.48em;font-weight:400;color:var(--n500);margin-left:4px;font-family:var(--fn)}
+.kpi .sub{font:400 12.5px/19px var(--fn);color:var(--n500);margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.kpi .sub b{font-weight:500}
+/* 涨跌徽章 */
+.dpill{display:inline-flex;align-items:center;gap:2px;padding:2.5px 8px;border-radius:6px;font:700 12px/1 var(--fnnum);font-variant-numeric:tabular-nums}
+.dpill.up{color:var(--up);background:var(--upbg);border:1px solid #EFC4BD}
+.dpill.down{color:var(--down);background:var(--downbg);border:1px solid #BFE0D2}
+.up{color:var(--up)}.down{color:var(--down)}
+.statline{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--n100);font-size:12.5px;color:var(--n500)}
+.statline:last-of-type{border-bottom:none}
+.statline b{font:700 17px/23px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums}
+/* 图表（v14：行情风——趋势涨跌着色/渐变面积/期初基准/最新价chip/描画动画） */
+.chart{position:relative;height:118px;margin-top:10px}
+.chart svg{display:block;width:100%;height:100%}
+.chart text{font-family:var(--fnnum);font-size:11px;fill:var(--n500);font-variant-numeric:tabular-nums}
+.chart .grid{stroke:var(--n100);stroke-width:1}
+.chart .baseline{stroke:var(--n300);stroke-width:1;stroke-dasharray:4,4}
+.chart .baselabel{font-size:10px;fill:var(--n500)}
+.chart .minmax{fill:#fff;stroke-width:1.6}
+.chart .mmlabel{font-size:10.5px;font-weight:700;fill:var(--n700)}
+.chart .chiprect{stroke:none}
+.chart .chiptext{font-weight:700;fill:#fff;font-variant-numeric:tabular-nums}
+.chart .guide{stroke:var(--n300);stroke-width:1;stroke-dasharray:3,3}
+.chart .hdot{fill:#fff;stroke-width:2}
+.chart .hit{fill:transparent}
+.chart .nodata{height:100%;display:flex;align-items:center;justify-content:center;font:400 12px/18px var(--fn);color:var(--n500);background:repeating-linear-gradient(45deg,transparent,transparent 8px,var(--n25) 8px,var(--n25) 16px);border-radius:8px}
+.line-a{stroke-dasharray:1;stroke-dashoffset:1;animation:v8dash .9s ease-out .15s forwards}
+@keyframes v8dash{to{stroke-dashoffset:0}}
+.area-a{opacity:0;animation:v8fade .55s ease-out .7s forwards}
+@keyframes v8fade{to{opacity:1}}
+.chip-a{opacity:0;animation:v8fade .3s ease-out .95s forwards}
+.redraw .line-a{animation:none;stroke-dasharray:none;stroke-dashoffset:0}
+.redraw .area-a,.redraw .chip-a{animation:none;opacity:1}
+@keyframes v8rise{from{opacity:0;transform:translateY(8px)}}
+.ctool{position:absolute;pointer-events:none;background:var(--n900);color:#F2F5F8;border-radius:7px;padding:6px 10px;font:400 12px/18px var(--fn);white-space:nowrap;display:none;z-index:5;box-shadow:var(--sh2)}
+.ctool b{color:#fff;font:700 13.5px/18px var(--fnnum);font-variant-numeric:tabular-nums}
+.ctool .d.up{color:#FFB4A8;font-weight:700}
+.ctool .d.down{color:#7BD9B4;font-weight:700}
+/* 资讯流 */
+.card.list{height:268px}
+.feed{list-style:none;margin:2px 0 8px;flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--n300) transparent;padding-right:2px}
+.feed::-webkit-scrollbar{width:5px}
+.feed::-webkit-scrollbar-thumb{background:var(--n300);border-radius:3px}
+.feed::-webkit-scrollbar-thumb:hover{background:var(--n500)}
+.feed li{margin:0;border-bottom:1px solid var(--n100)}
+.feed li:last-child{border-bottom:none}
+.feed .fi{display:flex;gap:9px;align-items:flex-start;padding:8px 9px;text-decoration:none;color:var(--n700);font-size:13px;line-height:1.5;transition:background .12s}
+.feed .fi:hover{background:var(--n25);color:var(--n900)}
+.feed .fi i{font-style:normal;flex:none;font-size:11px;color:var(--n500);font-family:var(--fnnum);font-variant-numeric:tabular-nums;padding-top:2px;min-width:36px}
+.feed .fi span{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.feed .fi::after{content:"↗";flex:none;font-size:11px;color:var(--brand);opacity:0;transition:opacity .12s;align-self:center}
+.feed .fi:hover::after{opacity:1}
+/* 图文拆解卡（v18：P91我爱音频网，渲染器70_review.js；紧凑档≈88px/张，同屏2张超出滚动） */
+.revcards{flex:1;min-height:0;margin:2px 0 8px;display:flex;flex-direction:column;gap:7px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--n300) transparent;padding-right:2px}
+.revcards::-webkit-scrollbar{width:5px}
+.revcards::-webkit-scrollbar-thumb{background:var(--n300);border-radius:3px}
+.revcards::-webkit-scrollbar-thumb:hover{background:var(--n500)}
+.revcard{flex:none;display:flex;gap:10px;padding:8px 10px;background:var(--n25);border:1px solid var(--n100);border-radius:9px;text-decoration:none;color:inherit;height:88px;overflow:hidden;transition:border-color .12s,box-shadow .12s}
+.revcard:hover{border-color:var(--brand-300);box-shadow:var(--sh1)}
+.rthumb{width:74px;height:70px;object-fit:cover;border-radius:6px;flex:none;background:var(--n100)}
+.rnoimg{display:flex;align-items:center;justify-content:center;font:700 10px/1 var(--fnnum);color:var(--n300);letter-spacing:.04em}
+.rinfo{flex:1;min-width:0;display:flex;flex-direction:column}
+.rl1{display:flex;align-items:center;gap:6px;min-width:0}
+.rname{font:700 12.5px/17px var(--fn);color:var(--n900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rtag{flex:none;font:600 9.5px/1 var(--fn);color:var(--brand);background:var(--brand-100);border-radius:999px;padding:2px 6px;white-space:nowrap}
+.rdate{margin-left:auto;flex:none;font:400 10px/1 var(--fnnum);color:var(--n500);font-variant-numeric:tabular-nums}
+.rchips{display:flex;gap:4px;margin-top:4px;overflow:hidden;white-space:nowrap}
+.rchip{flex:none;font:600 10px/16px var(--fn);color:var(--brand);background:var(--brand-100);border-radius:4px;padding:0 6px}
+.rchip.hot{background:var(--brand);color:#fff}
+.rdesc{margin-top:4px;font:400 11px/1.5 var(--fn);color:var(--n500);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rev-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--n500);font-size:12.5px;border:1px dashed var(--n200);border-radius:9px;margin:2px 0 8px}
+/* 时间线 */
+.tl-list{list-style:none;flex:1;margin:2px 0 8px;border-left:2px solid var(--n200);padding-left:14px}
+.tl-list li{position:relative;padding:4px 0 4px 4px;font-size:13px;color:var(--n700)}
+.tl-list li::before{content:"";position:absolute;left:-19px;top:11px;width:7px;height:7px;border-radius:50%;background:var(--n0);border:2px solid var(--n300)}
+.tl-list li.next::before{border-color:var(--acc);background:#fff}
+.tl-list b{font:700 13px/19px var(--fnnum);color:var(--n900);margin-right:6px;font-variant-numeric:tabular-nums}
+.hlines{display:flex;flex:1;align-items:stretch;margin:4px 0 6px}
+.hln{flex:1;position:relative;padding:8px 18px 4px;border-left:1px solid var(--n200)}
+.hln::before{content:"";position:absolute;left:-4.5px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--n0);border:2px solid var(--n300)}
+.hln.next::before{border-color:var(--acc);background:var(--brand-100)}
+.hln .hd{font:800 18px/26px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums}
+.hln.next .hd{color:var(--acc)}
+.hln .hn{font:500 13px/19px var(--fn);color:var(--n700);margin-top:1px}
+.hln .hs{font:400 11.5px/17px var(--fn);color:var(--n500)}
+.hln .warn-tag{display:inline-block;margin-top:4px;font:500 11px/17px var(--fn);color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4;border-radius:5px;padding:0 7px}
+/* 横向指标条 */
+.card.strip{flex-direction:row;align-items:stretch;padding:15px 12px}
+.sc{flex:1;padding:4px 18px;border-left:1px solid var(--n100);display:flex;flex-direction:column;justify-content:center;min-width:0}
+.sc:first-child{border-left:none}
+.sc .k{font:500 11.5px/17px var(--fn);color:var(--n500);white-space:nowrap}
+.sc .v{font:700 21px/30px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap}
+.sc .v small{font:400 11.5px/1 var(--fn);color:var(--n500);margin-left:2px}
+.sc .s{font:400 11px/16px var(--fn);color:var(--n500);white-space:nowrap}
+.sc.hi .v{color:var(--brand)}
+.sc .v .dot,.sc .k .dot{display:inline-block;margin:0 0 2px 5px;vertical-align:middle}
+/* 环形图（v14：品牌蓝定妆 + 圆弧生长动画） */
+.ringwrap{display:flex;align-items:center;gap:14px;flex:1;margin:2px 0 6px}
+.ring{position:relative;width:78px;height:78px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .rb{fill:none;stroke:var(--n100);stroke-width:8}
+.ring .rf{fill:none;stroke:var(--brand);stroke-width:8;stroke-linecap:round;transition:stroke-dasharray 1s cubic-bezier(.22,.8,.36,1) .25s}
+.ring .rt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 15.5px/1 var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums}
+.ringinfo .rv{font:600 14.5px/21px var(--fn);color:var(--n900)}
+.ringinfo .rs{font:400 12px/18px var(--fn);color:var(--n500);margin-top:2px}
+/* 条形图 */
+.bar{display:flex;align-items:center;gap:9px;margin:8px 0;font-size:12.5px}
+.bar .bl{width:56px;color:var(--n500);flex:none;text-align:right;white-space:nowrap}
+.bar .bt{flex:1;height:11px;background:var(--n100);border-radius:6px;overflow:hidden}
+.bar .bf{height:100%;background:var(--acc,var(--brand));border-radius:6px;opacity:.85}
+.bar .bv{width:44px;font:700 12.5px/1 var(--fnnum);color:var(--n900);flex:none;font-variant-numeric:tabular-nums}
+/* 表格 */
+.mini{width:100%;border-collapse:collapse;font-size:13px;margin:2px 0 6px}
+.mini th{font:600 12px/18px var(--fn);color:var(--n500);text-align:left;padding:5px 6px;border-bottom:1px solid var(--n200);background:var(--n25)}
+.mini td{padding:6px;border-bottom:1px solid var(--n100);color:var(--n700)}
+.mini tr:last-child td{border-bottom:none}
+.mini .r{text-align:right;font-family:var(--fnnum);font-variant-numeric:tabular-nums}
+/* 链接/说明 */
+.desc{font-size:13px;color:var(--n500);margin:2px 0 10px;flex:1}
+.btn-ext{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border:1px solid var(--acc,var(--brand));color:var(--acc,var(--brand));border-radius:7px;text-decoration:none;font:500 12.5px/1 var(--fn);align-self:flex-start;margin-bottom:4px;transition:background .12s}
+.btn-ext:hover{background:var(--acc,var(--brand));color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 8px}
+.chips a{padding:7px 13px;border:1px solid var(--n200);border-radius:7px;font-size:12.5px;color:var(--n700);text-decoration:none}
+.chips a:hover{border-color:var(--acc,var(--brand));color:var(--acc,var(--brand))}
+/* 底注 */
+.foot{margin-top:auto;padding-top:9px;border-top:1px solid var(--n100);display:flex;justify-content:space-between;align-items:center;gap:8px;font:400 11.5px/17px var(--fn);color:var(--n500)}
+.foot a{color:var(--n500);text-decoration:none}
+.foot a:hover{color:var(--brand)}
+.srcline{display:inline-flex;align-items:center;gap:5px;min-width:0}
+.src-name{cursor:default}
+.src-ref{font:500 10.5px/1 var(--fnnum);color:var(--n500);background:var(--n25);border:1px solid var(--n200);border-radius:4px;padding:1.5px 5px;cursor:pointer;font-variant-numeric:tabular-nums}
+.src-ref:hover{color:var(--brand);border-color:var(--brand);background:var(--brand-100)}
+.src-link{font-size:11.5px;text-decoration:none}
+.src-link:hover{color:var(--brand)}
+/* 公司卡墙 */
+.crow{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:14px;margin-bottom:14px}
+.cco{background:var(--n0);border:1px solid var(--n200);border-top:3px solid var(--acc);border-radius:12px;padding:14px 16px 12px;display:flex;flex-direction:column;box-shadow:var(--sh0);transition:box-shadow .12s,transform .12s,border-color .12s}
+.cco:hover{border-color:var(--n300);box-shadow:var(--sh1);transform:translateY(-1px)}
+.cco .chead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.mono{width:36px;height:36px;border-radius:9px;background:var(--brand-100);color:var(--brand);font:700 13px/1 var(--fn);display:flex;align-items:center;justify-content:center;flex:none}
+.cco .cn{font:600 14px/20px var(--fn);color:var(--n900)}
+.cco .cs{font:400 11.5px/16px var(--fnnum);color:var(--n500)}
+.cco .cd{font-size:12px;color:var(--n500);flex:1;margin-bottom:8px}
+/* ===== 溯源附录 ===== */
+.prov-app{max-width:1440px;margin:44px auto 0;padding:0 32px}
+.prov-toggle{width:100%;display:flex;align-items:center;gap:10px;background:var(--n0);border:1px solid var(--n200);border-left:4px solid var(--brand);border-radius:12px;padding:16px 20px;font:600 14.5px/20px var(--fn);color:var(--n900);cursor:pointer;box-shadow:var(--sh0)}
+.prov-toggle:hover{border-color:var(--n300)}
+.prov-toggle .sum{font:400 12.5px/19px var(--fn);color:var(--n500);margin-left:auto}
+.prov-toggle .chev{font-size:11px;color:var(--n500);transition:transform .15s}
+.prov-app[data-open="true"] .chev{transform:rotate(180deg)}
+.prov-body{display:none;border:1px solid var(--n200);border-top:none;border-radius:0 0 12px 12px;background:var(--n0);padding:16px 20px 20px}
+.prov-app[data-open="true"] .prov-body{display:block}
+.prov-app[data-open="true"] .prov-toggle{border-radius:12px 12px 0 0}
+.prov-note{font:400 12px/18px var(--fn);color:var(--n500);margin-bottom:12px}
+.prov-tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.prov-tools select,.prov-tools input{height:32px;border:1px solid var(--n200);border-radius:6px;background:var(--n0);font:400 12.5px/1 var(--fn);color:var(--n700);padding:0 10px;outline:none}
+.prov-tools select:focus,.prov-tools input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,101,176,.14)}
+.prov-tools input{flex:1;min-width:160px}
+.pcount{font:400 12.5px/32px var(--fn);color:var(--n500);margin-left:auto}
+.ptable{width:100%;border-collapse:collapse;font-size:12.5px}
+.ptable th{font:600 12px/18px var(--fn);color:var(--n500);text-align:left;padding:8px 10px;background:var(--n25);border-bottom:1px solid var(--n200);white-space:nowrap}
+.ptable td{padding:8px 10px;border-bottom:1px solid var(--n100);color:var(--n700);vertical-align:top}
+.ptable tbody tr:hover{background:var(--n25)}
+.ptable tbody tr.flash{animation:pflash 1.8s ease-out}
+@keyframes pflash{0%{background:#FDE68A}100%{background:transparent}}
+.ptable .pnum{font-family:var(--fnnum);font-variant-numeric:tabular-nums;color:var(--n500);white-space:nowrap}
+.ptable .ptitle{font-weight:600;color:var(--n900);cursor:pointer}
+.ptable .ptitle:hover{color:var(--brand);text-decoration:underline}
+.ptable td a{color:var(--brand);text-decoration:none;word-break:break-all}
+.ptable td a:hover{text-decoration:underline}
+.pchip{display:inline-flex;align-items:center;gap:5px;height:21px;padding:0 8px;border-radius:5px;font:600 11.5px/1 var(--fn);white-space:nowrap}
+.pchip.c-ok{color:var(--ok);background:#E9F2F9;border:1px solid #BBD6EA}
+.pchip.c-warn{color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4}
+/* ===== 页脚 ===== */
+.d-foot{max-width:1440px;margin:36px auto 0;padding:18px 32px 30px;border-top:1px solid var(--n200);font-size:12px;color:var(--n500);display:flex;flex-wrap:wrap;gap:8px 26px;line-height:1.7}
+.d-foot .lg{display:flex;align-items:center;gap:6px}
+.d-foot b{color:var(--n700)}
+#toTop{position:fixed;right:24px;bottom:28px;width:40px;height:40px;border-radius:9px;border:1px solid var(--n200);background:var(--n0);color:var(--n500);font-size:15px;cursor:pointer;box-shadow:var(--sh2);display:none;z-index:60}
+#toTop:hover{color:var(--brand);border-color:var(--brand)}
+/* 溯源tooltip */
+.prov-tip{position:fixed;z-index:99;max-width:340px;background:var(--n900);color:#EDF1F5;border-radius:8px;padding:12px 14px;font:400 12.5px/19px var(--fn);box-shadow:var(--sh2);display:none;pointer-events:auto}
+.prov-tip .pt-t{font:600 13.5px/20px var(--fn);color:#fff;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.15)}
+.prov-tip .pt-row{display:flex;gap:8px;margin:3px 0}
+.prov-tip .pt-k{flex:none;width:52px;color:rgba(255,255,255,.55)}
+.prov-tip .pt-v{flex:1;min-width:0;word-break:break-all}
+.prov-tip .pt-v a{color:#8FC4EA;text-decoration:none}
+.prov-tip .pt-v a:hover{text-decoration:underline}
+@media (prefers-reduced-motion: reduce){#dns-dash *{transition:none!important;animation:none!important}}
+@media print{
+  #dns-dash .toolbar{position:static}
+  #dns-dash .prov-app .prov-body{display:block!important}
+  #dns-dash .prov-toggle{display:none}
+  #dns-dash .prov-app{page-break-before:always}
+  #dns-dash .card,#dns-dash .cco{box-shadow:none}
+}
+
+/* ===== v8 增补：图表小标题 / 多SKU列表 / 份额分组柱图 ===== */
+.chart-cap{font:600 10.5px/14px var(--fn);color:var(--n500);margin:6px 0 0;letter-spacing:.04em}
+.card ul.multi{list-style:none;margin:6px 0 0;flex:1;overflow:auto}
+.card ul.multi li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0;border-bottom:1px dashed var(--n100);font-size:12.5px;color:var(--n700)}
+.card ul.multi li:last-child{border-bottom:none}
+.card ul.multi li .mu{color:var(--n500);font-size:11px;margin-left:auto}
+.card ul.multi li b{font-family:var(--fnnum);font-variant-numeric:tabular-nums;font-weight:700;color:var(--n900)}
+.sharechart{flex:1;min-height:170px;position:relative}
+.sharechart svg{width:100%;height:100%;display:block}
+.sharechart .leg{font:600 10.5px/14px var(--fn);fill:var(--n700)}
+.sharechart .xt{font:500 10px/12px var(--fnnum);fill:var(--n500)}
+.sharechart .yt{font:500 9.5px/12px var(--fnnum);fill:var(--n500)}
+
+/* ===== v9 增补：公司切换tabs / 面板 ===== */
+.co-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.cotab{font:600 13px/1 var(--fn);color:var(--n700);background:var(--n0);border:1px solid var(--n200);border-radius:8px;padding:9px 16px;cursor:pointer;transition:all .12s}
+.cotab small{font:500 11px/1 var(--fnnum);color:var(--n500);margin-left:4px}
+.cotab:hover{border-color:var(--brand);color:var(--brand)}
+.cotab.on{background:var(--brand-ink);border-color:var(--brand-ink);color:#fff}
+.cotab.on small{color:rgba(255,255,255,.7)}
+.co-panel[hidden]{display:none}
+
+/* ===== v10 增补：全局周期选择器（折线图显示窗口） ===== */
+.pctl{display:inline-flex;align-items:center;gap:3px;margin:0 10px 0 0;padding-right:14px;border-right:1px solid var(--n200)}
+.pctl i{font:600 10.5px/1 var(--fn);color:var(--n500);font-style:normal;letter-spacing:.14em;margin-right:4px}
+.pctl b{font:600 12px/1 var(--fn);color:var(--n500);border:1px solid transparent;border-radius:6px;padding:6px 9px;cursor:pointer;transition:all .12s;white-space:nowrap}
+.pctl b:hover{color:var(--brand)}
+.pctl b.on{color:var(--brand);background:var(--brand-100);border-color:#BBD6EA}
+@media (max-width:1200px){#dns-dash .pctl i{display:none}}
+
+/* ===== v11 增补：榜单商品缩略图（统一尺寸） ===== */
+.feed .fi .lthumb{width:42px;height:42px;object-fit:contain;border:1px solid var(--n100);border-radius:7px;background:#fff;flex:none;align-self:center}
+
+/* ===== v12治理增补：可靠度角标 / 快报徽标 / 待补录标注 ===== */
+.rlbadge{margin-left:6px;flex:none;font:800 10.5px/1 var(--fnnum);padding:3px 6px;border-radius:5px;letter-spacing:.5px;cursor:help}
+.rlbadge.a{color:#0E7A54;background:var(--downbg);border:1px solid #BFE0D2}
+.rlbadge.b{color:#B54708;background:var(--warnbg);border:1px solid #F3D9A4}
+.rlbadge.c{color:#B42318;background:var(--upbg);border:1px solid #EFC4BD}
+.kbflag{margin-left:6px;flex:none;font:600 10.5px/1 var(--fn);color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4;border-radius:5px;padding:3px 6px;cursor:help}
+.card-top .warn-tag{margin-left:6px}
+.ptable .rlbadge{margin-left:0;margin-right:6px}
+
+/* ===== v14 视觉迭代增补（2026-10-29，视觉方向见 样板v8/） ===== */
+/* 迷你走势（KPI卡无图表组时由 17_spark.js 自动注入） */
+.sparkrow{display:flex;align-items:flex-end;margin-top:auto;padding-top:6px}
+.spark{width:100%;height:38px}
+.spark svg{display:block;width:100%;height:100%}
+/* 行情条：较前值chip（35_bind.js 注入 .sc .v 尾部） */
+.sc .v{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;white-space:normal}
+.sc .chg{display:inline-flex;align-items:center;font:700 11px/1 var(--fnnum);font-variant-numeric:tabular-nums;padding:2.5px 6px;border-radius:5px}
+.sc .chg.up{color:var(--up);background:var(--upbg)}
+.sc .chg.down{color:var(--down);background:var(--downbg)}
+/* 资讯/公告日期chip（05_news.js 输出 i.dchip） */
+.feed .fi{align-items:center;border-radius:8px}
+.feed .fi i{font:600 10.5px/1 var(--fnnum);color:var(--n500);background:var(--n50);border:1px solid var(--n100);border-radius:5px;padding:3px 6px;min-width:0;text-align:center}
+/* 榜单名次徽章 / 价格chip / Anker高亮（60_toplist.js） */
+.feed .fi .rk{flex:none;width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;font:700 11px/1 var(--fnnum);background:var(--n100);color:var(--n500);font-style:normal}
+.feed .fi .rk.r1{background:#FCF0D4;color:#92610A}
+.feed .fi .rk.r2{background:#EDF1F5;color:#5A6B7A}
+.feed .fi .rk.r3{background:#F9E9DB;color:#A05A2C}
+.feed .fi .ptag{flex:none;font:700 11.5px/1 var(--fnnum);color:var(--n900);background:var(--n50);border:1px solid var(--n100);border-radius:6px;padding:3px 7px;font-variant-numeric:tabular-nums;font-style:normal}
+.feed .fi .ankertag{flex:none;font:700 10px/1 var(--fn);color:#fff;background:var(--brand);border-radius:4px;padding:3px 5px;letter-spacing:.03em;font-style:normal}
+/* 洞察条卡型（insight）预留样式：卡型与JSON字段尚未在规范登记，启用前先登记 */
+.card.insight{flex-direction:row;gap:12px;align-items:flex-start;border-left:4px solid var(--brand);padding:14px 18px}
+.card.insight .ic{flex:none;color:var(--brand);font-size:15px;line-height:22px}
+.card.insight p{font-size:13.5px;line-height:1.75;color:var(--n700);flex:1}
+.card.insight p b{color:var(--n900)}
+.card.insight p b.up{color:var(--up)}
+.card.insight p b.down{color:var(--down)}
+/* v14补：滚动feed底部渐隐（62_feedfade.js 控制开关） */
+.feed.faded{-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 24px),rgba(0,0,0,0));mask-image:linear-gradient(180deg,#000 calc(100% - 24px),rgba(0,0,0,0))}
+
+/* ===== v15 移动端适配增补（2026-10-30） =====
+   断点体系：≥1100 桌面12列（不动）｜768-1100 平板（1100px既有折行规则）｜
+   <960 工具条两行（行1=板块导航横滚，行2=周期选择器+溯源按钮，功能回归）｜<768 手机层（单列/组件重排）
+   桌面端（>960）渲染路径零改动：本段所有规则均包在 max-width 媒体查询内。 */
+/* #dnav 基础布局（自骨架内联样式迁入，桌面渲染等价，便于移动端覆盖） */
+#dnav{display:flex;height:100%}
+/* .tb2 基础=contents：pctl/tbtn 桌面上仍是 toolbar-in 的直接flex项（渲染等价），
+   <960 时转为第二行横滚条 */
+#dns-dash .tb2{display:contents}
+/* 图表触控：图上竖扫=滚页面，横扫=刷数值（配合 15_chart.js 的抬手收尾） */
+.chart .hit{touch-action:pan-y}
+/* --- <960：工具条两行，周期选择器回归（v10的display:none规则已移除） --- */
+@media (max-width:960px){
+  #dns-dash .toolbar-in{flex-wrap:wrap;height:auto;padding:0 14px;row-gap:2px}
+  #dns-dash #dnav{flex:1 1 100%;height:42px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  #dns-dash #dnav::-webkit-scrollbar{display:none}
+  #dns-dash .tlink{height:42px;padding:0 13px}
+  #dns-dash .tlink.on::after{left:13px;right:13px}
+  #dns-dash .tspace{display:none}
+  #dns-dash .tb2{flex:1 1 100%;display:flex;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 -14px;padding:0 14px}
+  #dns-dash .tb2::-webkit-scrollbar{display:none}
+  #dns-dash .pctl{display:inline-flex;margin:3px 0 6px;border-right:none;padding-right:0;flex:none}
+  #dns-dash .pctl i{display:inline}
+  #dns-dash .pctl b{padding:8px 10px}
+  #dns-dash .tbtn{margin:3px 0 6px;padding:9px 14px;flex:none}
+  #dns-dash .mod{scroll-margin-top:106px}
+}
+/* --- <768：手机层 --- */
+@media (max-width:768px){
+  #dns-dash{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  /* 报头紧凑化 */
+  #dns-dash .mast-in{padding:16px 18px 12px;gap:12px}
+  #dns-dash .m-brand{gap:10px}
+  #dns-dash .mark{width:40px;height:40px;border-radius:9px;font-size:12px}
+  #dns-dash .mast h1{font-size:20px;line-height:26px}
+  #dns-dash .m-sub{margin-top:2px}
+  #dns-dash .m-right{gap:18px;text-align:left}
+  /* 今日焦点：两列网格（.ticker-in子元素顺序：1=眉标，2-7=六项焦点） */
+  #dns-dash .ticker-in{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;padding:10px 18px 12px}
+  #dns-dash .tk-eyebrow{grid-column:1/-1;border-right:none;padding:0 0 4px;margin:0;border-bottom:1px solid var(--n100)}
+  #dns-dash .tk{border-left:none;padding:2px 0 0;min-width:0}
+  #dns-dash .tk:nth-child(n+4){border-top:1px solid var(--n100);padding-top:8px}
+  /* 板块头 */
+  #dns-dash .mod{margin-top:32px}
+  #dns-dash .sec-head{flex-wrap:wrap;gap:10px}
+  #dns-dash .sec-no{font-size:34px}
+  #dns-dash .sec-meta{margin-left:0;flex-basis:100%}
+  /* 卡片紧凑 + 图表加高（渲染器按clientHeight取尺寸，改CSS即生效） */
+  #dns-dash .card{padding:14px 14px 10px;border-radius:12px}
+  #dns-dash .chart{height:130px}
+  /* 展会横排：一行三节点 → 两列（时间线语义保留） */
+  #dns-dash .hlines{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+  #dns-dash .hln{padding:10px 2px 8px 12px;border-left-width:2px}
+  #dns-dash .hln:nth-child(n+3){border-top:1px solid var(--n100)}
+  #dns-dash .hln::before{left:-3px}
+  /* multi容器卡（如P58存储芯片五品类）：.sc横排min-content≈800px会撑破单列网格 → 折成两列 */
+  #dns-dash .card div[data-multi]{display:grid!important;grid-template-columns:1fr 1fr;gap:0 14px;margin:2px 0 4px}
+  #dns-dash .card div[data-multi] .sc{padding:8px 2px 6px;border-left:none}
+  #dns-dash .card div[data-multi] .sc:nth-child(n+3){border-top:1px solid var(--n100)}
+  /* 溯源附录：表格横滚、控件16px防iOS聚焦缩放 */
+  #dns-dash .prov-app{margin-top:32px;padding:0 18px}
+  #dns-dash .twrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #dns-dash .ptable{min-width:660px}
+  #dns-dash .prov-tools select,#dns-dash .prov-tools input{font-size:16px}
+  #dns-dash .prov-tip{max-width:min(340px,calc(100vw - 28px))}
+  /* 资讯/榜单行：悬停箭头触屏无意义且始终占位（挤占2px级空间），手机上移除 */
+  #dns-dash .feed .fi::after{display:none}
+  /* 回顶按钮贴边收紧 + 底部安全区 */
+  #dns-dash #toTop{right:14px;bottom:calc(18px + env(safe-area-inset-bottom))}
+}
+
+/* ===== v16 视觉精修层（2026-11-01）：设计令牌/卡片分层/英雄ticker/图表细节/入场动效/空态 ===== */
+/* A. 设计令牌：间距刻度 + 字号阶梯 + 三级elevation */
+#dns-dash{
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s6:24px;--s8:32px;
+  --fs-xs:11px;--fs-sm:12px;--fs-md:13px;--fs-base:14px;--fs-lg:17px;--fs-xl:21px;--fs-2xl:28px;--fs-3xl:34px;
+  --el-rest:0 1px 2px rgba(15,24,32,.05),0 1px 3px rgba(15,24,32,.04);
+  --el-hover:0 2px 4px rgba(15,24,32,.06),0 12px 24px -8px rgba(15,24,32,.14);
+  --el-pop:0 6px 12px -4px rgba(15,24,32,.12),0 20px 40px -12px rgba(15,24,32,.20);
+}
+#dns-dash .mod{margin-top:48px}
+#dns-dash .grp{margin:24px 2px 12px}
+#dns-dash .row,#dns-dash .crow{gap:16px}
+/* B. 卡片分层质感：更轻边框 + el-rest→el-hover 抬升150ms；foot统一 */
+#dns-dash .card{border-color:#E4EAEF;box-shadow:var(--el-rest);padding:16px 18px 14px}
+#dns-dash .card:hover{box-shadow:var(--el-hover);transform:translateY(-2px);border-color:#C9D5DF}
+#dns-dash .cco{border-color:#E4EAEF;box-shadow:var(--el-rest)}
+#dns-dash .cco:hover{box-shadow:var(--el-hover);transform:translateY(-2px)}
+#dns-dash .foot{border-top:1px solid #EEF2F6;padding-top:10px}
+/* C. 今日焦点 → 英雄摘要条 */
+#dns-dash .ticker{background:linear-gradient(90deg,#F4F9FE 0,#FFFFFF 240px)}
+#dns-dash .ticker-in{position:relative;padding-left:24px;min-height:66px}
+#dns-dash .ticker-in::before{content:"";position:absolute;left:10px;top:12px;bottom:12px;width:4px;border-radius:2px;background:linear-gradient(180deg,var(--brand),var(--brand-300))}
+#dns-dash .tk-eyebrow{font:700 11px/16px var(--fn);color:var(--brand);letter-spacing:.16em;align-self:flex-start;padding:6px 0}
+#dns-dash .tk .v{font-weight:800;font-size:20px}
+#dns-dash .tk .k{font-weight:600}
+#dns-dash .tk .s{color:#8895A2}
+/* D. 图表细节 */
+#dns-dash .chart .grid{stroke:#EDF1F5}
+#dns-dash .chart .baseline{stroke:#C9D4DD}
+#dns-dash .ctool{border-radius:8px;box-shadow:var(--el-pop);padding:7px 11px}
+/* F. 空态精修：符号 + 两行层次 */
+#dns-dash .chart .nodata{flex-direction:column;gap:6px;padding:18px;text-align:center}
+#dns-dash .chart .nodata::before{content:"◌";font:400 24px/1 var(--fnnum);color:var(--n300)}
+/* E. 滚动入场：js-anim 由 65_nav 在(非REDUCE且支持IO)时添加；无JS/REDUCE永不隐藏 */
+#dns-dash.js-anim .card,#dns-dash.js-anim .cco{animation:none}
+#dns-dash.js-anim .card:not(.in),#dns-dash.js-anim .cco:not(.in){opacity:0}
+#dns-dash.js-anim .card.in,#dns-dash.js-anim .cco.in{animation:v8rise .4s ease-out both}
+@media (max-width:660px){
+  #dns-dash .ticker-in{padding-left:16px}
+  #dns-dash .ticker-in::before{left:4px}
+}
+
+/* v17 词条新鲜度：附录「最近数据」列 */
+.ptable .pfresh{white-space:nowrap;font-family:var(--fnnum);font-variant-numeric:tabular-nums;font-size:12px}
+.ptable .ovd{margin-left:4px;padding:1px 5px;border-radius:4px;font:700 10.5px/16px var(--fn);color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4}
+
+/* v19 附录「最近核验」徽标：对照通过(ok)/偏差或取数失败(warn)/区间或突变存疑(sus) */
+.ptable .vrf{margin-left:4px;padding:1px 5px;border-radius:4px;font:700 10.5px/16px var(--fn);white-space:nowrap}
+.ptable .vrf.ok{color:var(--ok);background:#E9F2F9;border:1px solid #BBD6EA}
+.ptable .vrf.warn{color:var(--warn);background:var(--warnbg);border:1px solid #F3D9A4}
+.ptable .vrf.sus{color:#BE123C;background:#FBE9EB;border:1px solid #F2C6CE}
+
+/* ==== P41/P42 全宽放大（2026-11-10 用户反馈）：仅作用于这两张 review 卡，不影响其他图文卡 ==== */
+[data-review="41"].revcards,[data-review="42"].revcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-content:start;overflow-y:auto}
+[data-review="41"] .revcard,[data-review="42"] .revcard{height:150px;padding:14px 16px;gap:14px;border-radius:11px}
+[data-review="41"] .rthumb,[data-review="42"] .rthumb{width:132px;height:122px;border-radius:8px}
+[data-review="41"] .rname,[data-review="42"] .rname{font-size:15px;line-height:22px}
+[data-review="41"] .rtag,[data-review="42"] .rtag{font-size:11px;padding:3px 8px}
+[data-review="41"] .rdate,[data-review="42"] .rdate{font-size:11.5px}
+[data-review="41"] .rchips,[data-review="42"] .rchips{margin-top:8px;gap:6px}
+[data-review="41"] .rchip,[data-review="42"] .rchip{font-size:11.5px;line-height:22px;padding:0 9px;border-radius:5px}
+[data-review="41"] .rdesc,[data-review="42"] .rdesc{margin-top:7px;font-size:12.5px;line-height:1.65;-webkit-line-clamp:3}
+
+/* ==== P56 双环对比（2026-11-10用户反馈）：第二环琥珀色，仅review外卡型ring卡双环布局 ==== */
+.rings2{display:flex;gap:16px;flex:none}
+.ringu{display:flex;flex-direction:column;align-items:center;gap:5px}
+.ringu .rc{font:600 10px/13px var(--fn);color:var(--n500);white-space:nowrap}
+.ring .rf.ralt{stroke:var(--warn)}
+
+/* ==== v19.1 spark悬停查值：导引线/悬浮点/提示框（.spark需相对定位承载绝对定位元素） ==== */
+.spark{position:relative;cursor:crosshair}
+.spark .sguide{position:absolute;top:0;bottom:0;width:1px;background:var(--n300);pointer-events:none;display:none}
+.spark .sdot{position:absolute;width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid var(--brand);transform:translate(-50%,-50%);pointer-events:none;display:none;z-index:2}
+.spark .ctool{z-index:6}
+
+/* ==== P81/P83 全宽放大（2026-11-10用户反馈）：公告列表条目与招聘监测说明/按钮适度放大 ==== */
+[data-mid^="81_"] .feed .fi{font-size:13px;line-height:19px}
+[data-mid^="81_"] .feed .fi .fd{font-size:11px}
+[data-mid^="83_"]{justify-content:center}
+[data-mid^="83_"] .desc{margin:0;font-size:14px;line-height:25px;color:var(--n700);display:flex;align-items:center}
+[data-mid^="83_"] .btn-ext{font-size:13.5px;padding:10px 22px}
+
+/* ===== v21 · 浅色研究工作台（2026-11-11） =====
+   最终视觉层：浅中性色建立层级，蓝色仅用于重点/交互；保留涨跌和异常语义。
+   网格、数字对齐、可读时点形成精细感；不使用连续装饰动画或外部字体资源。 */
+html{scroll-padding-top:88px}
+body{margin:0;background:#F4F6FA}
+#dns-dash{
+  --brand:#285FAF;--brand-700:#204F94;--brand-ink:#1C416B;--brand-300:#9DBBDF;--brand-100:#EDF3FC;
+  --n0:#FFF;--n25:#F8FAFD;--n50:#F4F6FA;--n100:#EBEFF5;--n200:#DAE2EC;--n300:#B8C5D5;
+  --n500:#627287;--n700:#36465B;--n900:#172B43;
+  --up:#B83B32;--upbg:#FDF2F0;--down:#207C60;--downbg:#EEF7F3;--warn:#9A671A;--warnbg:#FCF6EA;
+  --ok:#426C9D;
+  --section-accent:#527DA6;
+  --sh0:0 1px 2px rgba(25,46,76,.025);--sh1:0 3px 12px rgba(25,46,76,.06);--sh2:0 8px 28px rgba(25,46,76,.13);
+  --el-rest:var(--sh0);--el-hover:var(--sh1);--el-pop:var(--sh2);
+  --fn:"Microsoft YaHei UI","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+  --fnnum:"Bahnschrift","Segoe UI",Arial,"Microsoft YaHei",sans-serif;
+  font-size:14px;line-height:1.6;overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+#dns-dash :where(a,button,input,select){-webkit-tap-highlight-color:transparent}
+#dns-dash :where(a,button,input,select):focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+#dns-dash .rule3{height:3px;background:var(--brand)}
+#dns-dash .mast{background:#FFF;border-bottom:1px solid var(--n200)}
+#dns-dash .mast-in,#dns-dash .toolbar-in,#dns-dash .ticker-wrap,#dns-dash .d-main,#dns-dash .prov-app,#dns-dash .d-foot{
+  width:100%;max-width:1536px;margin-left:auto;margin-right:auto;padding-left:40px;padding-right:40px;min-width:0;
+}
+#dns-dash .mast-in{padding-top:28px;padding-bottom:26px;align-items:center;gap:24px;flex-wrap:nowrap}
+#dns-dash .m-brand{gap:18px;min-width:0}
+#dns-dash .mark{width:54px;height:62px;flex:none;border-radius:10px;flex-direction:column;gap:5px;background:var(--brand-100);border:1px solid #D6E3F4;color:var(--brand);font-size:11px;letter-spacing:.12em}
+#dns-dash .mark svg{width:25px;height:25px}
+#dns-dash .m-eyebrow{display:flex;align-items:center;gap:16px;color:var(--n500);letter-spacing:.06em;font-size:11px;line-height:17px;margin-bottom:7px}
+#dns-dash .m-eyebrow>span{font:500 10px/1 var(--fnnum);color:#62758E;letter-spacing:.14em;padding-left:15px;border-left:1px solid var(--n200)}
+#dns-dash .mast h1{display:flex;align-items:center;gap:14px;font-size:27px;line-height:36px;font-weight:650;letter-spacing:.035em}
+#dns-dash .workbench-tag{font:500 11px/20px var(--fn);letter-spacing:.02em;color:var(--brand);background:var(--brand-100);border:1px solid #D8E4F4;border-radius:4px;padding:0 7px;white-space:nowrap}
+#dns-dash .m-sub{font-size:12px;line-height:19px;color:var(--n500);margin-top:7px;letter-spacing:.02em}
+#dns-dash .m-right{flex:none;align-items:center;gap:30px;text-align:left;padding:6px 0}
+#dns-dash .m-meta+.m-meta{border-left:1px solid var(--n200);padding-left:30px}
+#dns-dash .m-k{font-size:11px;letter-spacing:.03em;margin-bottom:5px;color:var(--n500)}
+#dns-dash .m-meta b{font-size:18px;line-height:24px;font-weight:550;color:var(--n900)}
+#dns-dash .m-meta b>span{font:400 11px/1 var(--fn);color:var(--n500);margin-left:4px}
+#dns-dash .mline{display:none}
+
+/* 轻量导航与周期分段控件 */
+#dns-dash .toolbar{background:rgba(255,255,255,.97);border-bottom:1px solid var(--n200);box-shadow:0 2px 8px rgba(25,46,76,.025);backdrop-filter:blur(12px)}
+#dns-dash .toolbar-in{height:60px;gap:18px}
+#dns-dash #dnav{min-width:0;gap:4px;align-items:center;flex:none}
+#dns-dash .tlink{height:38px;padding:0 12px;gap:7px;border-radius:6px;color:var(--n500);font-size:12.5px;font-weight:550;letter-spacing:.02em}
+#dns-dash .nav-no{font:400 10px/1 var(--fnnum);color:#62758E;letter-spacing:.03em}
+#dns-dash .tlink.on{background:var(--brand-100);color:var(--brand)}
+#dns-dash .tlink.on .nav-no{color:var(--brand)}
+#dns-dash .tlink.on::after{left:12px;right:12px;bottom:0;height:2px;border-radius:2px;background:var(--brand)}
+#dns-dash .tlink:hover{background:var(--n25);color:var(--brand)}
+#dns-dash .tspace{min-width:0}
+#dns-dash .pctl{gap:1px;border:1px solid var(--n200);border-radius:6px;padding:3px;background:var(--n25);margin:0 0 0 auto;flex:none}
+#dns-dash .pctl i{display:none}
+#dns-dash .pctl button{appearance:none;border:1px solid transparent;background:transparent;font:500 11.5px/26px var(--fn);padding:0 8px;white-space:nowrap;min-width:34px;border-radius:4px;color:var(--n500);cursor:pointer;transition:background .12s,border-color .12s}
+#dns-dash .pctl button:hover{color:var(--brand);background:#FFF}
+#dns-dash .pctl button.on{background:#FFF;border-color:var(--n200);color:var(--brand);box-shadow:0 1px 2px rgba(25,46,76,.04)}
+#dns-dash .tbtn{height:34px;padding:0 12px;border-radius:6px;font-size:12px;color:var(--n700);margin-left:10px;white-space:nowrap;flex:none}
+#dns-dash .tbtn svg{width:15px;height:15px;color:var(--n500)}
+
+/* 首屏摘要：六个真实指标，统一对齐的数字和独立时点 */
+#dns-dash .ticker{background:transparent;border:0}
+#dns-dash .ticker-wrap{padding-top:26px;padding-bottom:0}
+#dns-dash .snapshot-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}
+#dns-dash .section-kicker{font:500 9px/14px var(--fnnum);letter-spacing:.18em;color:#62758E;display:block;margin-bottom:5px}
+#dns-dash .snapshot-head h2{font:600 15px/22px var(--fn);color:var(--n900);letter-spacing:.035em}
+#dns-dash .snapshot-head p{font:400 11px/17px var(--fn);color:var(--n500);margin-bottom:1px}
+#dns-dash .snapshot-head p span{color:var(--n300);padding:0 8px}
+#dns-dash .ticker-in{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;max-width:none;padding:0;min-height:0;margin:0}
+#dns-dash .ticker-in::before{display:none}
+#dns-dash .tk{min-width:0;padding:16px 16px 13px;border:1px solid var(--n200);border-radius:8px;background:#FFF;position:relative;box-shadow:var(--sh0)}
+#dns-dash .tk::before{content:"";position:absolute;left:16px;top:0;width:22px;height:2px;background:#97B6DF}
+#dns-dash .tk .k{font-size:11px;font-weight:500;line-height:18px;color:var(--n500);white-space:normal}
+#dns-dash .tk .v{display:flex;align-items:baseline;gap:3px;margin:8px 0 6px;font-size:24px;line-height:29px;font-weight:600;letter-spacing:-.035em;color:var(--n900);font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
+#dns-dash .tk .v small{font:400 10.5px/1 var(--fn);color:var(--n500);margin-left:1px;letter-spacing:0}
+#dns-dash .tk .s{font:400 10.5px/16px var(--fn);color:var(--n500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 板块与数据卡：中性色结构，颜色只在小范围保留板块识别 */
+#dns-dash .d-main{padding-top:2px;padding-bottom:0}
+#dns-dash .mod{margin-top:36px;scroll-margin-top:88px}
+#dns-dash .sec-head{padding:0 0 15px;margin-bottom:18px;align-items:center;gap:13px;border-bottom:1px solid #D3DEEB;position:relative}
+#dns-dash .sec-head::after{content:"";position:absolute;left:0;bottom:-1px;width:36px;height:2px;background:var(--brand)}
+#dns-dash .sec-no{width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex:none;border:1px solid #D5E0EF;background:#F9FBFE;border-radius:6px;color:#4C6C98;font:500 15px/1 var(--fnnum);letter-spacing:.02em;opacity:1}
+#dns-dash .sec-head h2{font-size:20px;line-height:27px;font-weight:650;letter-spacing:.035em}
+#dns-dash .sec-head p{font-size:11.5px;line-height:18px;margin-top:3px;color:var(--n500)}
+#dns-dash .sec-meta{font-size:11px;line-height:18px;color:var(--n500)}
+#dns-dash .sec-meta .ok{color:var(--n500)}
+#dns-dash .grp{font-size:12px;line-height:18px;font-weight:600;letter-spacing:.04em;margin:24px 0 12px;color:#435673;gap:8px}
+#dns-dash .grp::before{width:7px;height:7px;border-radius:1px;background:var(--brand);opacity:.65}
+#dns-dash .row{grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;margin-bottom:16px}
+#dns-dash .row>*,#dns-dash .card,#dns-dash .cco,#dns-dash .co-panel{min-width:0}
+#dns-dash .card{padding:19px 20px 14px;border:1px solid var(--n200);border-radius:10px;background:#FFF;box-shadow:var(--sh0);animation:none;transform:none;transition:border-color .15s,box-shadow .15s}
+#dns-dash .card:hover{transform:none;box-shadow:var(--sh1);border-color:#BFCFE3}
+#dns-dash .card.tint{background:#FBFDFF;border-color:#C8D9EE}
+#dns-dash .card-top{gap:7px;min-width:0;align-items:center;margin-bottom:12px;flex-wrap:wrap;row-gap:6px}
+#dns-dash .card-top .t{font-size:15px;line-height:22px;font-weight:600;letter-spacing:.015em;flex:1;min-width:100px;color:var(--n900)}
+#dns-dash .card-top .t small{color:var(--n500)}
+#dns-dash .chip{height:20px;font-size:10px;padding:0 6px;border-radius:4px;letter-spacing:0;margin-left:auto;font-weight:500}
+#dns-dash .chip .cdot{width:4px;height:4px}
+#dns-dash .chip.c-ok,#dns-dash .pchip.c-ok{color:#526F94;background:#F5F8FD;border-color:#DCE6F3}
+#dns-dash .chip.c-ok .cdot{background:#5B82B4}
+#dns-dash .rlbadge{font-size:9px;font-weight:600;padding:3px 5px;border-radius:3px;margin-left:0}
+#dns-dash .rlbadge.b{background:#F5F7FA;color:#586C85;border-color:#DFE6EF}
+#dns-dash .rlbadge.a{background:#F2F8F5;color:#3D7860;border-color:#D7E8DF}
+#dns-dash .rlbadge.c{background:#FFF6EF;color:#9C5E28;border-color:#F0DDCD}
+#dns-dash .kbflag,#dns-dash .warn-tag{font-size:10px;line-height:15px;border-radius:4px}
+#dns-dash .card-top .warn-tag{margin-left:0}
+#dns-dash .kpi .val{font-size:34px;line-height:40px;font-weight:600;letter-spacing:-.025em;font-variant-numeric:tabular-nums lining-nums}
+#dns-dash .kpi.lg .val{font-size:37px;line-height:43px}
+#dns-dash .kpi .val .unit{font-size:13px;letter-spacing:0;font-weight:400;margin-left:5px;vertical-align:baseline}
+#dns-dash .kpi .sub{font-size:12px;line-height:19px;margin-top:7px;gap:7px;color:var(--n500)}
+#dns-dash .dpill{padding:3px 6px;border-radius:4px;font-size:10.5px;line-height:13px;font-weight:550}
+#dns-dash .dpill.up{border-color:#F1DAD5}
+#dns-dash .dpill.down{border-color:#D3E7DD}
+#dns-dash .foot{font-size:11px;line-height:18px;gap:5px;color:var(--n500);border-top:1px solid var(--n100);padding-top:10px;margin-top:auto}
+#dns-dash .statline{font-size:12px;line-height:18px;padding:8px 0;border-color:var(--n100)}
+#dns-dash .statline b{font-size:17px;line-height:23px;font-weight:550}
+
+/* 静态优先的图表：淡网格、清晰读值，无呼吸光环/绘制/滚动入场 */
+#dns-dash .chart{height:144px;margin-top:13px;margin-bottom:7px}
+#dns-dash .chart text{font-size:10.5px;fill:var(--n500)}
+#dns-dash .chart .grid{stroke:#ECF0F6;stroke-width:1}
+#dns-dash .chart .baseline{stroke:#C9D5E4;stroke-dasharray:3,4;opacity:.65}
+#dns-dash .chart .chiptext{font-size:10px;font-weight:600;fill:#FFF}
+#dns-dash .chart .guide{stroke:#8CA4C4;stroke-dasharray:3,3}
+#dns-dash .chart svg circle:has(animate){display:none}
+#dns-dash .line-a,#dns-dash .area-a,#dns-dash .chip-a{animation:none;opacity:1}
+#dns-dash .line-a{stroke-dasharray:none;stroke-dashoffset:0}
+#dns-dash.js-anim .card,#dns-dash.js-anim .cco,#dns-dash.js-anim .card:not(.in),#dns-dash.js-anim .cco:not(.in){animation:none;opacity:1}
+#dns-dash .chart .nodata{background:var(--n25);border:1px dashed var(--n200);font-size:12px;color:var(--n500)}
+#dns-dash .chart .nodata::before{font-size:20px}
+#dns-dash .ctool{background:#FFF;color:var(--n700);border:1px solid #CBDAED;border-radius:6px;box-shadow:var(--sh2);padding:8px 11px;font-size:12px}
+#dns-dash .ctool b{color:var(--n900);font-size:13px}
+#dns-dash .ctool .d.up{color:var(--up)}
+#dns-dash .ctool .d.down{color:var(--down)}
+#dns-dash .sparkrow{padding-top:10px}
+#dns-dash .spark{height:40px}
+#dns-dash .sharechart{min-height:180px}
+
+/* 资讯与榜单：正文优先，统一缩略图与两行标题 */
+#dns-dash .feed{margin-top:0;padding-right:3px}
+#dns-dash .feed li{border-color:var(--n100)}
+#dns-dash .feed .fi{font-size:13px;line-height:1.65;padding:10px 5px;gap:9px;border-radius:4px;min-width:0}
+#dns-dash .feed .fi:hover{background:var(--n25)}
+#dns-dash .feed .fi i{font-size:10px;border:0;background:#F1F5FA;color:#62758E;border-radius:4px;padding:4px 6px}
+#dns-dash .feed .fi .lthumb{width:42px;height:42px;border-color:var(--n100);border-radius:5px}
+#dns-dash .feed .fi .rk{width:21px;height:21px;border-radius:4px;font-weight:550}
+#dns-dash .feed .fi .ptag{font-size:11px;border:0;border-radius:4px;padding:4px 6px;background:#F4F6FA}
+#dns-dash .revcards{gap:9px;padding-right:4px;margin-top:1px;min-width:0}
+#dns-dash .revcard{height:104px;padding:10px;gap:12px;border-radius:6px;border-color:var(--n100);background:#FAFBFD;min-width:0;box-shadow:none}
+#dns-dash .revcard:hover{border-color:#BFCFE4;box-shadow:none;background:#F6F9FE}
+#dns-dash .rthumb{width:76px;height:80px;border-radius:5px;object-fit:cover}
+#dns-dash .rinfo{min-width:0}
+#dns-dash .rl1{align-items:flex-start;gap:5px}
+#dns-dash .rname{font-size:12.5px;line-height:18px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:600;flex:1;min-width:0}
+#dns-dash .rtag{font-size:9px;padding:3px 5px;border-radius:3px;background:#EEF3FA;color:#5278A6;white-space:nowrap}
+#dns-dash .rdate{font-size:10px;line-height:17px;color:var(--n500);white-space:nowrap}
+#dns-dash .rchips{gap:4px;margin-top:5px}
+#dns-dash .rchip{font-size:10px;line-height:16px;padding:0 5px;border-color:var(--n200);background:#FFF;border-radius:3px}
+#dns-dash .rdesc{font-size:11.5px;line-height:17px;-webkit-line-clamp:2;margin-top:4px;color:var(--n500)}
+#dns-dash [data-review="41"].revcards,#dns-dash [data-review="42"].revcards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#dns-dash [data-review="41"] .revcard,#dns-dash [data-review="42"] .revcard{height:142px;padding:12px;gap:13px;border-radius:7px}
+#dns-dash [data-review="41"] .rthumb,#dns-dash [data-review="42"] .rthumb{width:112px;height:116px;border-radius:5px}
+#dns-dash [data-review="41"] .rname,#dns-dash [data-review="42"] .rname{font-size:14px;line-height:21px;-webkit-line-clamp:2}
+#dns-dash [data-review="41"] .rdesc,#dns-dash [data-review="42"] .rdesc{font-size:12px;line-height:19px;-webkit-line-clamp:2}
+
+/* 公司面板、结构指标及时间线 */
+#dns-dash .co-tabs{gap:8px;padding:6px;border:1px solid var(--n200);border-radius:8px;background:#EEF2F8;margin-bottom:18px}
+#dns-dash .cotab{flex:1;min-height:40px;padding:10px 12px;min-width:0;text-align:center;border-radius:5px;background:transparent;border:1px solid transparent;color:var(--n500);font-size:12.5px;font-weight:550}
+#dns-dash .cotab small{font-size:10px;color:var(--n500);margin-left:6px}
+#dns-dash .cotab.on{background:#FFF;color:var(--brand);border-color:#CDDBEE;box-shadow:0 1px 3px rgba(25,46,76,.05)}
+#dns-dash .cotab.on small{color:#5B7BA7}
+#dns-dash .co-panel[hidden]{display:none!important}
+#dns-dash .cco{border:1px solid var(--n200);border-radius:8px;padding:16px;background:#FFF;box-shadow:var(--sh0)}
+#dns-dash .cco:hover{transform:none;border-color:#BFCFE3;box-shadow:var(--sh1)}
+#dns-dash .cco .mono{border-radius:5px;background:var(--brand-100);color:var(--brand);font-weight:550}
+#dns-dash .cco .cn{font-size:14px;font-weight:600}
+#dns-dash .cco .cd{font-size:12px;line-height:20px}
+#dns-dash .btn-ext{font-size:12px;line-height:18px;border-radius:5px;background:#F7FAFE;color:var(--brand);border-color:#D2DFF0;box-shadow:none}
+#dns-dash .sc{padding-left:18px;padding-right:18px;min-width:0}
+#dns-dash .sc .v{font-size:25px;font-weight:550;letter-spacing:-.025em;line-height:32px}
+#dns-dash .sc .k,#dns-dash .sc .s{white-space:normal;overflow-wrap:anywhere}
+#dns-dash .sc .k{font-size:11.5px}
+#dns-dash .sc .s{font-size:10.5px;margin-top:5px}
+#dns-dash .sc .chg{font-size:10px;font-weight:500;border-radius:4px}
+#dns-dash .ringwrap{flex-wrap:wrap;gap:18px;margin-top:10px;margin-bottom:14px}
+#dns-dash .rings2{gap:20px;min-width:0}
+#dns-dash .ring .rt{font-size:18px;font-weight:550}
+#dns-dash .ring .rf{transition:stroke-dasharray .2s ease-out;stroke-linecap:butt}
+#dns-dash .ringinfo .rv{font-size:16px;font-family:var(--fnnum);font-weight:550}
+#dns-dash .ringinfo .rs{font-size:11px;line-height:19px}
+#dns-dash .tl-list{border-left-color:#CEDAEA}
+#dns-dash .tl-list li{font-size:12px;line-height:20px;padding-top:6px;padding-bottom:6px}
+#dns-dash .tl-list li.next::before{border-color:var(--brand)}
+#dns-dash .hln .hd{font-size:19px;font-weight:550}
+#dns-dash .hln .hn{font-size:12px}
+#dns-dash .hln .hs{font-size:11px}
+#dns-dash .bar .bt{height:8px;border-radius:3px}
+#dns-dash .bar .bf{border-radius:3px}
+#dns-dash .card ul.multi li{padding:7px 0;font-size:12px;border-bottom-style:solid}
+#dns-dash .card ul.multi li b{font-size:14px;font-weight:550}
+
+/* 溯源作为可检索的数据目录 */
+#dns-dash .prov-app{margin-top:36px;scroll-margin-top:88px}
+#dns-dash .prov-toggle{font-size:14px;font-weight:600;padding:18px 20px;border-radius:8px;border:1px solid var(--n200);box-shadow:none;background:#FFF}
+#dns-dash .prov-toggle::before{content:"";width:7px;height:7px;flex:none;border:1px solid var(--brand);background:var(--brand-100);border-radius:1px}
+#dns-dash .prov-toggle .sum{font-size:11px;line-height:18px}
+#dns-dash .prov-app[data-open="true"] .prov-toggle{border-radius:8px 8px 0 0}
+#dns-dash .prov-body{border-radius:0 0 8px 8px;padding:20px;border-color:var(--n200)}
+#dns-dash .prov-note{font-size:12px;line-height:21px;margin-bottom:16px}
+#dns-dash .prov-tools{padding:12px;background:var(--n25);border:1px solid var(--n100);border-radius:6px;gap:8px}
+#dns-dash .prov-tools input,#dns-dash .prov-tools select{height:36px;font-size:12px;border-radius:5px}
+#dns-dash .twrap{max-height:620px;overflow:auto;overscroll-behavior:contain;min-width:0;border:1px solid var(--n100);border-radius:5px}
+#dns-dash .ptable{font-size:12px}
+#dns-dash .ptable th{position:sticky;top:0;z-index:1;background:#F1F5FA;font-size:11px;font-weight:600;padding:12px 10px;color:#51657F}
+#dns-dash .ptable td{padding:11px 10px;font-size:11.5px;line-height:19px;border-color:var(--n100)}
+#dns-dash .ptable tbody tr:nth-child(even){background:#FAFBFD}
+#dns-dash .ptable tbody tr:hover{background:#F0F5FC}
+#dns-dash .ptable .pfresh{font-size:11px}
+#dns-dash .pchip{font-size:10px;font-weight:500;border-radius:4px}
+#dns-dash .prov-tip{background:#FFF;color:var(--n700);border:1px solid #CBD9EB;box-shadow:var(--sh2);border-radius:7px}
+#dns-dash .prov-tip .pt-t{color:var(--n900);border-color:var(--n100)}
+#dns-dash .prov-tip .pt-k{color:var(--n500)}
+#dns-dash .prov-tip .pt-v a{color:var(--brand)}
+#dns-dash .d-foot{margin-top:28px;padding-top:22px;padding-bottom:32px;font-size:11px;line-height:19px;gap:10px 22px;border-color:var(--n200)}
+#dns-dash .d-foot .footer-note{flex-basis:100%;font-size:10.5px;color:var(--n500)}
+#dns-dash #toTop{width:38px;height:38px;border-radius:7px;background:#FFF;border-color:#CFDAE8;box-shadow:var(--sh1);color:var(--brand)}
+
+@media(min-width:1600px){
+  #dns-dash .mast-in,#dns-dash .toolbar-in,#dns-dash .ticker-wrap,#dns-dash .d-main,#dns-dash .prov-app,#dns-dash .d-foot{padding-left:48px;padding-right:48px}
+}
+@media(max-width:1200px){
+  #dns-dash .mast-in,#dns-dash .toolbar-in,#dns-dash .ticker-wrap,#dns-dash .d-main,#dns-dash .prov-app,#dns-dash .d-foot{padding-left:28px;padding-right:28px}
+  #dns-dash .toolbar-in{gap:8px}
+  #dns-dash .tlink{padding-left:10px;padding-right:10px}
+  #dns-dash .nav-no{display:none}
+  #dns-dash .m-right{gap:20px}
+  #dns-dash .m-meta+.m-meta{padding-left:20px}
+  #dns-dash .tk{padding-left:12px;padding-right:12px}
+  #dns-dash .tk .v{font-size:22px}
+}
+@media(max-width:960px){
+  html{scroll-padding-top:116px}
+  #dns-dash .mast-in{flex-wrap:wrap;padding-top:22px;padding-bottom:20px}
+  #dns-dash .mast h1{font-size:25px}
+  #dns-dash .m-right{margin-left:72px}
+  #dns-dash .toolbar-in{height:auto;gap:0;padding-top:5px;padding-bottom:5px;flex-wrap:wrap;min-width:0}
+  #dns-dash #dnav{flex:1 1 100%;width:0;height:41px;min-width:0;gap:3px;overflow-x:auto}
+  #dns-dash .tlink{height:36px;font-size:12px;padding:0 12px}
+  #dns-dash .nav-no{display:inline}
+  #dns-dash .tb2{display:flex;flex:1 1 100%;min-width:0;max-width:100%;margin:4px 0 0;padding:0 0 1px;gap:0;overflow-x:auto}
+  #dns-dash .pctl{margin:0;border-right:1px solid var(--n200);padding:2px;flex:none}
+  #dns-dash .pctl i{display:none}
+  #dns-dash .tbtn{margin:0 0 0 10px;height:34px;padding:0 12px;flex:none}
+  #dns-dash .ticker-in{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #dns-dash .mod,#dns-dash .prov-app{scroll-margin-top:116px}
+}
+@media(max-width:768px){
+  #dns-dash .mast-in,#dns-dash .toolbar-in,#dns-dash .ticker-wrap,#dns-dash .d-main,#dns-dash .prov-app,#dns-dash .d-foot{padding-left:18px;padding-right:18px}
+  #dns-dash .mast-in{gap:16px;padding-top:22px;padding-bottom:20px}
+  #dns-dash .m-brand{gap:12px;align-items:flex-start;width:100%}
+  #dns-dash .mark{width:42px;height:52px;border-radius:7px;margin-top:2px;font-size:9px}
+  #dns-dash .mark svg{width:21px;height:21px}
+  #dns-dash .m-eyebrow{font-size:10px;line-height:16px;margin-bottom:4px;gap:8px;flex-wrap:wrap}
+  #dns-dash .m-eyebrow>span{font-size:8px;letter-spacing:.1em;padding-left:8px}
+  #dns-dash .mast h1{font-size:23px;line-height:32px;gap:8px;flex-wrap:wrap}
+  #dns-dash .workbench-tag{font-size:10px;line-height:18px;padding:0 5px}
+  #dns-dash .m-sub{font-size:10.5px;line-height:18px;margin-top:5px;letter-spacing:0}
+  #dns-dash .m-right{width:100%;margin:0;padding:12px 0 0;border-top:1px solid var(--n100);gap:22px;flex-wrap:wrap}
+  #dns-dash .m-meta+.m-meta{padding-left:22px}
+  #dns-dash .m-meta b{font-size:16px;line-height:22px}
+  #dns-dash .m-meta b>span{font-size:10px}
+  #dns-dash .m-k{font-size:10px;margin-bottom:3px}
+  #dns-dash .ticker-wrap{padding-top:22px}
+  #dns-dash .snapshot-head{align-items:flex-start;gap:12px;margin-bottom:12px}
+  #dns-dash .snapshot-head h2{font-size:14px}
+  #dns-dash .section-kicker{font-size:8px;letter-spacing:.14em;margin-bottom:3px}
+  #dns-dash .snapshot-head p{max-width:142px;text-align:right;font-size:10px;line-height:17px}
+  #dns-dash .snapshot-head p span{display:none}
+  #dns-dash .ticker-in{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0}
+  #dns-dash .tk,#dns-dash .tk:nth-child(n+4){border:1px solid var(--n200);padding:13px 12px 11px}
+  #dns-dash .tk .k{font-size:10.5px;min-height:17px}
+  #dns-dash .tk .v{font-size:23px;margin-top:7px;margin-bottom:4px;gap:2px;flex-wrap:wrap;row-gap:0}
+  #dns-dash .tk .v small{font-size:10px}
+  #dns-dash .tk .s{font-size:10px;line-height:15px}
+  #dns-dash .mod{margin-top:28px}
+  #dns-dash .sec-head{gap:11px;flex-wrap:wrap;padding-bottom:13px;margin-bottom:16px}
+  #dns-dash .sec-no{font-size:14px;width:32px;height:32px}
+  #dns-dash .sec-head h2{font-size:19px;line-height:26px}
+  #dns-dash .sec-head p{font-size:10.5px;line-height:17px}
+  #dns-dash .sec-meta{font-size:10.5px;line-height:17px;margin-left:43px;flex-basis:calc(100% - 43px);margin-top:-4px}
+  #dns-dash .grp{font-size:11.5px;margin-top:20px}
+  #dns-dash .row{grid-template-columns:minmax(0,1fr);gap:12px;margin-bottom:12px}
+  #dns-dash .row>*{grid-column:auto!important;grid-row:auto!important;min-width:0}
+  #dns-dash .card{padding:17px 16px 13px;border-radius:9px;min-width:0}
+  #dns-dash .card-top{gap:6px;margin-bottom:12px}
+  #dns-dash .card-top .t{font-size:14px;line-height:21px}
+  #dns-dash .kpi .val{font-size:34px;line-height:40px}
+  #dns-dash .kpi .sub{font-size:11.5px;line-height:19px}
+  #dns-dash .chart{height:150px}
+  #dns-dash .foot{font-size:11px;line-height:18px;flex-wrap:wrap}
+  #dns-dash .card div[data-multi]{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+  #dns-dash .sc{padding-left:0;padding-right:0;min-width:0}
+  #dns-dash .card.strip{gap:0}
+  #dns-dash .sc .v{font-size:24px}
+  #dns-dash .ringwrap{flex-wrap:wrap;gap:16px}
+  #dns-dash .rings2{gap:18px;flex:0 1 auto}
+  #dns-dash .revcards{min-width:0}
+  #dns-dash .revcard{height:110px;padding:10px;gap:10px;min-width:0}
+  #dns-dash .rthumb{width:70px;height:86px}
+  #dns-dash .rname{font-size:12px;line-height:18px}
+  #dns-dash .rtag{display:none}
+  #dns-dash .rdesc{font-size:11px;line-height:17px;-webkit-line-clamp:2}
+  #dns-dash [data-review="41"].revcards,#dns-dash [data-review="42"].revcards{grid-template-columns:minmax(0,1fr);gap:9px}
+  #dns-dash [data-review="41"] .revcard,#dns-dash [data-review="42"] .revcard{height:132px;padding:10px;gap:11px}
+  #dns-dash [data-review="41"] .rthumb,#dns-dash [data-review="42"] .rthumb{width:84px;height:108px}
+  #dns-dash [data-review="41"] .rname,#dns-dash [data-review="42"] .rname{font-size:13px;line-height:20px}
+  #dns-dash [data-review="41"] .rdesc,#dns-dash [data-review="42"] .rdesc{font-size:11px;line-height:17px}
+  #dns-dash .co-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:5px}
+  #dns-dash .cotab{font-size:12px;line-height:18px;min-height:42px;padding:8px}
+  #dns-dash .cotab small{font-size:10px;margin-left:4px}
+  #dns-dash .crow{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  #dns-dash .cco{padding:13px 12px}
+  #dns-dash .cco .chead{flex-wrap:wrap;gap:7px}
+  #dns-dash .cco .cn{font-size:13px}
+  #dns-dash .hlines{grid-template-columns:minmax(0,1fr)}
+  #dns-dash .hln{padding:11px 6px 11px 14px}
+  #dns-dash .hln+.hln{border-top:1px solid var(--n100)}
+  #dns-dash .prov-app{margin-top:28px}
+  #dns-dash .prov-toggle{padding:15px 14px;gap:8px;font-size:13px;flex-wrap:wrap}
+  #dns-dash .prov-toggle .sum{margin-left:0;font-size:10px;flex:1;min-width:100px}
+  #dns-dash .prov-toggle .chev{margin-left:auto}
+  #dns-dash .prov-body{padding:14px}
+  #dns-dash .prov-note{font-size:11px;line-height:20px}
+  #dns-dash .prov-tools{padding:10px;gap:8px;min-width:0}
+  #dns-dash .prov-tools input,#dns-dash .prov-tools select{font-size:16px;min-width:0;max-width:100%}
+  #dns-dash .prov-tools select{flex:1 1 40%;padding-left:7px;padding-right:7px}
+  #dns-dash .prov-tools input{flex:1 1 100%;width:0}
+  #dns-dash .pcount{margin:0;font-size:11px;line-height:18px}
+  #dns-dash .twrap{max-height:60vh}
+  #dns-dash .d-foot{margin-top:24px;font-size:10.5px;padding-top:18px;padding-bottom:25px;gap:10px}
+}
+@media(max-width:380px){
+  #dns-dash .mast h1{font-size:21px}
+  #dns-dash .workbench-tag{display:none}
+  #dns-dash .m-eyebrow>span{font-size:7px}
+  #dns-dash .pctl button{min-width:30px;padding-left:6px;padding-right:6px}
+  #dns-dash .tbtn{font-size:11px;padding:0 8px;margin-left:7px}
+  #dns-dash .tk .v{font-size:21px}
+}
+@media print{
+  body,#dns-dash{background:#FFF}
+  #dns-dash .mast-in,#dns-dash .ticker-wrap,#dns-dash .d-main,#dns-dash .prov-app,#dns-dash .d-foot{max-width:none;padding-left:12px;padding-right:12px}
+  #dns-dash .toolbar,#dns-dash #toTop{display:none!important}
+  #dns-dash .twrap{max-height:none;overflow:visible}
+  #dns-dash .card,#dns-dash .cco{box-shadow:none;break-inside:avoid}
+  #dns-dash .line-a{stroke-dasharray:none;stroke-dashoffset:0}
+}
+
+/* ===== v22 · 配置驱动的部门子看板，沿用v21浅色视觉 ===== */
+html{scroll-padding-top:0}
+#dns-dash .m-right{flex-direction:column;align-items:flex-end;gap:12px;padding:0}
+#dns-dash .header-department-switch{display:flex;align-items:center;justify-content:flex-end;gap:12px;min-width:0}
+#dns-dash .header-meta-row{display:flex;align-items:center;gap:26px;min-width:0}
+#dns-dash .department-label{font:550 11px/18px var(--fn);color:var(--brand);white-space:nowrap;flex:none;letter-spacing:.04em}
+#dns-dash .department-links{display:flex;align-items:center;gap:4px;flex:none;padding:3px;border:1px solid #D5E0EF;border-radius:8px;background:#F2F6FC}
+#dns-dash .department-link{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 13px;border:1px solid transparent;border-radius:5px;background:transparent;color:#4D6584;font:550 12px/18px var(--fn);text-decoration:none;white-space:nowrap;transition:background .12s,border-color .12s}
+#dns-dash .department-link:hover{color:var(--brand);border-color:var(--brand-300)}
+#dns-dash .department-link.on{background:var(--brand);color:#FFF;border-color:var(--brand);box-shadow:0 1px 3px rgba(40,95,175,.14)}
+#dns-dash #dnav{flex:1 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none}
+#dns-dash #dnav::-webkit-scrollbar{display:none}
+#dns-dash #dnav .tlink{flex:none}
+#dns-dash .mod,#dns-dash .prov-app{scroll-margin-top:88px}
+#dns-dash .sec-head>div:nth-child(2){min-width:0;flex:1}
+@media(max-width:960px){
+  html{scroll-padding-top:0}
+  #dns-dash .m-right{margin-left:0;width:100%;flex-direction:row;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--n100);padding-top:14px}
+  #dns-dash .header-department-switch{order:2}
+  #dns-dash .header-meta-row{order:1}
+  #dns-dash #dnav{flex:1 1 100%;width:0}
+  #dns-dash .mod,#dns-dash .prov-app{scroll-margin-top:116px}
+}
+@media(max-width:768px){
+  #dns-dash .m-right{flex-direction:column;align-items:stretch;gap:13px;padding-top:13px}
+  #dns-dash .header-department-switch{order:0;justify-content:space-between;gap:10px}
+  #dns-dash .header-meta-row{order:1;gap:18px;flex-wrap:wrap}
+  #dns-dash .department-label{font-size:11px}
+  #dns-dash .department-link{font-size:11px;padding:7px 9px;min-height:36px;flex:1}
+  #dns-dash .department-links{gap:4px;flex:1;min-width:0}
+}
+@media print{#dns-dash .header-department-switch{display:none}}
+
+/* ===== v23 · 外部情报部门视图与真实空态 ===== */
+#dns-dash .header-department-switch{max-width:100%}
+#dns-dash .department-links{flex:0 1 auto;flex-wrap:wrap;justify-content:flex-end;min-width:0}
+#dns-dash .m-meta b>span{white-space:normal}
+#dns-dash .planned-card{border:1px dashed #C7D5E5;background:#FCFDFE;min-width:0}
+#dns-dash .planned-card .card-top{align-items:flex-start}
+#dns-dash .planned-card .card-top .t{min-width:0;flex:1}
+#dns-dash .c-planned,#dns-dash .c-static{color:#52667D;background:#EDF2F7;border:1px solid #DCE5EF;white-space:nowrap;flex:none}
+#dns-dash .plan-purpose{font-size:13px;line-height:1.8;color:var(--n700);margin-bottom:8px}
+#dns-dash .plan-content{font-size:12px;line-height:1.85;color:var(--n500);margin-bottom:13px}
+#dns-dash .plan-fields{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+#dns-dash .plan-fields>span{font-size:11px;line-height:18px;padding:3px 8px;border-radius:4px;background:#F0F4F8;color:#52667D;overflow-wrap:anywhere}
+#dns-dash .plan-details{font-size:11.5px;line-height:1.85;color:var(--n500);margin-bottom:12px}
+#dns-dash .plan-details summary{cursor:pointer;color:#45658B;padding:4px 0}
+#dns-dash .plan-details p{margin:7px 0;overflow-wrap:anywhere}
+#dns-dash .plan-details b{color:var(--n700);font-weight:550}
+#dns-dash .plan-foot{border-top:1px solid #E4EBF3;padding-top:10px;margin-top:auto;gap:12px;flex-wrap:wrap}
+#dns-dash .plan-number{font-family:var(--fnnum);font-weight:650;color:#45658B}
+#dns-dash .research-note{font-size:11px;line-height:1.8;color:var(--n500);border-top:1px solid var(--n100);padding-top:9px;margin-top:10px}
+#dns-dash .static-review{font-size:11px;color:#52667D}
+@media(max-width:1100px){
+  #dns-dash .m-right{flex-wrap:wrap;max-width:100%}
+}
+@media(max-width:768px){
+  #dns-dash .header-department-switch{align-items:flex-start;justify-content:flex-start;gap:8px}
+  #dns-dash .department-label{line-height:38px}
+  #dns-dash .department-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex:1 1 0;gap:4px}
+  #dns-dash .department-link{padding:6px 4px;font-size:10.5px;min-width:0;min-height:34px}
+  #dns-dash .plan-purpose{font-size:12px}
+}
+
+</style>
+<div id="dns-dash">
+<div class="rule3" aria-hidden="true"></div>
+<header class="mast"><div class="mast-in">
+  <div class="m-brand"><span class="mark" aria-label="DNS 深圳和宏"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3z" fill="currentColor"/><path d="M14 14h7v7h-7z" fill="currentColor" opacity=".35"/></svg><span>DNS</span></span>
+    <div><div class="m-eyebrow">DNS · 深圳和宏 <span>DESIGN INTELLIGENCE</span></div><h1>设计部外部情报看板<span class="workbench-tag">外部设计研究</span></h1><div class="m-sub">竞品设计 / 公开体验 / 技术材料 / 设计研究线索</div></div>
+  </div>
+  <div class="m-right">
+    <div class="header-department-switch" title="仅使用公开拆解、评测、新品与材料线索；规划模块暂无结构化结果，不包含内部设计文件。"><span class="department-label">部门看板</span><div class="department-links" role="group" aria-label="选择部门看板"><a class="department-link" data-dashboard-page="strategy" href="index.html">战略主看板</a><a class="department-link" data-dashboard-page="marketing" href="marketing.html">市场部看板</a><a class="department-link on" data-dashboard-page="design" href="design.html" aria-current="page">设计部看板</a><a class="department-link" data-dashboard-page="product" href="product.html">产品部看板</a><a class="department-link" data-dashboard-page="hr" href="hr.html">人力部看板</a></div></div>
+    <div class="header-meta-row"><div class="m-meta"><span class="m-k">全库最新观测</span><b id="asof">—</b></div>
+    <div class="m-meta"><span class="m-k">本页范围</span><b>16 <span>项词条 · 14 个已建模块 · 2 个规划</span></b></div></div>
+  </div>
+</div></header>
+<div class="mline"></div>
+<nav class="toolbar" aria-label="看板导航">
+<div class="toolbar-in">
+  <span id="dnav">
+    <a class="tlink" href="#design1"><span class="nav-no">01</span>设计研究（规划中）</a><a class="tlink" href="#design2"><span class="nav-no">02</span>竞品拆解与公开体验</a><a class="tlink" href="#design3"><span class="nav-no">03</span>技术材料与形态线索</a>
+  </span>
+  <span class="tspace"></span>
+  <span class="tb2"><span class="pctl" title="切换折线图显示周期（仅影响曲线渲染，不改动固化数据）"><i>周期</i><button class="on" type="button" aria-pressed="true">默认</button><button type="button" data-m="3" aria-pressed="false">3月</button><button type="button" data-m="6" aria-pressed="false">6月</button><button type="button" data-m="12" aria-pressed="false">1年</button><button type="button" data-m="36" aria-pressed="false">3年</button><button type="button" data-all="1" aria-pressed="false">全部</button></span>
+  <a class="tbtn" href="#appendix" id="provbtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 3a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm4 10 4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>数据溯源</a></span>
+</div></nav>
+
+
+<main class="d-main">
+<section class="mod" id="design1">
+  <div class="sec-head"><div class="sec-no">01</div><div><h2>设计研究（规划中）</h2><p>竞品设计特征、使用场景与体验问题的外部研究结构；规划卡暂无结构化结论，不包含内部设计资料。</p></div><div class="sec-meta">2个规划模块 · 外部公开资料</div></div>
+  <div class="row">
+    <div class="card c6 planned-card" style="grid-column:span 6;grid-row:1" data-mid="306_竞品设计特征与取舍库" data-module-status="planned" data-planned-id="M306"><div class="card-top"><span class="t">竞品设计特征与取舍库</span><span class="chip c-planned">规划中</span></div><p class="plan-purpose">帮助设计团队比较同类竞品的公开设计方案，形成可追溯的设计取舍讨论。</p><p class="plan-content">复用已有拆解与评测线索，按同品类、相近价位和使用场景归纳结构、交互与携带特征。</p><div class="plan-fields" aria-label="计划展示字段"><span>品类与具体型号</span><span>使用场景</span><span>结构与交互特征</span><span>可见设计取舍</span><span>图文证据</span><span>待验证问题</span></div><details class="plan-details"><summary>候选来源与使用边界</summary><p><b>候选公开来源</b> 品牌公开产品图与说明书 / 公开拆解与专业评测 / 公开设计与使用演示资料</p><p><b>使用边界</b> 公开图像和评测难以覆盖工艺、成本及长期体验；观察事实与设计评价分开记录，保留证据局限。</p></details><div class="foot plan-foot"><span class="plan-number">M306</span><span>尚未接入数据 · 当前仅为功能预留</span></div></div>
+    <div class="card c6 planned-card" style="grid-column:span 6;grid-row:1" data-mid="307_公开用户场景与体验问题" data-module-status="planned" data-planned-id="M307"><div class="card-top"><span class="t">公开用户场景与体验问题</span><span class="chip c-planned">规划中</span></div><p class="plan-purpose">帮助设计与产品团队识别公开反馈中的使用任务和体验阻碍，形成后续验证假设。</p><p class="plan-content">从公开评论和评测中人工归纳具体场景、任务与问题，保留可追溯证据并合并重复主题。</p><div class="plan-fields" aria-label="计划展示字段"><span>用户任务与场景</span><span>产品类别</span><span>体验问题主题</span><span>公开证据</span><span>样本范围</span><span>待验证假设</span></div><details class="plan-details"><summary>候选来源与使用边界</summary><p><b>候选公开来源</b> 可公开阅读的商品评论 / 公开评测与使用体验文章 / 公开产品支持与常见问题页面</p><p><b>使用边界</b> 只汇总匿名主题，不记录个人身份；评论数量和发声频率不能代表整体用户的问题发生率。</p></details><div class="foot plan-foot"><span class="plan-number">M307</span><span>尚未接入数据 · 当前仅为功能预留</span></div></div>
+  </div>
+</section>
+<section class="mod" id="design2">
+  <div class="sec-head"><div class="sec-no">02</div><div><h2>竞品拆解与公开体验</h2><p>拆解、评测和新品原文供设计研究参考；媒体评价与产品宣传均不等同独立用户验证。</p></div><div class="sec-meta">拆解 / 评测 / 新品 · 公开线索</div></div>
+  <h3 class="grp">结构与交互参考 · 原文拆解及评测</h3>
+  <div class="row">
+    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-mid="90_充电头网拆解报告" data-source-pids="P90" data-k="90"><div class="card-top"><span class="t">充电头网 · 拆解报告</span><span class="dot g" title="已接入：充电头网拆解栏目"></span></div><div class="revcards" data-review="90"></div><div class="foot"><a href="https://www.chongdiantou.com/archives/category/teardowns" target="_blank" rel="noopener">充电头网 ↗</a><span>每日</span></div></div>
+    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-mid="91_我爱音频网评测" data-source-pids="P91" data-k="91"><div class="card-top"><span class="t">我爱音频网 · 耳机评测</span><span class="dot g" title="已接入：我爱音频网耳机评测"></span></div><div class="revcards" data-review="91"></div><div class="foot"><a href="https://www.52audio.com/archives/category/reviews/earphone" target="_blank" rel="noopener">我爱音频网 ↗</a><span>每日</span></div></div>
+  </div>
+  <h3 class="grp">终端新品与生态 · 外观及交互背景</h3>
+  <div class="row">
+    <div class="card list c12" style="height:500px;grid-column:span 12;grid-row:1" data-mid="41_APPLE相关新闻近7天" data-source-pids="P41" data-k="41"><div class="card-top"><span class="t" title="IT之家苹果生态资讯，图文速览（关键词过滤）">Apple 生态 · 新闻速览</span><span class="dot g" title="已接入：IT之家（苹果生态关键词）"></span></div><div class="revcards" data-review="41"></div><div class="foot"><a href="https://www.ithome.com/" target="_blank" rel="noopener">IT之家 ↗</a><span>每日</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card list c12" style="height:500px;grid-column:span 12;grid-row:1" data-mid="42_手机厂家新品发布近7天" data-source-pids="P42" data-k="42"><div class="card-top"><span class="t" title="IT之家手机/快充/新品资讯，图文速览（关键词过滤）">手机厂商 · 新品动态</span><span class="dot g" title="已接入：IT之家（新品关键词）"></span></div><div class="revcards" data-review="42"></div><div class="foot"><a href="https://www.ithome.com/" target="_blank" rel="noopener">IT之家手机 ↗</a><span>每日</span></div></div>
+  </div>
+  <h3 class="grp">充电行业与协议资讯</h3>
+  <div class="row">
+    <div class="card list c6" style="grid-column:span 6;grid-row:1" data-mid="59_充电头网早报" data-source-pids="P59" data-k="59" data-news="P59"><div class="card-top"><span class="t">充电头网早报</span><span class="dot g" title="已接入：充电头网"></span></div><ul class="feed"></ul><div class="foot"><a href="https://www.chongdiantou.com" target="_blank" rel="noopener">充电头网 ↗</a><span>每日</span></div></div>
+    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-mid="61_苹果AVS新品资讯" data-source-pids="P61" data-k="61"><div class="card-top"><span class="t" title="充电头网AVS/苹果关键词资讯，图文速览（低频主题展示库存最近篇目）">苹果 AVS · 资讯</span><span class="dot g" title="已接入：充电头网（AVS/苹果关键词）"></span></div><div class="revcards" data-review="61"></div><div class="foot"><a href="https://www.chongdiantou.com/" target="_blank" rel="noopener">充电头网 ↗</a><span>每日</span></div></div>
+  </div>
+</section>
+<section class="mod" id="design3">
+  <div class="sec-head"><div class="sec-no">03</div><div><h2>技术材料与形态线索</h2><p>认证、材料、存储与众筹信息辅助识别研究方向；认证占比不代表市场渗透，公开价格不代表实际采购成本。</p></div><div class="sec-meta">技术材料 / 形态观察 / 口碑待接入</div></div>
+  <h3 class="grp">材料与技术背景</h3>
+  <div class="row">
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="56_Qi2磁吸认证占比" data-source-pids="P56" data-k="56"><div class="card-top"><span class="t" title="WPC无线充电认证库中Qi2（MPP）认证产品占比，观察已认证产品结构。">Qi2磁吸认证占比</span><span class="dot g" title="已接入：WPC认证产品库"></span></div><div class="ringwrap" data-ring="P56"><div class="rings2"><div class="ringu"><div class="ring"><svg viewBox="0 0 72 72" role="img" aria-label="Qi2占认证库34%"><circle class="rb" cx="36" cy="36" r="30"/><circle class="rf" cx="36" cy="36" r="30" stroke-dasharray="64.1 188.5"/></svg><span class="rt">34%</span></div><span class="rc">Qi2（MPP）</span></div><div class="ringu"><div class="ring"><svg viewBox="0 0 72 72" role="img" aria-label="其中Qi2.2(25W)占认证库12%"><circle class="rb" cx="36" cy="36" r="30"/><circle class="rf ralt" cx="36" cy="36" r="30" stroke-dasharray="22.6 188.5"/></svg><span class="rt">12%</span></div><span class="rc">其中 Qi2.2(25W)</span></div></div><div class="ringinfo"><div class="rv">加载中</div><div class="rs">Qi2（MPP）认证累计 · 其中含Qi2.2(25W)档</div></div></div><div class="foot"><a href="https://www.wirelesspowerconsortium.com/products/" target="_blank" rel="noopener">WPC产品库 ↗</a><span>每周</span></div><p class="research-note">认证库产品数量占比不等于销量或市场渗透率；需结合上架、价格与用户反馈评估需求。</p></div>
+    <div class="card kpi c4" style="grid-column:span 4;grid-row:1" data-mid="33_PAPC工程塑料" data-source-pids="P33" data-k="33"><div class="card-top"><span class="t">PA/PC 工程塑料</span><span class="dot g" title="已接入：生意社（报价动态文章逐日考证回填）"></span></div><div class="val">15,000<span class="unit">元/吨 · PC</span></div><ul class="multi" data-multi="P33"></ul><div class="chart-cap">PC聚碳酸酯（文章考证回填）</div><div class="chart" data-chart="P33" data-col="1" style="min-height:74px;height:74px"></div><div class="foot"><span>生意社（元/吨）</span><span>每日</span></div></div>
+    <div class="card c4" style="grid-column:span 4;grid-row:1" data-mid="58_存储芯片现货价多品类" data-source-pids="P58" data-k="58"><div class="card-top"><span class="t" title="TrendForce现货官方页五品类现货均价；合约价需订阅">存储芯片现货价（多品类）</span><span class="dot g" title="已接入：TrendForce现货官方页"></span></div><div style="display:flex;align-items:stretch;flex:1;margin:4px 0 2px" data-multi="P58"><span data-multi-note style="display:none"></span></div><div class="foot"><span>TrendForce · 现货均价（美元）</span><span>监测口径：现货价免费 · 合约价需订阅</span></div></div>
+  </div>
+  <h3 class="grp">新形态与研究节点 · 众筹不代表交付销量</h3>
+  <div class="row">
+    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-mid="93_Kickstarter科技众筹热门" data-source-pids="P93" data-k="93"><div class="card-top"><span class="t">Kickstarter · 科技众筹热门</span><span class="dot g" title="已接入：Kickstarter科技类目（项目图文）"></span></div><div class="revcards" data-review="93"></div><div class="foot"><a href="https://www.kickstarter.com/discover/categories/technology" target="_blank" rel="noopener">Kickstarter ↗</a><span>每日</span></div></div>
+    <div class="card list c6" style="height:400px;grid-column:span 6;grid-row:1" data-mid="94_摩点众筹热门" data-source-pids="P94" data-k="94"><div class="card-top"><span class="t">摩点 · 众筹热门</span><span class="dot g" title="已接入：摩点（项目图文）"></span></div><div class="revcards" data-review="94"></div><div class="foot"><a href="https://www.modian.me" target="_blank" rel="noopener">摩点 ↗</a><span>每日</span></div></div>
+  </div>
+  <div class="row">
+    <div class="card c12" style="grid-column:span 12;grid-row:1" data-mid="50_展会横排" data-source-pids="P50 P51 P53" data-k="50 51 53"><div class="hlines"><div class="hln next" data-k="50" style="cursor:pointer" data-href="https://www.ces.tech/" title="打开CES官网"><div class="hd">01-06/09</div><div class="hn">CES 2027 ↗</div><div class="hs">拉斯维加斯 · 报名已开放</div></div><div class="hln" data-k="51" style="cursor:pointer" data-href="https://www.mwcbarcelona.com/" title="打开MWC官网"><div class="hd">03-01/04</div><div class="hn">MWC Barcelona 2027 ↗</div><div class="hs">巴塞罗那 Fira Gran Via</div></div><div class="hln" data-k="53" style="cursor:pointer" data-href="https://www.cantonfair.org.cn/" title="打开广交会官网"><div class="hd">春季/秋季</div><div class="hn">广交会 ↗ <span class="warn-tag">官网动态渲染 · 接入中</span></div><div class="hs">广州 · 线下渠道同步跟踪</div></div></div></div>
+  </div>
+  <h3 class="grp">公开口碑能力 · 现有账号受限项</h3>
+  <div class="row">
+    <div class="card c6" style="grid-column:span 6;grid-row:1" data-mid="76_差评关键词分析" data-source-pids="P76" data-k="76"><div class="card-top"><span class="t">差评关键词分析</span><span class="dot y" title="保留现状：需Helium 10账号"></span></div><p class="desc">需Helium 10账号（Chrome插件）运行Review Insights；账号到位后接入。</p><div class="foot"><span>Helium 10</span><span>每周</span></div></div>
+    <div class="card c6" style="grid-column:span 6;grid-row:1" data-mid="77_评论增速监测" data-source-pids="P77" data-k="77"><div class="card-top"><span class="t">评论增速监测</span><span class="dot y" title="保留现状：需Keepa账号"></span></div><p class="desc">Keepa评论数/价格历史需注册账号（API另计费）；账号到位后接入。</p><div class="foot"><span>Keepa</span><span>每日</span></div></div>
+  </div>
+</section>
+
+</main>
+
+<section class="prov-app" id="appendix" data-open="false">
+  <button class="prov-toggle" type="button" id="provToggle">附录 · 数据溯源索引<span class="sum" id="provSum"></span><span class="chev">▼</span></button>
+  <div class="prov-body">
+    <p class="prov-note">按词条追溯来源、统计口径与有效数据日期。点击词条回到对应卡片，点击来源链接查看原文；不同指标的观测期与更新频率可能不同。</p>
+    <div class="prov-tools">
+      <select id="pfCat" aria-label="筛选板块"><option value="">全部板块</option></select>
+      <select id="pfStatus" aria-label="筛选状态"><option value="">全部状态</option><option>成功</option><option>部分成功</option><option>静态维护</option></select>
+      <input id="pfQ" aria-label="搜索数据来源" placeholder="搜索词条、来源或网址…">
+      <span class="pcount" id="pfCount"></span>
+    </div>
+    <div class="twrap"><table class="ptable">
+      <thead><tr><th style="width:52px">序号</th><th style="width:88px">板块</th><th>词条</th><th>来源</th><th>来源URL</th><th style="width:110px">采集方式</th><th style="width:64px">频率</th><th style="width:110px">最近数据</th><th style="width:88px">状态</th></tr></thead>
+      <tbody id="provRows"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<footer class="d-foot">
+  <span class="lg"><span class="chip c-ok"><span class="cdot"></span>已接入</span> 可自动抓取</span>
+  <span class="lg"><span class="chip c-warn"><span class="cdot"></span>受限/接入中</span> 需账号或浏览器渲染</span>
+  <span>涨跌标识：<b class="up">▲红涨</b> / <b class="down">▼绿跌</b>（中国惯例）</span>
+  <span>数据来源：见「附录 · 数据溯源索引」；数据仅用于内部研究，引用请注明原始来源</span>
+  <span class="footer-note">预测、累计、代理指标及受限数据请结合卡片说明使用；各项有效日期与核验范围见数据溯源。</span>
+</footer>
+
+<button id="toTop" aria-label="回到顶部">↑</button>
+</div>
+
+<script src="data.js"></script>
+<script>
+// 00_core.js —— 核心层：根节点/数据契约/格式化/取数（渲染器的公共依赖）
+// 契约：ACCENT/DDATA 由 data.js 先行加载；本文件只定义变量与纯函数，无DOM副作用
+var root=document.getElementById('dns-dash');
+if(!root)throw new Error('root missing');
+var BIND=DDATA._bind||{};delete DDATA._bind;
+// 显示窗口：每词条默认截取最近N点（WIN），工具栏「周期」选择器可临时覆盖
+var WIN=DDATA._win||{};delete DDATA._win;
+var PSEL=null;
+function wind(pid,rows){
+  if(PSEL==='all')return rows;
+  if(PSEL&&PSEL.months){
+    var t=new Date();t.setMonth(t.getMonth()-PSEL.months);
+    var cs=t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-01';
+    var f=rows.filter(function(r){return r[0]>=cs});
+    if(f.length>=2)return f;
+  }
+  var n=WIN[pid];
+  return (n&&rows.length>n)?rows.slice(-n):rows;
+}
+// 资讯/公告feed：由 DDATA._news（data.js）渲染进 data-news 锚点
+var NEWS=DDATA._news||{};delete DDATA._news;
+// 数据治理元数据（可靠度/口径/待补录/数据截至，来自词条注册表，保留供溯源脚本使用）
+var META=DDATA._meta||{}, PEND=DDATA._pending||{}, ASOF=DDATA._asof||'';
+function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+// 数值格式化
+function fmtN(v,d){d=(d===undefined)?(Math.abs(v)>=1000?0:2):d;
+  var s=Math.abs(v)>=1000?Math.round(v).toLocaleString('en-US'):v.toFixed(d);
+  return s;}
+function fmtT(v){var a=Math.abs(v);if(a>=1000)return Math.round(v).toLocaleString('en-US');
+  if(a>=100)return String(Math.round(v));if(a>=10)return String(Math.round(v*10)/10);
+  return String(Math.round(v*100)/100)}
+function getSeries(pid,col){col=col||1;var d=DDATA[pid];if(!d||!d.rows||!d.rows.length)return null;
+  var rows=d.rows.filter(function(r){return r[col]!==null&&r[col]!==undefined});
+  rows=wind(pid,rows);
+  return rows.length?{rows:rows,col:col,src:d.src}:null;}
+// 累计财报/预测等不可直接以前一观测差值解释为涨跌，卡配置可显式关闭。
+function canCompare(el){return !el.closest('[data-change="none"]');}
+// 05_news.js —— 渲染器：资讯/公告feed（data-news 锚点 ← DDATA._news）
+// v14：日期改为chip样式（i.dchip）
+(function(){
+  var KEY,ITEMS;
+  for(KEY in NEWS){
+    ITEMS=NEWS[KEY];
+    if(!ITEMS||!ITEMS.length)continue;
+    root.querySelectorAll('[data-news]').forEach(function(el){
+      if(el.getAttribute('data-news')!==KEY)return;
+      var ul=el.querySelector('ul.feed');if(!ul)return;
+      ul.innerHTML=ITEMS.map(function(it){
+        var zh=it.title_zh&&it.title_zh!==it.title;
+        var tt=zh?(' title="'+escH(it.title)+'"'):'';
+        return '<li><a class="fi" href="'+escH(it.url||'#')+'" target="_blank" rel="noopener">'
+          +'<i class="dchip">'+escH(it.date||'')+'</i><span'+tt+'>'+escH(zh?it.title_zh:it.title)+'</span></a></li>';
+      }).join('');
+    });
+  }
+})();
+// 空feed兜底提示：数据为空时如实显示（不编造条目）
+root.querySelectorAll('[data-news]').forEach(function(el){
+  var ul=el.querySelector('ul.feed');
+  if(ul&&!ul.querySelector('li')){
+    ul.innerHTML='<li><span class="fi"><i class="dchip">--</i><span>当前无可展示资讯 · 更新与异常状态见数据溯源</span></span></li>';
+  }
+});
+// 10_theme.js —— 渲染器：板块主题色（m1-m5 → --acc CSS变量）
+root.querySelectorAll('.mod[id]').forEach(function(s){
+  s.style.setProperty('--acc',getComputedStyle(s).getPropertyValue('--section-accent').trim()||ACCENT[s.id]||'#285FAF');
+});
+// 15_chart.js —— 渲染器：行情风交互折线图（.chart[data-chart]，真实日期轴+悬停）
+// v14：线色随窗口区间涨红/跌绿、渐变面积、期初基准虚线、尾点呼吸圈、最新价chip、描画动画
+// 小图（H<150）自动精简：省略最高/最低标注与期初文字，chip 缩小
+var charts=[],v8seq=0;
+var V8REDUCE=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function v8cols(){var cs=getComputedStyle(root);
+  return{up:(cs.getPropertyValue('--up')||'#B42318').trim()||'#B42318',
+         down:(cs.getPropertyValue('--down')||'#0E7A54').trim()||'#0E7A54'}}
+function drawChart(el,redraw){
+  var key=el.getAttribute('data-chart');
+  var ci=parseInt(el.getAttribute('data-col')||'1',10)||1;
+  var s=getSeries(key,ci);
+  if(!s||s.rows.length<2){el.innerHTML='<div class="nodata">数据积累中 · 自2026-10-23起按频率记录，正式序列生成后自动绘制</div>';return;}
+  var b=BIND[key]||[null,null];
+  var W=el.clientWidth||300,H=el.clientHeight||118;
+  var mini=H<150;
+  var pl=mini?44:52,pr=mini?58:66,pt=mini?10:16,pb=mini?18:24,n=s.rows.length;
+  var vals=s.rows.map(function(r){return r[ci]});
+  var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+  var rg=(mx-mn)||Math.abs(mx)*0.02||1,lo=mn-rg*0.15,hi=mx+rg*0.15;
+  function X(i){return pl+i*(W-pl-pr)/(n-1)}
+  function Y(v){return pt+(1-(v-lo)/(hi-lo))*(H-pt-pb)}
+  function XL(t){return t.length>=10?t.slice(0,7):t}
+  function dec(){return (b[1]==null)?2:b[1]}
+  var CC=v8cols(),isUp=vals[n-1]>=vals[0],comparable=canCompare(el);
+  var c=comparable?(isUp?CC.up:CC.down):getComputedStyle(el).getPropertyValue('--acc').trim()||'#0065B0';
+  var gid='v8g'+(++v8seq);
+  var svg='<svg'+((redraw||V8REDUCE)?' class="redraw"':'')+' width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="历史趋势，悬停或左右滑动查看数值">';
+  var span=hi-lo,rawStep=span/(mini?3:3.5),mag=Math.pow(10,Math.floor(Math.log(rawStep)/Math.LN10));
+  var nm=rawStep/mag,step=(nm>=5?10:nm>=2?5:nm>=1?2:1)*mag;
+  for(var tv=Math.ceil(lo/step)*step,i2=0;tv<=hi+1e-9;tv=(Math.ceil(lo/step)*step+(++i2)*step)){
+    var yy=Y(tv);
+    svg+='<line class="grid" x1="'+pl+'" y1="'+yy+'" x2="'+(W-pr)+'" y2="'+yy+'"/>';
+    svg+='<text x="'+(pl-6)+'" y="'+(yy+3.5)+'" text-anchor="end">'+fmtT(tv)+'</text>';
+  }
+  /* 期初基准虚线（窗口首值，类昨收线） */
+  var y0=Y(vals[0]);
+  svg+='<line class="baseline" x1="'+pl+'" y1="'+y0.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+y0.toFixed(1)+'"/>';
+  if(!mini)svg+='<text class="baselabel" x="'+(pl+4)+'" y="'+(y0-4).toFixed(1)+'">期初 '+fmtT(vals[0])+'</text>';
+  /* 渐变面积 + 主线（描画动画：pathLength=1） */
+  var pts=s.rows.map(function(r,i){return [X(i),Y(r[ci])]});
+  var line=pts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ');
+  svg+='<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1">'
+    +'<stop offset="0" stop-color="'+c+'" stop-opacity=".18"/>'
+    +'<stop offset="1" stop-color="'+c+'" stop-opacity="0"/></linearGradient></defs>';
+  svg+='<polygon class="area-a" fill="url(#'+gid+')" points="'+pl+','+(H-pb)+' '+line+' '+(W-pr)+','+(H-pb)+'"/>';
+  svg+='<polyline class="line-a" pathLength="1" fill="none" stroke="'+c+'" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round" points="'+line+'"/>';
+  /* 最高/最低点标注（小图省略） */
+  if(!mini){
+    var imx=0,imn=0;vals.forEach(function(v,i){if(v>vals[imx])imx=i;if(v<vals[imn])imn=i});
+    if(imx!==imn){
+      [[imx,-7],[imn,15]].forEach(function(m){
+        var i=m[0],dy=m[1];if(i===0||i===n-1)return;
+        svg+='<circle class="minmax" cx="'+pts[i][0].toFixed(1)+'" cy="'+pts[i][1].toFixed(1)+'" r="2.6" stroke="'+c+'"/>';
+        svg+='<text class="mmlabel" x="'+pts[i][0].toFixed(1)+'" y="'+(pts[i][1]+dy).toFixed(1)+'" text-anchor="middle">'+fmtT(vals[i])+'</text>';
+      });
+    }
+  }
+  /* 尾点：实心点 + 呼吸圈 + 最新价chip */
+  var lx=pts[n-1][0],ly=pts[n-1][1];
+  svg+='<circle cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="3" fill="#fff" stroke="'+c+'" stroke-width="2"/>';
+  svg+='<circle cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="3" fill="none" stroke="'+c+'" stroke-width="1.5">'
+    +'<animate attributeName="r" values="3;10" dur="1.8s" repeatCount="indefinite"/>'
+    +'<animate attributeName="opacity" values=".55;0" dur="1.8s" repeatCount="indefinite"/></circle>';
+  var chipT=fmtN(vals[n-1],dec()),cw=chipT.length*(mini?6.6:7.4)+(mini?10:14),chh=mini?16:20;
+  var cy=Math.max(pt+chh/2+1,Math.min(H-pb-chh/2-1,ly));
+  svg+='<g class="chip-a"><rect class="chiprect" x="'+(W-cw-3).toFixed(1)+'" y="'+(cy-chh/2).toFixed(1)+'" width="'+cw.toFixed(1)+'" height="'+chh+'" rx="5" fill="'+c+'"/>'
+    +'<text class="chiptext" x="'+(W-3-cw/2).toFixed(1)+'" y="'+(cy+3.5).toFixed(1)+'" text-anchor="middle" font-size="'+(mini?10:11)+'">'+chipT+'</text></g>';
+  var lb=[0,Math.floor((n-1)/2),n-1];
+  for(var li=0;li<lb.length;li++){var i3=lb[li];
+    var a=i3===0?'start':(i3===n-1?'end':'middle');
+    svg+='<text x="'+X(i3).toFixed(1)+'" y="'+(H-4)+'" text-anchor="'+a+'">'+XL(s.rows[i3][0])+'</text>';
+  }
+  svg+='<line class="guide" x1="0" y1="'+pt+'" x2="0" y2="'+(H-pb)+'" style="display:none"/>';
+  svg+='<circle class="hdot" r="4.5" style="display:none"/>';
+  svg+='<rect class="hit" x="0" y="0" width="'+W+'" height="'+H+'"/>';
+  svg+='</svg>';
+  var tip=document.createElement('div');tip.className='ctool';
+  el.innerHTML=svg;el.appendChild(tip);
+  var gl=el.querySelector('.guide'),hd=el.querySelector('.hdot'),hit=el.querySelector('.hit');
+  function v8hideTick(){tip.style.display='none';gl.style.display='none';hd.style.display='none'}
+  hit.addEventListener('pointermove',function(e){
+    var r=el.getBoundingClientRect();var x=e.clientX-r.left;
+    var i=Math.round((x-pl)/((W-pl-pr)/(n-1)));i=Math.max(0,Math.min(n-1,i));
+    var px=X(i),py=Y(s.rows[i][ci]);
+    gl.setAttribute('x1',px);gl.setAttribute('x2',px);gl.style.display='block';
+    hd.setAttribute('cx',px);hd.setAttribute('cy',py);hd.setAttribute('stroke',c);hd.style.display='block';
+  var dtxt='';if(i>0&&comparable){var dd=Math.round((s.rows[i][ci]-s.rows[i-1][ci])*Math.pow(10,dec()))/Math.pow(10,dec());
+      dtxt='<span class="d '+(dd>=0?'up':'down')+'">（较前期 '+(dd>=0?'+':'')+dd+'）</span>';}
+    tip.innerHTML=escH(s.rows[i][0])+' · <b>'+fmtN(s.rows[i][ci],dec())+'</b> '+escH(b[0]||'')+dtxt;
+    tip.style.display='block';
+    var tx=px+10;if(tx+tip.offsetWidth>W-2)tx=px-tip.offsetWidth-10;
+    tip.style.left=tx+'px';tip.style.top=Math.max(2,py-tip.offsetHeight-10)+'px';
+  });
+  hit.addEventListener('pointerleave',v8hideTick);
+  /* v15移动端：触摸抬手/系统中断（滚页面接管）时收尾提示；.hit 的 touch-action:pan-y
+     保证竖扫滚页面、横扫刷数值两种手势并存（样式见 _style.css v15段） */
+  hit.addEventListener('pointercancel',v8hideTick);
+  hit.addEventListener('pointerup',function(e){if(e.pointerType!=='mouse')v8hideTick()});
+}
+root.querySelectorAll('.chart').forEach(function(el){drawChart(el);charts.push(el)});
+// 17_spark.js —— 渲染器：KPI卡迷你走势（v14新增）
+// 规则：.card.kpi 无 .chart、无多品类/多行清单、且 data-k 首个P号序列≥2点时，
+// 自动在 .foot 前注入 sparkline（趋势涨跌着色 + 淡面积 + 尾点），免卡配置
+// v19.1：悬停查值——导引线+悬浮点+.ctool数值提示（日期 · 值 单位 · 较前期变化），
+// 与15_chart同款交互；svg为preserveAspectRatio=none非等比拉伸，故导引/悬浮点用
+// 绝对定位div（像素空间）而非svg元素防变形；ResizeObserver重绘只重建图形，监听一次性绑定
+(function(){
+  var REDUCE=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var W=200,H=36,P=3;   // viewBox常量（绘制与命中换算共用）
+  root.querySelectorAll('.card.kpi').forEach(function(card){
+    if(card.getAttribute('data-trend')==='none')return;
+    if(card.querySelector('.chart'))return;
+    if(card.querySelector('ul.multi,[data-multi],.sparkrow'))return;
+    var dk=card.getAttribute('data-k');if(!dk)return;
+    var pid='P'+dk.split(' ')[0];
+    var s=getSeries(pid);if(!s||s.rows.length<3)return;// 少于3点无趋势意义，不注入
+    var row=document.createElement('div');row.className='sparkrow';
+    row.innerHTML='<div class="spark" data-v8spark="'+pid+'"></div>';
+    var foot=card.querySelector('.foot');
+    if(foot)card.insertBefore(row,foot);else card.appendChild(row);
+  });
+  function spark(el){
+    var pid=el.getAttribute('data-v8spark');
+    var s=getSeries(pid);if(!s||s.rows.length<2)return;
+    var n=s.rows.length;
+    var vals=s.rows.map(function(r){return r[1]});
+    var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+    var rg=(mx-mn)||Math.abs(mx)*0.02||1;
+    function X(i){return P+i*(W-2*P)/(n-1)}
+    function Y(v){return P+(1-(v-mn)/rg)*(H-2*P)}
+    var cs=getComputedStyle(root);
+    var c=canCompare(el)?(vals[n-1]>=vals[0]?((cs.getPropertyValue('--up')||'#B42318').trim()):((cs.getPropertyValue('--down')||'#0E7A54').trim())):((getComputedStyle(el).getPropertyValue('--acc')||'#0065B0').trim());
+    var pts=vals.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1)}).join(' ');
+    el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'
+      +'<polygon fill="'+c+'" opacity=".12" points="'+P+','+(H-P)+' '+pts+' '+(W-P)+','+(H-P)+'"/>'
+      +'<polyline fill="none" stroke="'+c+'" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round" points="'+pts+'"/>'
+      +'<circle cx="'+X(n-1).toFixed(1)+'" cy="'+Y(vals[n-1]).toFixed(1)+'" r="2.4" fill="'+c+'"/></svg>'
+      +'<div class="sguide"></div><div class="sdot"></div>';
+    if(!el.querySelector('.ctool')){
+      var tip=document.createElement('div');tip.className='ctool';el.appendChild(tip);
+    }
+  }
+  root.querySelectorAll('[data-v8spark]').forEach(function(el){
+    spark(el);
+    if(el._sparkBound)return;el._sparkBound=1;
+    function hide(){var g=el.querySelector('.sguide'),d=el.querySelector('.sdot'),t=el.querySelector('.ctool');
+      if(g)g.style.display='none';if(d)d.style.display='none';if(t)t.style.display='none';}
+    el.addEventListener('pointermove',function(e){
+      var pid=el.getAttribute('data-v8spark');
+      var s=getSeries(pid);if(!s||s.rows.length<2)return;
+      var n=s.rows.length,vals=s.rows.map(function(r){return r[1]});
+      var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+      var rg=(mx-mn)||Math.abs(mx)*0.02||1;
+      var r=el.getBoundingClientRect();
+      var px=(e.clientX-r.left)/r.width*W;
+      var i=Math.round((px-P)/(W-2*P)*(n-1));i=Math.max(0,Math.min(n-1,i));
+      var v=vals[i],gl=el.querySelector('.sguide'),dt=el.querySelector('.sdot'),tip=el.querySelector('.ctool');
+      if(!gl||!dt||!tip)return;
+      if(v==null){hide();return}
+      var lx=(P+i*(W-2*P)/(n-1))/W*r.width, ly=(P+(1-(v-mn)/rg)*(H-2*P))/H*r.height;
+      var cs=getComputedStyle(root);
+      var c=canCompare(el)?(vals[n-1]>=vals[0]?((cs.getPropertyValue('--up')||'#B42318').trim()):((cs.getPropertyValue('--down')||'#0E7A54').trim())):((getComputedStyle(el).getPropertyValue('--acc')||'#0065B0').trim());
+      gl.style.left=lx+'px';gl.style.display='block';
+      dt.style.left=lx+'px';dt.style.top=ly+'px';dt.style.borderColor=c;dt.style.display='block';
+      var b=BIND[pid]||[null,null],dec=(b[1]==null)?2:b[1],unit=b[0]||'';
+      var dd='';if(i>0&&vals[i-1]!=null&&canCompare(el)){
+        var d0=Math.round((v-vals[i-1])*Math.pow(10,dec))/Math.pow(10,dec);
+        dd='<span class="d '+(d0>=0?'up':'down')+'">（较前期 '+(d0>=0?'+':'')+d0+'）</span>';}
+      tip.innerHTML=escH(s.rows[i][0])+' · <b>'+fmtN(v,dec)+'</b> '+escH(unit)+dd;
+      tip.style.display='block';
+      var tx=lx+10;if(tx+tip.offsetWidth>r.width+8)tx=lx-tip.offsetWidth-10;
+      tip.style.left=tx+'px';
+      var ty=ly-tip.offsetHeight-8;
+      if(ty<0)ty=ly+12;
+      tip.style.top=ty+'px';
+    });
+    el.addEventListener('pointerleave',hide);
+    el.addEventListener('pointercancel',hide);
+    el.addEventListener('pointerup',function(e){if(e.pointerType!=='mouse')hide()});
+  });
+  if(!REDUCE&&'ResizeObserver' in window){
+    var ro=new ResizeObserver(function(es){es.forEach(function(e){if(e.target.classList.contains('spark'))spark(e.target)})});
+    root.querySelectorAll('[data-v8spark]').forEach(function(el){ro.observe(el)});
+  }
+})();
+// 20_share.js —— 渲染器：多季度品牌份额分组柱状图（.sharechart[data-share]）
+var shareEls=[];
+function drawShare(el){
+  var pid=el.getAttribute('data-share');var d=DDATA[pid];
+  if(!d||!d.rows||!d.rows.length||!d.cols||!d.cols.length)return;
+  var W=el.clientWidth||380,H=el.clientHeight||170;
+  var pl=30,pr=8,pb=18;
+  var rows=d.rows,n=rows.length,nb=Math.min(d.cols.length,6);
+  var COLORS=['#0065B0','#B45309','#0F766E','#6D28D9','#BE123C','#8A94A0'];
+  var mx=0;rows.forEach(function(r){for(var i=1;i<=nb;i++)if(r[i]!=null&&r[i]>mx)mx=r[i]});
+  if(!mx)mx=100;var hi=Math.ceil(mx/10)*10;
+  /* v15移动端：图例按可用宽自动换行（窄容器不再画出右边界），行数决定顶部留白pt；
+     桌面容器宽时仍为单行，pt=22 与 v14 一致 */
+  var leg=[],lx=pl,ly=4,lrows=1;
+  for(var li=0;li<nb;li++){
+    var wi=11+String(d.cols[li]).length*11.5+10;
+    if(lx+wi>W-pr&&lx>pl){lrows++;lx=pl;ly+=14;}
+    leg.push([lx,ly,li]);lx+=wi;}
+  var pt=22+(lrows-1)*14;
+  function Y(v){return pt+(1-v/hi)*(H-pt-pb)}
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:100%">';
+  for(var g=0;g<=2;g++){var tv=hi*g/2,yy=Y(tv);
+    svg+='<line x1="'+pl+'" y1="'+yy+'" x2="'+(W-pr)+'" y2="'+yy+'" stroke="#E6EBEF" stroke-width="1"/>';
+    svg+='<text class="yt" x="'+(pl-4)+'" y="'+(yy+3)+'" text-anchor="end">'+Math.round(tv)+'</text>';}
+  var slot=(W-pl-pr)/n,bw=Math.max(4,Math.min(12,(slot-6)/nb));
+  function qlabel(s){var m=String(s).split('-');
+    if(m.length>=2){var q=Math.ceil(parseInt(m[1],10)/3);return m[0].slice(2)+'Q'+q;}
+    return String(s).slice(2);}
+  rows.forEach(function(r,gi){
+    var gx=pl+gi*slot+(slot-nb*bw)/2;
+    for(var i=0;i<nb;i++){var v=r[i+1];if(v==null)continue;
+      svg+='<rect x="'+(gx+i*bw).toFixed(1)+'" y="'+Y(v).toFixed(1)+'" width="'+(bw-1.5).toFixed(1)+'" height="'+(Y(0)-Y(v)).toFixed(1)+'" fill="'+COLORS[i]+'"><title>'+r[0]+' · '+d.cols[i]+'：'+v+'%</title></rect>';}
+    svg+='<text class="xt" x="'+(pl+gi*slot+slot/2).toFixed(1)+'" y="'+(H-4)+'" text-anchor="middle">'+qlabel(r[0])+'</text>';});
+  for(var i2=0;i2<leg.length;i2++){
+    svg+='<rect x="'+leg[i2][0]+'" y="'+leg[i2][1]+'" width="8" height="8" fill="'+COLORS[leg[i2][2]]+'"/>';
+    svg+='<text class="leg" x="'+(leg[i2][0]+11)+'" y="'+(leg[i2][1]+8)+'">'+d.cols[leg[i2][2]]+'</text>';}
+  svg+='</svg>';el.innerHTML=svg;
+}
+root.querySelectorAll('.sharechart').forEach(function(el){drawShare(el);shareEls.push(el)});
+// 25_resize.js —— 全局：窗口变化后重绘图表（依赖 15_chart/20_share 的 charts/shareEls）
+// v14：折线重绘传 redraw=true，不重播入场动画
+// v18.8：隐藏co-panel内图表clientWidth=0会按300px兜底画错尺寸——只重绘可见图（切tab时40_copanel自会重绘）
+function vis(el){var p=el.closest('[data-copanel]');return (!p||!p.hidden)&&el.clientWidth>0}
+var rT;window.addEventListener('resize',function(){clearTimeout(rT);
+  rT=setTimeout(function(){
+    charts.forEach(function(el){if(vis(el))drawChart(el,true)});
+    shareEls.forEach(function(el){if(vis(el))drawShare(el)});
+  },150)});
+// 30_multi.js —— 渲染器：多品类/多SKU（data-multi：ul渲染li，strip容器渲染.sc）
+root.querySelectorAll('[data-multi]').forEach(function(el){
+  var pid=el.getAttribute('data-multi');var d=DDATA[pid];
+  if(!d||!d.rows||!d.rows.length||!d.cols)return;
+  var b=BIND[pid]||[null,null];var unit=b[0]||'';var last=d.rows[d.rows.length-1];
+  if(el.tagName==='UL'){
+    var html='';
+    for(var i=1;i<=d.cols.length&&i<last.length;i++){var v=last[i];
+      if(v===null||v===undefined)continue;
+      /* v14：单位启发式——列名含%显示%，含样本/数量不标单位，其余用注册表单位 */
+      var cn=String(d.cols[i-1]),u=cn.indexOf('%')>=0?'%':((cn.indexOf('样本')>=0||cn.indexOf('数量')>=0||cn.indexOf('总数')>=0)?'':unit);
+      html+='<li><span>'+cn+'</span><b>'+fmtN(v,b[1])+'</b>'+(u?'<span class="mu">'+u+'</span>':'')+'</li>';}
+    if(html)el.innerHTML=html;
+  }else{
+    var note=el.querySelector('[data-multi-note]');
+    for(var j=1;j<=d.cols.length&&j<last.length;j++){var v2=last[j];
+      if(v2===null||v2===undefined)continue;
+      var sc=document.createElement('div');sc.className='sc';
+      sc.innerHTML='<span class="k">'+d.cols[j-1]+'</span><span class="v"><span class="vnum">'+fmtN(v2,b[1])+'</span>'+(unit?'<small>'+unit+'</small>':'')+'</span><span class="s">'+last[0]+'</span>';
+      el.insertBefore(sc,note||null);}
+  }
+});
+// 35_bind.js —— 渲染器：数值绑定（.val卡片 / .sc指标条 / ticker / statline）
+// v14：大数字滚动动画（REDUCE降级）、涨跌chip格式化（▲▼+绝对值，红涨绿跌）、.sc 较前值chip
+function v8count(el,to,dec){
+  // v21：管理层阅读优先，数字直接显示真实末值，不经过滚动中间帧。
+  el.textContent=fmtN(to,dec);
+}
+function v8dec(b){return (b[1]==null)?2:b[1]}
+function applyBind(pid, el, valEl, subEl){
+  var s=getSeries(pid);if(!s)return;
+  var b=BIND[pid]||[null,null];
+  var last=s.rows[s.rows.length-1],v=last[1];
+  if(subEl&&subEl.hasAttribute('data-sub-template')){
+    var date=String(last[0]),parts={'日期':date,'期间':date.slice(0,7),'年度':date.slice(0,4),'月份':Number(date.slice(5,7))+'月'};
+    subEl.textContent=subEl.getAttribute('data-sub-template').replace(/\{(日期|期间|年度|月份)\}/g,function(_,k){return parts[k]});
+  }
+  if(valEl){
+    valEl.innerHTML='<span class="vnum"></span>'+(b[0]?'<span class="unit">'+b[0]+'</span>':'');
+    var vn=valEl.querySelector('.vnum');
+    if(vn)v8count(vn,v,v8dec(b));
+  }
+  if(subEl&&s.rows.length>1&&canCompare(el)){
+    var pv=s.rows[s.rows.length-2][1];
+    var d=Math.round((v-pv)*Math.pow(10,v8dec(b)))/Math.pow(10,v8dec(b));
+    var dir=d>=0?'up':'down',arw=d>=0?'▲':'▼';
+    var pill='<span class="dpill '+dir+'">'+arw+' '+(d>=0?'+':'')+Math.abs(d).toFixed(v8dec(b))+'</span>';
+    subEl.insertAdjacentHTML('afterbegin',pill+' ');
+  }
+}
+root.querySelectorAll('[data-k]').forEach(function(el){
+  var ids=el.getAttribute('data-k').split(' ');var pid='P'+ids[0];
+  if(!DDATA[pid])return;
+  var valEl=el.querySelector('.val'),subEl=el.querySelector('.sub');
+  if(valEl&&BIND[pid])applyBind(pid,el,valEl,subEl);
+  if(el.classList.contains('sc')&&BIND[pid]){
+    var s=getSeries(pid);if(s){var b=BIND[pid]||[null,null];
+      var vEl=el.querySelector('.v');
+      if(vEl)vEl.innerHTML='<span class="vnum">'+fmtN(s.rows[s.rows.length-1][1],b[1])+'</span>'+(b[0]?'<small>'+b[0]+'</small>':'');
+      var sEl=el.querySelector('.s');
+      if(sEl&&!sEl.textContent.includes('·'))sEl.textContent=s.rows[s.rows.length-1][0]+' · '+sEl.textContent;
+      /* v14：较前值chip */
+      if(vEl&&s.rows.length>1&&canCompare(el)){
+        var pv=s.rows[s.rows.length-2][1];
+        var dd=Math.round((s.rows[s.rows.length-1][1]-pv)*Math.pow(10,v8dec(b)))/Math.pow(10,v8dec(b));
+        var chg=document.createElement('span');
+        chg.className='chg '+(dd>=0?'up':'down');
+        chg.textContent=(dd>=0?'▲+':'▼')+Math.abs(dd).toFixed(v8dec(b));
+        vEl.appendChild(chg);
+      }
+    }
+  }
+});
+root.querySelectorAll('[data-tk]').forEach(function(el){
+  var pid=el.getAttribute('data-tk');var s=getSeries(pid);if(!s)return;
+  var b=BIND[pid]||[null,null];var v=s.rows[s.rows.length-1][1];
+  var vEl=el.querySelector('.v');
+  if(vEl){
+    if(b[0]==='%'){var sign=v>=0?'+':'';vEl.textContent=sign+fmtN(v,b[1])+'%';
+      vEl.style.color=v>=0?'var(--up)':'var(--down)';}
+    else vEl.innerHTML='<span class="vnum">'+fmtN(v,b[1])+'</span>'+(b[0]?'<small>'+b[0]+'</small>':'');
+  }
+});
+root.querySelectorAll('[data-vk]').forEach(function(el){
+  var pid=el.getAttribute('data-vk');var s=getSeries(pid);if(!s)return;
+  var b=BIND[pid]||[null,null];var v=s.rows[s.rows.length-1][1];
+  var bEl=el.querySelector('b');if(bEl)bEl.textContent=(v>=0?'':'')+fmtN(v,b[1])+((b[0]==='%')?'%':'');
+});
+/* v14.1修复：静态日期占位统一刷新。
+   背景：骨架ticker日期行、卡JSON指标行标签/指标条说明/环形文案中的日期是构建期占位，
+   此前绑定器只刷新数值导致"数值新、日期旧"。此块按各自数据最新一行的日期同步，
+   只替换已存在的日期token（前缀日期·来源 / 最新MM-DD /（MM-DD）/（M月）），不动来源等其余文本。 */
+(function(){
+  function pidOf(host){
+    if(!host)return null;
+    var p=host.getAttribute('data-tk')||host.getAttribute('data-vk')||host.getAttribute('data-ring');
+    if(!p){var dk=host.getAttribute('data-k');p=dk?('P'+String(dk).trim().split(/\s+/)[0].replace(/^P/,'')):null;}
+    return p;
+  }
+  function fresh(el){
+    var s=getSeries(pidOf(el.closest('[data-tk],[data-vk],[data-k],[data-ring]')));
+    if(!s||!s.rows||!s.rows.length)return;
+    var last=String(s.rows[s.rows.length-1][0]);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(last))return;
+    var md=last.slice(5,10),mo=Number(last.slice(5,7))+'月',t=el.textContent;
+    var out=t.replace(/(^|\s)(\d{1,2}-\d{1,2})(期)?(\s*·)/,'$1'+md+'$3$4')
+             .replace(/最新(\d{1,2}-\d{1,2})/,'最新'+md)
+             .replace(/（(\d{1,2}-\d{1,2})）/,'（'+md+'）')
+             .replace(/（(\d{1,2})月）/,'（'+mo+'）')
+             .replace(/(^|\s)(\d{1,2})月(\s*·)/,'$1'+mo+'$3');
+    if(out!==t)el.textContent=out;
+  }
+  root.querySelectorAll('.tk>.s,.sc>.s,.statline>.k,.rs').forEach(fresh);
+})();
+// 40_copanel.js —— 渲染器：上市公司切换面板（.cotab → .co-panel 显隐+重绘）
+var cotabs=[].slice.call(root.querySelectorAll('[data-cotab]'));
+cotabs.forEach(function(b){
+  b.addEventListener('click',function(){
+    var scope=b.closest('.mod')||root;
+    scope.querySelectorAll('[data-cotab]').forEach(function(x){x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b?'true':'false')});
+    var co=b.getAttribute('data-cotab');
+    scope.querySelectorAll('[data-copanel]').forEach(function(p){
+      p.hidden=p.getAttribute('data-copanel')!==co;});
+    scope.querySelectorAll('.chart').forEach(function(el){
+      if(!el.closest('[data-copanel]')||!el.closest('[data-copanel]').hidden)drawChart(el);});
+  });
+});
+// 45_period.js —— 渲染器：全局周期选择器（.pctl，切换后重绘所有可见折线图）
+var pbtns=[].slice.call(root.querySelectorAll('.pctl button'));
+pbtns.forEach(function(b){
+  b.addEventListener('click',function(){
+    pbtns.forEach(function(x){x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b?'true':'false')});
+    PSEL=(function(){ // v18.8：缺data-m时显式null（旧parseInt得NaN，靠wind()兜底才不炸）
+      if(b.hasAttribute('data-all'))return 'all';
+      var m=parseInt(b.getAttribute('data-m'),10);
+      return isNaN(m)?null:{months:m};
+    })();
+    root.querySelectorAll('.chart').forEach(function(el){
+      var p=el.closest('[data-copanel]');
+      if(!p||!p.hidden)drawChart(el);});
+  });
+});
+// 50_governance.js —— 渲染器：数据治理标注（数据截至 / 可靠度角标 / 快报徽标 / 待补录）
+// 数据来源：词条注册表（META/PEND/ASOF 由 data.js 下发）
+(function(){
+  if(ASOF){var el0=document.getElementById('asof');if(el0)el0.textContent=ASOF;}
+  root.querySelectorAll('.card[data-k]').forEach(function(el){
+    var pid='P'+el.getAttribute('data-k').split(' ')[0];
+    var meta=META[pid]; if(!meta)return;
+    var top=el.querySelector('.card-top'); if(!top)return;
+    var rl=meta.r||'';
+    var b=document.createElement('span');
+    b.className='rlbadge '+(rl==='A'?'a':rl==='C'?'c':'b');
+    b.textContent=rl;
+    b.title='可靠度'+rl+'级'+(meta.k?('：'+meta.k):'')+'（数据治理分级）';
+    top.appendChild(b);
+    if(PEND[pid]){
+      var w=document.createElement('span');w.className='warn-tag';
+      w.textContent='缺'+PEND[pid]+'待考证';w.title='缺失季度待人工考证补录（见待补录清单）';
+      top.appendChild(w);
+    }else{
+      var s=getSeries(pid,1);
+      if(s&&/快报|闪估|ECFIN/.test(s.src||'')){
+        var kb=document.createElement('span');kb.className='kbflag';kb.textContent='快报';
+        kb.title='当前为快报/闪估值，正式值发布后自动替换';
+        top.appendChild(kb);
+      }
+    }
+  });
+})();
+// 55_ring.js —— 渲染器：Qi2环形图（[data-ring]：col1=Qi2数 col2=全库总数 col3=Qi2.2(25W)数）
+// v14：圆弧生长动画 + 占比滚动（REDUCE降级为直出）；结构色定妆品牌蓝
+// v19.1：双环对比——存在第二组 .rf/.rt 时，col3(Qi2.2)/全库 画第二环（琥珀色，类 ralt）
+(function(){
+  var REDUCE=true; // v21：双环与占比直接到位，避免装饰性滚动读数。
+  root.querySelectorAll('[data-ring]').forEach(function(el){
+    var d=DDATA[el.getAttribute('data-ring')];
+    if(!d||!d.rows||!d.rows.length||d.cols.length<2)return;
+    var last=d.rows[d.rows.length-1],qi2=last[1],tot=last[2],qi22=last[3];
+    if(qi2==null||!tot)return;
+    var pct=Math.round(qi2/tot*100),C=188.5;
+    var pcts=[pct];
+    if(qi22!=null&&el.querySelector('.rf.ralt'))pcts.push(Math.round(qi22/tot*100));   // v19.1：第二环=Qi2.2占全库
+    var rfs=el.querySelectorAll('.rf'),rts=el.querySelectorAll('.rt');
+    for(var i=0;i<rfs.length&&i<pcts.length;i++){
+      (function(rf,p){
+        if(REDUCE){rf.setAttribute('stroke-dasharray',(C*p/100).toFixed(1)+' '+C);}
+        else{
+          rf.setAttribute('stroke-dasharray','0 '+C);
+          setTimeout(function(){rf.setAttribute('stroke-dasharray',(C*p/100).toFixed(1)+' '+C)},60);
+        }
+      })(rfs[i],pcts[i]);
+    }
+    for(var j=0;j<rts.length&&j<pcts.length;j++){
+      (function(rt,p){
+        if(REDUCE){rt.textContent=p+'%';}
+        else{var t0=null;
+          function step(t){if(!t0)t0=t;var q=Math.min(1,(t-t0)/900);
+            rt.textContent=Math.round(p*(1-Math.pow(1-q,3)))+'%';
+            if(q<1)requestAnimationFrame(step)}
+          requestAnimationFrame(step);
+        }
+      })(rts[j],pcts[j]);
+    }
+    var rv=el.querySelector('.rv');if(rv)rv.textContent=fmtN(qi2,0)+' / '+fmtN(tot,0)+' 条';
+    var sub='Qi2（MPP）认证累计 · 最新'+String(last[0]).slice(5)+' · 每周增长';
+    if(qi22!=null)sub+=' · 其中Qi2.2(25W) '+fmtN(qi22,0)+'条';   // v19：Qi2.2认证数(25W)列
+    var rs=el.querySelector('.rs');if(rs)rs.textContent=sub;
+  });
+})();
+// 60_toplist.js —— 渲染器：Amazon榜单快照（[data-toplist] TOP5图文 + [data-topsub]统计行）
+// v14：名次徽章（金银铜）、价格chip、Anker行高亮
+root.querySelectorAll('[data-toplist]').forEach(function(el){
+  var tp=(typeof TOPS!=='undefined')&&TOPS[el.getAttribute('data-toplist')];
+  if(!tp||!tp.items||!tp.items.length)return;
+  el.innerHTML=tp.items.map(function(it){
+    var rk=it.rank<=3?('rk r'+it.rank):'rk';
+    var ak=/anker/i.test(it.title||'')?'<i class="ankertag">ANKER</i>':'';
+    var pr=it.price!=null?'<i class="ptag">$'+it.price+'</i>':'';
+    var u=it.asin?('https://www.amazon.com/dp/'+it.asin):'https://www.amazon.com/Best-Sellers-Cell-Phones-Accessories/zgbs/wireless';
+    var im=it.img?('<img class="lthumb" loading="lazy" src="'+escH(it.img)+'" alt="">'):'';
+    return '<li><a class="fi" href="'+u+'" target="_blank" rel="noopener">'
+      +'<i class="'+rk+'">'+it.rank+'</i>'+im+'<span>'+it.title+'</span>'+pr+ak+'</a></li>';
+  }).join('');
+});
+root.querySelectorAll('[data-topsub]').forEach(function(el){
+  var tp=(typeof TOPS!=='undefined')&&TOPS[el.getAttribute('data-topsub')];
+  if(!tp)return;
+  el.textContent='TOP'+tp.total+' · Anker '+tp.anker+'席'+(tp.avg?(' · 均价$'+tp.avg):'')+' · 快照'+tp.date+' · '+(el.getAttribute('data-top-label')||tp.label);
+});
+// 62_feedfade.js —— 渲染器：滚动feed底部渐隐（内容溢出时提示可下滚，滚到底自动消失）
+root.querySelectorAll('ul.feed').forEach(function(ul){
+  function chk(){ul.classList.toggle('faded',ul.scrollTop+ul.clientHeight<ul.scrollHeight-4)}
+  chk();
+  ul.addEventListener('scroll',chk,{passive:true});
+});
+// 65_nav.js —— 渲染器：导航高亮（IntersectionObserver）+ 回顶按钮
+// v21：卡片直接可见，去除滚动入场；导航保留当前位置与键盘语义。
+var links=[].slice.call(root.querySelectorAll('#dnav a'));
+var secs=links.map(function(a){return root.querySelector(a.getAttribute('href'))}).filter(Boolean);
+function mark(id){links.forEach(function(a){var active=a.getAttribute('href')==='#'+id;
+  a.classList.toggle('on',active);if(active)a.setAttribute('aria-current','location');else a.removeAttribute('aria-current');})}
+var btn=root.querySelector('#toTop');
+var navFrame=0;
+function updateNav(){
+  navFrame=0;
+  if(secs.length){var current=secs[0],edge=Math.min(window.innerHeight*.35,250);
+    secs.forEach(function(s){if(s.getBoundingClientRect().top<=edge)current=s});mark(current.id);}
+  btn.style.display=window.scrollY>500?'block':'none';
+}
+function queueNav(){if(!navFrame)navFrame=requestAnimationFrame(updateNav)}
+window.addEventListener('scroll',queueNav,{passive:true});
+window.addEventListener('resize',queueNav,{passive:true});
+updateNav();
+btn.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
+// v18.7：外链卡片委托点击——组装器b_hlines不再注入内联onclick，改data-href属性统一在此打开
+root.addEventListener('click',function(ev){
+  var el=ev.target.closest?ev.target.closest('[data-href]'):null;
+  if(el){window.open(el.getAttribute('data-href'),'_blank','noopener')}
+});
+// 70_review.js —— 渲染器：图文拆解卡（data-review 锚点 ← REVIEWS，v18）
+// P91我爱音频网·拆解；卡样移植 模块样板_耳机评测.html v8（缩略图+chips+两行摘要+整卡超链接），
+// 配色改用看板主题变量；数据由 生成数据.py 从 RPA数据/*/*/_meta.json 生成。
+(function(){
+  if(typeof REVIEWS==='undefined')return;
+  root.querySelectorAll('[data-review]').forEach(function(el){
+    var pid='P'+el.getAttribute('data-review');
+    var d=REVIEWS[pid];
+    if(!d||!d.items||!d.items.length){
+      el.innerHTML='<div class="rev-empty">暂无图文数据 · 采集器每日自动更新（低频主题近期可能无新稿）</div>';
+      return;
+    }
+    el.innerHTML=d.items.map(function(it){
+      var chips=(it.chips||[]).map(function(c,i){
+        return '<span class="rchip'+(i===0?' hot':'')+'">'+escH(c)+'</span>';
+      }).join('');
+      var img=it.img
+        ?'<img class="rthumb" src="'+it.img+'" alt="'+escH(it.name)+'" loading="lazy">'
+        :'<span class="rthumb rnoimg">'+escH(d.noimg||'图')+'</span>';
+      return '<a class="revcard" href="'+escH(it.url||'#')+'" target="_blank" rel="noopener">'
+        +img
+        +'<span class="rinfo"><span class="rl1"><span class="rname">'+escH(it.name)+'</span>'
+        +(it.tag?('<span class="rtag">'+escH(it.tag)+'</span>'):'')
+        +'<span class="rdate">'+escH(it.date||'')+'</span></span>'
+        +(chips?('<span class="rchips">'+chips+'</span>'):'')
+        +(it.desc?('<span class="rdesc">'+escH(it.desc)+'</span>'):'')
+        +'</span></a>';
+    }).join('');
+  });
+})();
+// 72_calendar.js —— 渲染器：议息日历动态覆盖（data-cal 锚点 ← CAL，v18.6）
+// P16美联储 / P20欧洲央行：collect_P16_议息日历.py 解析官网日历与决议数据 → 议息日历.json → data.js。
+// CAL 有值时覆盖模块JSON静态快照（时间线 + 说明行）；无数据时保留静态兜底不动。
+// 锚点约定（v18.9统一）：data-cal 与 data-cal-desc 都存完整P号（如"P16"），与 CAL 键同名——
+// v18.6的两套键（锚点存数字/CAL带P前缀）曾致静默失败，现一处同名处处同名。
+(function(){
+  if(typeof CAL==='undefined')return;
+  root.querySelectorAll('[data-cal]').forEach(function(el){
+    var pid=el.getAttribute('data-cal');     // 完整P号，即CAL键
+    var d=CAL[pid];
+    if(!d||!d.时间线||!d.时间线.length)return;
+    el.innerHTML=d.时间线.map(function(it){
+      var cls=it.下一个?' class="next"':'';
+      return '<li'+cls+'><b>'+escH(it.日期)+'</b>'+escH(it.文本||'')+'</li>';
+    }).join('');
+    var card=el.closest('.card');   // desc在所在卡内找（多面板同号不漏刷）
+    var desc=card&&card.querySelector('[data-cal-desc="'+pid+'"]');
+    if(desc&&d.说明)desc.textContent=d.说明;
+  });
+})();
+</script>
+<script>
+// ===== 数据溯源系统（注册表驱动） =====
+var root=document.getElementById('dns-dash');
+if(!root)throw new Error('dns-dash root missing');
+var PROV=[{"id": 33, "cat": "大宗商品数据", "sub": "塑料", "title": "PA/PC工程塑料价格", "source": "生意社工程塑料频道", "url": "https://www.100ppi.com/chanye/gcsl.html", "desc": "PA6/PA66/PC等工程塑料基准价与市场价", "freq": "每周", "status": "成功", "sample": "10月23日生意社PC基准价14800.00元/吨、PA6基准价15000.00元/吨、PA66基准价19100.00元/吨；PC利华益维远市场价15200元/吨", "note": "工程塑料频道服务端渲染，HW_CHECK cookie绕过后HTML直接含PA6/PA66/PC/PET/POM基准价与市场价", "method": "curl-200+HW_CHECKcookie绕过"}, {"id": 41, "cat": "行业数据", "sub": "厂商动态", "title": "APPLE相关新闻", "source": "IT之家RSS（苹果生态关键词）", "url": "https://www.ithome.com/rss/", "desc": "Apple相关中文资讯，仅保留最近7天（Apple Newsroom无RSS）", "freq": "每日", "status": "成功", "sample": "最新新闻稿：'Formula 1 United States Grand Prix streams live on Apple TV this weekend'(2026-10-22)；Hot News源含'Apple Reports Second Quarter Results'财报稿", "note": "v8：改IT之家中文源+7天过滤", "method": "curl-200+官方RSS"}, {"id": 42, "cat": "行业数据", "sub": "厂商动态", "title": "手机厂家新品发布新闻", "source": "IT之家RSS（手机/快充关键词）", "url": "https://www.ithome.com/rss/", "desc": "手机厂家新品资讯，仅保留最近7天", "freq": "每日", "status": "成功", "sample": "《大哥大造型 ADHD ONE\"手机\"发布，只能接打电话》2026-10-22；《摩托罗拉首款宽屏折叠手机 Razr Flex 跑分曝光：高通第五代骁龙 8 芯片》2026-10-20；标签页SSR共解析出19条近期新闻（标题+日期）", "note": "v8：7天过滤", "method": "curl-200"}, {"id": 50, "cat": "行业数据", "sub": "展会日历", "title": "CES展会信息", "source": "CES官网（CTA主办）", "url": "https://www.ces.tech", "desc": "CES每年拉斯维加斯展期日期、展馆布局、参展商名录", "freq": "事件驱动", "status": "静态维护", "sample": "CES 2027：2027年1月6-9日，拉斯维加斯；页面显示'Registration for CES 2027 is now open'（报名已开放）", "note": "官网首页服务端渲染，含下届展期日期/地点/注册入口", "method": "curl-200+文本提取"}, {"id": 51, "cat": "行业数据", "sub": "展会日历", "title": "MWC展会信息", "source": "MWC Barcelona官网（GSMA主办）", "url": "https://www.mwcbarcelona.com", "desc": "MWC巴塞罗那展会日期、主题、参展与议程信息", "freq": "事件驱动", "status": "静态维护", "sample": "MWC27：2027年3月1-4日，巴塞罗那Fira Gran Via展馆，GSMA主办，预计超100,000名决策者参会", "note": "官网首页服务端渲染，含下届展会日期/地点/参会规模信息", "method": "curl-200+文本提取"}, {"id": 53, "cat": "行业数据", "sub": "展会日历", "title": "广交会信息", "source": "中国进出口商品交易会官网", "url": "https://www.cantonfair.org.cn", "desc": "广交会各届三期展期日期、展区设置、参展指引", "freq": "事件驱动", "status": "部分成功", "sample": "—", "note": "URL返回200且标题/meta正常，但首页为Vue SPA空壳（HTML仅2.5KB，无正文）；数据需浏览器JS渲染，程序化抓不到；公开接口/websiteapi/common/exhibitionInfo无鉴权调用返回500", "method": "curl-200(JS空壳)+API探测"}, {"id": 56, "cat": "行业数据", "sub": "结构渗透率", "title": "Qi2磁吸无线充（WPC认证产品库监测）", "source": "WPC认证产品库（jpsapi/ajax/products/qi）", "url": "https://jpsapi.wirelesspowerconsortium.com/ajax/products/qi", "desc": "Qi认证产品库全量记录（12,008条），按功率档MPP/Qi版本2.x筛出Qi2磁吸产品4,090条，含品牌/型号/功率/认证日期", "freq": "半年度", "status": "成功", "sample": "4,094 / 12,012条（34%）", "note": "GET接口一次取全量12,008条（人工页在wirelesspowerconsortium.com/products/），本地按功率档MPP*/Qi版本2.x筛Qi2；用户决定由Counterpoint付费渗透率报告改为此口径；v10环形图接线CSV自动更新", "method": "requests-JSON"}, {"id": 58, "cat": "行业数据", "sub": "上游价格", "title": "存储芯片价格（DRAM/NAND）", "source": "TrendForce现货价官方页（5品类）", "url": "https://www.trendforce.com/price/dram/dram_spot", "desc": "DRAM/NAND现货价与合约价（页面可切换NAND栏目）", "freq": "每周", "status": "成功", "sample": "2026-10-27：DDR4 8Gb $47.04 / DDR4 16Gb $82.62 / DDR5 16Gb $61.33 / NAND 256Gb $18.37 / 512Gb $18.59", "note": "v8：扩5品类分列（采集器已改5品类解析）；无RSS，页结构稳定可脚本化", "method": "curl-200+文本提取"}, {"id": 59, "cat": "产品品类", "sub": "充电器", "title": "充电头网早报", "source": "充电头网（curl_cffi过JS验证）·新闻分类页", "url": "https://www.chongdiantou.com/brand/1786585462612.html", "desc": "每日汇总全球充电行业资讯（新品、快充、芯片、无线充动态）", "freq": "每日", "status": "成功", "sample": "10月28日充电早报等3条（近7天）", "note": "v10：新增采集器接线，标题过滤\"早报\"", "method": "curl_cffi+HTML解析"}, {"id": 61, "cat": "产品品类", "sub": "充电器", "title": "苹果AVS相关新品/产品资讯", "source": "充电头网（curl_cffi过JS验证）·新闻页（AVS/苹果关键词）", "url": "https://www.chongdiantou.com/archives/1758248042216.html", "desc": "与苹果AVS（可调电压电源）协议相关的新品发布、产品资讯与拆解评测，充电头网AVS关键词监测", "freq": "每日", "status": "成功", "sample": "苹果首款折叠屏快充测试：15V AVS调压等3条", "note": "v10：新增采集器接线；AVS低频可能0条", "method": "curl_cffi+HTML解析"}, {"id": 76, "cat": "产品品类", "sub": "通用品类数据", "title": "差评关键词分析", "source": "Helium 10", "url": "https://kb.helium10.com/hc/en-us/articles/48006601967643-Review-Insights-Analyze-Customer-Feedback-with-Amazon-Data", "desc": "亚马逊商品评论聚合分析，提取差评关键词与反馈主题", "freq": "每月", "status": "部分成功", "sample": "KB文章可访问，正文：'Review Insights is a feature within the Helium 10 Chrome Extension that helps you understand what customers are saying about a product... Powered directly by Amazon's official Customer Feedback API'（更新于2026-04-03）", "note": "首次请求403，重试后200。注意：该URL为Helium 10帮助中心功能说明文档（可正常访问），非数据接口；实际差评关键词分析数据需注册Helium 10账号并使用Chrome Extension工具", "method": "curl-403→重试-200→提取KB文章正文"}, {"id": 77, "cat": "产品品类", "sub": "通用品类数据", "title": "评论增速监测", "source": "Keepa", "url": "https://keepa.com", "desc": "追踪亚马逊商品价格、销售排名与评论数历史走势", "freq": "每月", "status": "部分成功", "sample": "官网标题'Keepa - Amazon Price Tracker'可正常访问", "note": "keepa.com可访问（200），但主站为需登录的Web应用，商品价格/销售排名/评论数历史走势数据需注册账号（API另收费），程序化抓取无公开数据", "method": "curl-200→主站为登录制Web应用"}, {"id": 90, "cat": "竞对同业数据", "sub": "非上市公司", "title": "充电头网·拆解图文监测", "source": "充电头网·拆解栏目（curl_cffi脚本）", "url": "https://www.chongdiantou.com/archives/category/teardowns", "desc": "拆解报告图文（正文+关键照片），图文卡展示最近6篇（chips词条+摘要+整卡跳原文）", "freq": "每日", "status": "成功", "sample": "航嘉S67 Mini 67W · 酷态科10号车载磁吸无线充 等6篇（首批回填）", "note": "2026-11-05升级：由同业新闻feed改为拆解图文卡；数据落 图文数据/充电头网拆解/，chips/摘要由21:15任务AI提炼", "method": "curl_cffi脚本"}, {"id": 91, "cat": "竞对同业数据", "sub": "非上市公司", "title": "我爱音频网·评测监测（耳机测评）", "source": "我爱音频网·耳机评测栏目（requests脚本，无反爬）", "url": "https://www.52audio.com/archives/category/reviews/earphone", "desc": "耳机评测全文与关键照片，图文卡展示最近6篇（chips词条+摘要+整卡跳原文）", "freq": "每周", "status": "成功", "sample": "LINKLIKE C-Flow · CMF Clip Pro · Bose QCⅡ 等10篇（迁移5+脚本采5）", "note": "2026-11-05通道迁移：脚本为主（原图直链）、AutoGLM任务转为备用；数据落 图文数据/我爱音频网评测/", "method": "requests脚本"}, {"id": 93, "cat": "竞对同业数据", "sub": "非上市公司", "title": "Kickstarter众筹表现", "source": "Kickstarter discover JSON接口（curl_cffi）", "url": "https://www.kickstarter.com/discover/categories/technology", "desc": "Technology类目消费电子子类（Hardware/Gadgets/CE/Sound/Camera/Wearables）金额与支持人数", "freq": "每周", "status": "成功", "sample": "XGIMI AURA 3 · $22,035,192 · 22035%达成（消费电子子类10/12优先）", "note": "v9：拆独立卡；12项目快照+JSON注入；v18.3图文卡升级：项目照片+blurb+chips入板（图文数据/Kickstarter众筹/，CF盾间歇拦截已加多指纹轮换）；v18.3.1消费电子聚焦：CE子类白名单（Fabrication Tools等制造工具不入图文卡，泛科技仅CSV垫底标注）", "method": "API(curl_cffi)"}, {"id": 94, "cat": "竞对同业数据", "sub": "非上市公司", "title": "摩点众筹表现", "source": "摩点 realtime/get_simple_product JSONP", "url": "https://www.modian.com", "desc": "科技类目消费电子众筹项目金额、达成率与支持人数（全站3C关键词补充）", "freq": "每周", "status": "成功", "sample": "Daijimi猫咪远程互动小车 ¥1.6万 · 科技类目Top1（消费电子聚焦）", "note": "v9：拆独立卡；金额榜Top10+科技类保底；v18.3图文卡升级：logo2照片+chips入板（图文数据/摩点众筹/，快照日刷新语义）；v18.3.1消费电子聚焦：科技类目榜主池+纯软件剔除，全站榜仅3C关键词补充（桌游/游戏不入图文卡）", "method": "API(JSONP)"}];
+var PAGE_INFO={"id": "design", "label": "设计部看板", "file": "design.html", "moduleCount": 16, "sourceCount": 16, "plannedCount": 2, "activeModuleCount": 14};
+var STATMAP={'成功':['c-ok','已接入'],'部分成功':['c-warn','受限/接入中'],'失败':['c-warn','失败'],'静态维护':['c-static','静态维护']};
+// 状态点 → 文字chip
+root.querySelectorAll('span.dot.g,span.dot.y').forEach(function(d){
+  var label=d.getAttribute('data-status-label')||(d.classList.contains('g')?'已接入':'受限/接入中');
+  var c=document.createElement('span');c.className='chip '+(label==='静态维护'?'c-static':(d.classList.contains('g')?'c-ok':'c-warn'));
+  if(d.title)c.title=d.title;
+  var dot=document.createElement('span');dot.className='cdot';c.appendChild(dot);c.appendChild(document.createTextNode(label));
+  d.replaceWith(c);
+});
+// 卡片实例与数据P号分离：允许同P多卡/嵌套指标，不制造重复DOM ID。
+var SOURCE_CARDS=Object.create(null),cardIds=Object.create(null);
+root.querySelectorAll('.card[data-mid],.cco[data-mid]').forEach(function(el,index){
+  var pids=(el.getAttribute('data-source-pids')||'').split(/\s+/).filter(Boolean);
+  var primary=(el.getAttribute('data-k')||'').split(/\s+/)[0];
+  var preferred=primary?'card-P'+primary:'module-'+el.getAttribute('data-mid');
+  var id=preferred;
+  if(cardIds[id]||document.getElementById(id))id=preferred+'-instance-'+index;
+  el.id=id;cardIds[id]=true;
+  pids.forEach(function(pid){(SOURCE_CARDS[pid]||(SOURCE_CARDS[pid]=[])).push(el)});
+});
+function focusSourceCard(pid){
+  var cards=SOURCE_CARDS[pid]||[];
+  var card=cards.find(function(el){return !el.closest('[data-copanel][hidden]')})||cards[0];
+  if(!card)return false;
+  var panel=card.closest('[data-copanel]');
+  if(panel&&panel.hidden){
+    var group=panel.closest('.mod');
+    var button=Array.from(group.querySelectorAll('[data-cotab]')).find(function(b){return b.getAttribute('data-cotab')===panel.getAttribute('data-copanel')});
+    if(button)button.click();
+  }
+  card.scrollIntoView({behavior:'smooth',block:'center'});
+  card.style.transition='box-shadow .3s';card.style.boxShadow='0 0 0 3px rgba(0,101,176,.25)';
+  setTimeout(function(){card.style.boxShadow=''},1200);
+  return true;
+}
+// 底部来源行注入（只为真实卡片处理，跳过内部指标的data-k）
+root.querySelectorAll('.card[data-k],.cco[data-k]').forEach(function(el){
+  var ids=el.getAttribute('data-k').split(' ');
+  var pid='P'+ids[0];
+  var p=null;for(var i=0;i<PROV.length;i++){if(PROV[i].id==ids[0]){p=PROV[i];break}}
+  var foot=el.querySelector('.foot');if(!foot||!p)return;
+  var first=foot.firstElementChild;
+  var sup=document.createElement('sup');sup.className='src-ref';sup.setAttribute('data-ref',pid);sup.textContent='['+pid+']';sup.title='点击查看溯源详情';
+  if(first&&first.tagName==='A'){first.appendChild(sup);}
+  else if(first&&first.tagName==='SPAN'&&!first.querySelector('a')){
+    first.classList.add('srcline');
+    first.innerHTML='<span class="src-name" data-ref="'+pid+'">'+first.textContent+'</span>'+sup.outerHTML+
+      '<a class="src-link" href="'+p.url+'" target="_blank" rel="noopener" title="打开来源页">⧉</a>';
+  }
+  if(ids.length>1&&foot.querySelector('.srcline')){
+    var sup2=document.createElement('sup');sup2.className='src-ref';sup2.setAttribute('data-ref',pid);
+    sup2.textContent='+'+(ids.length-1);sup2.title='本卡合并监测'+ids.length+'项，详见附录';
+    foot.querySelector('.srcline').appendChild(sup2);
+  }
+});
+// 全局溯源tooltip（单节点+委托）
+var tip=document.createElement('div');tip.className='prov-tip';tip.setAttribute('role','tooltip');root.appendChild(tip);
+var tipTimer=null,hideTimer=null;
+function provById(pid){for(var i=0;i<PROV.length;i++){if('P'+PROV[i].id===pid)return PROV[i]}return null}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}   // v18.8：转义引号——esc同时用于拼href属性，URL含"可破属性边界
+function tipHTML(p){
+  var st=STATMAP[p.status]||['',''];
+  var h='<div class="pt-t">'+esc(p.title)+' · P'+p.id+'</div>';
+  h+='<div class="pt-row"><span class="pt-k">来源</span><span class="pt-v">'+esc(p.source)+'</span></div>';
+  h+='<div class="pt-row"><span class="pt-k">链接</span><span class="pt-v"><a href="'+esc(p.url)+'" target="_blank" rel="noopener">'+esc(p.url.length>58?p.url.slice(0,58)+'…':p.url)+'</a></span></div>';
+  h+='<div class="pt-row"><span class="pt-k">采集</span><span class="pt-v">'+esc(p.method||'—')+'</span></div>';
+  h+='<div class="pt-row"><span class="pt-k">频率</span><span class="pt-v">'+esc(p.freq||'—')+' · 有效观测期见溯源表</span></div>';
+  h+='<div class="pt-row"><span class="pt-k">状态</span><span class="pt-v"><span class="pchip '+st[0]+'">'+st[1]+'</span></span></div>';
+  if(p.sample)h+='<div class="pt-row"><span class="pt-k">实测</span><span class="pt-v">'+esc(p.sample.length>76?p.sample.slice(0,76)+'…':p.sample)+'</span></div>';
+  if(p.note)h+='<div class="pt-row"><span class="pt-k">备注</span><span class="pt-v">'+esc(p.note.length>70?p.note.slice(0,70)+'…':p.note)+'</span></div>';
+  return h;
+}
+document.addEventListener('mouseover',function(e){
+  var t=e.target.closest('[data-ref]');if(!t)return;
+  clearTimeout(hideTimer);
+  tipTimer=setTimeout(function(){
+    var p=provById(t.getAttribute('data-ref'));if(!p)return;
+    tip.innerHTML=tipHTML(p);tip.style.display='block';
+    var r=t.getBoundingClientRect();
+    tip.style.left='0px';tip.style.top='0px';
+    var tw=tip.offsetWidth,th=tip.offsetHeight;
+    var lx=r.left;if(lx+tw>window.innerWidth-12)lx=window.innerWidth-tw-12;
+    var ly=r.bottom+8;if(ly+th>window.innerHeight-12)ly=r.top-th-8;
+    tip.style.left=Math.max(8,lx)+'px';tip.style.top=Math.max(8,ly)+'px';
+  },150);
+});
+document.addEventListener('mouseout',function(e){
+  var t=e.target.closest('[data-ref]');if(!t)return;
+  clearTimeout(tipTimer);
+  hideTimer=setTimeout(function(){tip.style.display='none'},250);
+});
+tip.addEventListener('mouseenter',function(){clearTimeout(hideTimer)});
+tip.addEventListener('mouseleave',function(){tip.style.display='none'});
+// 序号点击 → 附录行
+document.addEventListener('click',function(e){
+  var t=e.target.closest('.src-ref');if(!t)return;
+  var app=document.getElementById('appendix');
+  app.setAttribute('data-open','true');
+  renderProv();
+  var row=document.getElementById('prov-'+t.getAttribute('data-ref'));
+  if(row){row.scrollIntoView({behavior:'smooth',block:'center'});
+    row.classList.remove('flash');void row.offsetWidth;row.classList.add('flash');}
+});
+document.getElementById('provbtn').addEventListener('click',function(){
+  var app=document.getElementById('appendix');
+  app.setAttribute('data-open','true');renderProv();
+});
+// ===== 词条新鲜度：附录「最近数据」列（v17）——最近数据日期+逾期标注，阈值按注册表更新频率 =====
+var FRESH_MAX={'每日':4,'每周':10,'每月':40,'每季':110,'半年度':200,'每年':380};
+var FRESH_TODAY=(function(){var t=new Date();return t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2)})();
+// 核验徽标（v19）：DDATA._verify 由 cross_check 对照（ok/warn）与采集侧区间/突变存疑（sus）驱动
+function vrfHTML(pid){
+  if(typeof DDATA==='undefined'||!DDATA._verify)return '';
+  var v=DDATA._verify[pid];if(!v)return '';
+  var cls=v.s==='ok'?'vrf ok':(v.s==='sus'?'vrf sus':'vrf warn');
+  var txt=(v.s==='ok'?'✓':'⚠')+(v.t||(v.s==='sus'?'存疑':'对照异常'));
+  return ' <span class="'+cls+'" title="'+escH((v.x||'')+' · '+v.d)+'">'+txt+' '+escH(v.d)+'</span>';
+}
+function freshHTML(pid){
+  var source=provById(pid);
+  if(source&&source.status==='静态维护')return '<span class="static-review">静态说明 · 待人工核查</span>';
+  if(typeof DDATA==='undefined')return '—';
+  var d=DDATA[pid];
+  if(!d||!d.rows||!d.rows.length){
+    // v18：无CSV的图文词条（P91）回退 REVIEWS 最近文章日期（updated=最大发布日期）
+    if(typeof REVIEWS!=='undefined'&&REVIEWS[pid]&&REVIEWS[pid].items&&REVIEWS[pid].items.length&&REVIEWS[pid].updated){
+      var m=DDATA._meta?DDATA._meta[pid]:null;
+      var lim=m?FRESH_MAX[m.f]:null;
+      var dd=Math.floor((new Date(FRESH_TODAY)-new Date(REVIEWS[pid].updated))/864e5);
+      var out=(lim&&dd>lim)?(REVIEWS[pid].updated+' <span class="ovd">逾期'+dd+'天</span>'):REVIEWS[pid].updated;
+      return out+vrfHTML(pid);   // v20资讯治理：P90=图文+同业feed双内容，feed健康徽标随行
+    }
+    // v20资讯治理A3：feed型词条（资讯数据/*.json）回退 _feedfresh——最新条目日期+逾期+资讯健康徽标
+    var ff=DDATA._feedfresh?DDATA._feedfresh[pid]:null;
+    if(ff){
+      var out2=ff.u+(ff.o>0?(' <span class="ovd">逾期'+ff.o+'天</span>'):'');
+      return out2+vrfHTML(pid);
+    }
+    return '—'+vrfHTML(pid);
+  }
+  // 与主数值使用同一列最后有效记录，避免“同比9月、附录10月空值行”错配。
+  var valid=d.rows.filter(function(r){return r[1]!==null&&r[1]!==undefined});
+  var last=valid.length?valid[valid.length-1][0]:null;
+  if(!last)return '—'+vrfHTML(pid);
+  var dd=Math.floor((new Date(FRESH_TODAY)-new Date(last))/864e5);
+  var m=DDATA._meta?DDATA._meta[pid]:null;
+  var lim=m?FRESH_MAX[m.f]:null;
+  var out=last;
+  if(lim&&dd>lim)out+=' <span class="ovd">逾期'+dd+'天</span>';
+  return out+vrfHTML(pid);
+}
+// ===== 溯源索引表 =====
+function renderProv(){
+  var cat=document.getElementById('pfCat').value,st=document.getElementById('pfStatus').value,q=document.getElementById('pfQ').value.trim().toLowerCase();
+  var rows=PROV.filter(function(p){
+    if(cat&&p.cat!==cat)return false;
+    if(st&&p.status!==st)return false;
+    if(q&&(p.title+' '+p.source+' '+p.url).toLowerCase().indexOf(q)<0)return false;
+    return true;
+  });
+  document.getElementById('provRows').innerHTML=rows.map(function(p){
+    var stc=STATMAP[p.status]||['',''];
+    var u=esc(p.url);var us=u.replace(/^https?:\/\//,'');
+    return '<tr id="prov-P'+p.id+'"><td class="pnum">P'+p.id+'</td><td>'+esc(p.cat)+'</td>'+
+      '<td class="ptitle" data-goto="P'+p.id+'" tabindex="0" role="button" title="回跳本页看板卡片">'+((typeof DDATA!=='undefined'&&DDATA._meta&&DDATA._meta['P'+p.id]&&DDATA._meta['P'+p.id].r)?('<span class="rlbadge '+(DDATA._meta['P'+p.id].r==='A'?'a':DDATA._meta['P'+p.id].r==='C'?'c':'b')+'" title="可靠度'+DDATA._meta['P'+p.id].r+'级'+(DDATA._meta['P'+p.id].k?'：'+DDATA._meta['P'+p.id].k:'')+'">'+DDATA._meta['P'+p.id].r+'</span> '):'')+esc(p.title)+'</td>'+
+      '<td>'+esc(p.source)+'</td>'+
+      '<td><a href="'+u+'" target="_blank" rel="noopener">'+esc(us.length>44?us.slice(0,44)+'…':us)+'</a></td>'+
+      '<td>'+esc(p.method||'—')+'</td><td>'+esc(p.freq||'—')+'</td><td class="pfresh">'+freshHTML('P'+p.id)+'</td>'+
+      '<td><span class="pchip '+stc[0]+'">'+stc[1]+'</span></td></tr>';
+  }).join('')||'<tr><td colspan="9" style="color:var(--n500);padding:18px">无匹配条目</td></tr>';
+  document.getElementById('pfCount').textContent='显示 '+rows.length+' / '+PROV.length+' 条';
+}
+document.getElementById('provToggle').addEventListener('click',function(){
+  var app=document.getElementById('appendix');
+  var open=app.getAttribute('data-open')==='true';
+  app.setAttribute('data-open',open?'false':'true');
+  if(!open)renderProv();
+});
+['pfCat','pfStatus'].forEach(function(id){document.getElementById(id).addEventListener('change',renderProv)});
+document.getElementById('pfQ').addEventListener('input',renderProv);
+document.getElementById('provRows').addEventListener('click',function(e){
+  var t=e.target.closest('[data-goto]');if(!t)return;
+  focusSourceCard(t.getAttribute('data-goto'));
+});
+document.getElementById('provRows').addEventListener('keydown',function(e){
+  if(e.key==='Enter'||e.key===' '){var target=e.target.closest('[data-goto]');if(target){e.preventDefault();focusSourceCard(target.getAttribute('data-goto'));}}
+});
+// 初始化：板块下拉 + 摘要
+(function(){
+  var cats={};PROV.forEach(function(p){cats[p.cat]=1});
+  var sel=document.getElementById('pfCat');
+  Object.keys(cats).forEach(function(c){var o=document.createElement('option');o.textContent=c;sel.appendChild(o)});
+  var srcs={};PROV.forEach(function(p){srcs[p.source]=1});
+  var lim=PROV.filter(function(p){return p.status!=='成功'&&p.status!=='静态维护'}).length;
+  var manual=PROV.filter(function(p){return p.status==='静态维护'}).length;
+  document.getElementById('provSum').textContent='本页 '+PROV.length+' 条 · '+Object.keys(srcs).length+' 个来源 · '+lim+' 项受限/接入中'+(manual?' · '+manual+' 项静态维护':'');
+  window.__provOK=true;
+})();</script>
+</body>
+</html>
