@@ -21,35 +21,32 @@
 <div class="mline"></div>
 <div class="workspace-layout">
 <aside class="workspace-rail" aria-label="本页研究目录">
-  <div class="rail-head"><span class="rail-overline">RESEARCH INDEX</span><span class="rail-title">板块目录</span></div>
+  <div class="rail-head"><span class="rail-title">本页内容</span></div>
   <nav id="dnav" aria-label="看板导航">
     <!--__SECTION_NAV__-->
   </nav>
-  <div class="rail-foot"><span class="rail-foot-label">研究范围</span><b>外部公开信息</b><p>数据、原文与规划预留<br>按各自状态明确区分</p></div>
+  <div class="rail-foot"><span class="rail-foot-label">数据说明</span><b>外部公开信息</b><p>每项数据附有日期与来源<br>点开卡片可查看依据</p></div>
 </aside>
 <div class="workspace-stage">
 <section class="workspace-hero" id="workspaceOverview" aria-label="本页研究概览" tabindex="-1">
-  <div class="hero-topline"><span class="hero-eyebrow"><!--__PAGE_EYEBROW__--></span><span class="workbench-tag"><!--__PAGE_TAG__--></span></div>
+  <div class="hero-topline"><span class="workbench-tag"><!--__PAGE_TAG__--></span><span class="hero-eyebrow" aria-hidden="true"><!--__PAGE_EYEBROW__--></span></div>
   <div class="hero-heading"><div><h1><!--__PAGE_TITLE__--></h1><p class="m-sub"><!--__PAGE_SUBTITLE__--></p></div><div class="hero-date"><span>全库最新观测</span><b id="asof">—</b></div></div>
-  <p class="hero-description"><!--__PAGE_DESCRIPTION__--></p>
-  <div class="workspace-metrics"><!--__PAGE_METRICS__--></div>
+  <details class="coverage-summary"><summary>数据范围与说明</summary><p class="hero-description"><!--__PAGE_DESCRIPTION__--></p><div class="workspace-metrics"><!--__PAGE_METRICS__--></div></details>
 </section>
 <div class="toolbar" aria-label="研究工具">
 <div class="toolbar-in">
   <div class="module-search"><label class="module-search-field" for="moduleSearch"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg><input type="search" id="moduleSearch" placeholder="搜索本页模块、P号或板块…" aria-label="搜索本页模块" aria-controls="moduleSearchResults" autocomplete="off"><kbd aria-hidden="true">/</kbd></label><button id="clearModuleSearch" type="button" aria-label="清空模块搜索" hidden>清空</button><div id="moduleSearchResults" class="workspace-search-results" role="status" aria-live="polite" hidden></div></div>
-  <span class="tb2"><span class="pctl" title="切换折线图显示周期（仅影响曲线渲染，不改动固化数据）"><i>周期</i><button class="on" type="button" aria-pressed="true">默认</button><button type="button" data-m="3" aria-pressed="false">3月</button><button type="button" data-m="6" aria-pressed="false">6月</button><button type="button" data-m="12" aria-pressed="false">1年</button><button type="button" data-m="36" aria-pressed="false">3年</button><button type="button" data-all="1" aria-pressed="false">全部</button></span>
+  <span class="tb2"><button id="readingSize" class="reading-size" type="button" aria-pressed="false">放大阅读</button><span class="pctl" title="切换折线图显示周期（仅影响曲线渲染，不改动固化数据）"><i>周期</i><button class="on" type="button" aria-pressed="true">默认</button><button type="button" data-m="3" aria-pressed="false">3月</button><button type="button" data-m="6" aria-pressed="false">6月</button><button type="button" data-m="12" aria-pressed="false">1年</button><button type="button" data-m="36" aria-pressed="false">3年</button><button type="button" data-all="1" aria-pressed="false">全部</button></span>
   <a class="tbtn" href="#appendix" id="provbtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 3a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm4 10 4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>数据溯源</a></span>
 </div></div>
+<!--__FEATURED__-->
 <!--__OVERVIEW_START__-->
 <div class="ticker"><div class="ticker-wrap">
-  <div class="snapshot-head"><div><span class="section-kicker">MARKET SNAPSHOT</span><h2>重点指标速览</h2></div><p>各指标按自身频率更新 <span aria-hidden="true">/</span> 数据时点见卡片</p></div>
+  <div class="snapshot-head"><div><h2>更多市场指标</h2></div><p>各项观测日期不同，详见卡片</p></div>
   <div class="ticker-in">
-  <div class="tk" data-tk="P21"><span class="k">美元兑人民币中间价</span><span class="v">6.7180</span><span class="s">10-23 · 中国货币网</span></div>
   <div class="tk" data-tk="P22"><span class="k">美元指数 DXY</span><span class="v">101.65</span><span class="s">10-23 · 东方财富</span></div>
-  <div class="tk" data-tk="P26"><span class="k">LME铜（3月）</span><span class="v">14,164<small>美元/吨</small></span><span class="s">10-23 · 新浪财经</span></div>
   <div class="tk" data-tk="P36"><span class="k">布伦特原油</span><span class="v">113.87<small>美元/桶</small></span><span class="s">10-23 · 新浪财经</span></div>
   <div class="tk" data-tk="P37"><span class="k">SCFI集装箱运价</span><span class="v">3,679.58</span><span class="s">10-16期 · 上海航交所</span></div>
-  <div class="tk" data-tk="P71"><span class="k">通讯器材零售同比</span><span class="v" style="color:var(--up)">+31.1%</span><span class="s">9月 · 国家统计局</span></div>
 </div></div></div>
 <!--__OVERVIEW_END__-->
 
@@ -88,6 +85,7 @@
 <button id="toTop" aria-label="回到顶部">↑</button>
 </div>
 
+<!--__MEDIA_POLICY__-->
 <!--__DATA_JS__-->
 <!--__ENGINE__-->
 <script>

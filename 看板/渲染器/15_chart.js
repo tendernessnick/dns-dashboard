@@ -8,10 +8,10 @@ function v8cols(){var cs=getComputedStyle(root);
          base:(cs.getPropertyValue('--brand')||'#235BCC').trim()||'#235BCC',
          grid:(cs.getPropertyValue('--n100')||'#E6ECF4').trim()||'#E6ECF4',
          muted:(cs.getPropertyValue('--n500')||'#65758B').trim()||'#65758B'}}
-function drawChart(el,redraw){
+function drawChart(el,redraw,seriesOverride){
   var key=el.getAttribute('data-chart');
   var ci=parseInt(el.getAttribute('data-col')||'1',10)||1;
-  var s=getSeries(key,ci);
+  var s=seriesOverride||getSeries(key,ci);
   if(!s||s.rows.length<2){el.innerHTML='<div class="nodata">有效数据点不足 · 累积后展示趋势</div>';return;}
   var b=BIND[key]||[null,null];
   var W=el.clientWidth||300,H=el.clientHeight||118;
@@ -28,12 +28,12 @@ function drawChart(el,redraw){
   var CC=v8cols(),isUp=vals[n-1]>=vals[0],comparable=canCompare(el);
   var c=comparable&&vals[n-1]!==vals[0]?(isUp?CC.up:CC.down):CC.base;
   pl=Math.max(pl,Math.max(fmtT(lo).length,fmtT(hi).length)*5.6+10);
-  var chipT=fmtN(vals[n-1],dec()),cw=chipT.length*(mini?6.4:6.8)+14,chh=20;
+  var chipT=fmtN(vals[n-1],dec()),cw=chipT.length*(mini?7.2:7.8)+14,chh=20;
   pr=Math.max(pr,cw+10);
   var gid='v8g'+(++v8seq);
   var svg='<svg class="redraw terminal-plot" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="时间序列，悬停或左右滑动查看实际日期与数值">';
-  svg+='<text class="plot-unit" x="'+pl+'" y="11" style="font-size:10px;fill:'+CC.muted+'">'+escH(b[0]?('单位：'+b[0]):'')+'</text>';
-  svg+='<text class="plot-meta" x="'+(W-pr)+'" y="11" text-anchor="end" style="font-size:10px;fill:'+CC.muted+'">'+n+' 个数据点</text>';
+  svg+='<text class="plot-unit" x="'+pl+'" y="11" style="font-size:12px;fill:'+CC.muted+'">'+escH(b[0]?('单位：'+b[0]):'')+'</text>';
+  svg+='<text class="plot-meta" x="'+(W-pr)+'" y="11" text-anchor="end" style="font-size:12px;fill:'+CC.muted+'">'+n+' 个数据点</text>';
   var span=hi-lo,rawStep=span/(mini?3:3.5),mag=Math.pow(10,Math.floor(Math.log(rawStep)/Math.LN10));
   var nm=rawStep/mag,step=(nm>=5?10:nm>=2?5:nm>=1?2:1)*mag;
   for(var tv=Math.ceil(lo/step)*step,i2=0;tv<=hi+1e-9;tv=(Math.ceil(lo/step)*step+(++i2)*step)){
@@ -69,11 +69,11 @@ function drawChart(el,redraw){
   svg+='<circle class="last-point" cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="3" fill="#fff" stroke="'+c+'" stroke-width="1.7"/>';
   var cy=Math.max(pt+chh/2+1,Math.min(H-pb-chh/2-1,ly));
   svg+='<g class="chip-a"><rect class="chiprect" x="'+(W-cw-3).toFixed(1)+'" y="'+(cy-chh/2).toFixed(1)+'" width="'+cw.toFixed(1)+'" height="'+chh+'" rx="4" style="fill:#FFF;stroke:'+c+';stroke-opacity:.35;stroke-width:1"/>'
-    +'<text class="chiptext" x="'+(W-3-cw/2).toFixed(1)+'" y="'+(cy+3.5).toFixed(1)+'" text-anchor="middle" style="fill:'+c+';font-size:10px;font-weight:600">'+escH(chipT)+'</text></g>';
+    +'<text class="chiptext" x="'+(W-3-cw/2).toFixed(1)+'" y="'+(cy+3.5).toFixed(1)+'" text-anchor="middle" style="fill:'+c+';font-size:12px;font-weight:600">'+escH(chipT)+'</text></g>';
   var lb=(W-pl-pr<190||n<3)?[0,n-1]:[0,Math.floor((n-1)/2),n-1];
   for(var li=0;li<lb.length;li++){var i3=lb[li];
     var a=i3===0?'start':(i3===n-1?'end':'middle');
-    svg+='<text class="plot-date" x="'+X(i3).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+a+'" style="font-size:10px">'+escH(XL(s.rows[i3][0]))+'<title>'+escH(s.rows[i3][0])+'</title></text>';
+    svg+='<text class="plot-date" x="'+X(i3).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+a+'" style="font-size:12px">'+escH(XL(s.rows[i3][0]))+'<title>'+escH(s.rows[i3][0])+'</title></text>';
   }
   svg+='<line class="guide" x1="0" y1="'+pt+'" x2="0" y2="'+(H-pb)+'" style="display:none"/>';
   svg+='<circle class="hdot" r="4.5" style="display:none"/>';

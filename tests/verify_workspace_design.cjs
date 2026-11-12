@@ -112,6 +112,12 @@ async function assertSearch(scope, page, view, label) {
   assert.equal(await scope.locator('#clearModuleSearch').count(), 1);
   assert.equal(await scope.locator('#workspaceOverview').count(), 1);
   assert.ok((await scope.locator('#workspaceOverview').innerText()).trim(), label + '工作台概览不能空白');
+  const coverage = scope.locator('details.coverage-summary');
+  if (await coverage.count()) {
+    assert.equal(await coverage.evaluate(node => node.open), false, label + '覆盖统计默认收起，优先展示阅读内容');
+    await coverage.locator('summary').click();
+    assert.equal(await coverage.evaluate(node => node.open), true);
+  }
   const overview = await scope.evaluate(() => ({
     expected: { '来源词条': PAGE_INFO.sourceCount, '已建模块': PAGE_INFO.activeModuleCount,
       '规划预留': PAGE_INFO.plannedCount },
@@ -119,6 +125,7 @@ async function assertSearch(scope, page, view, label) {
       .map(node => [node.querySelector('span').textContent.trim(), Number(node.querySelector('b').textContent)])),
   }));
   assert.deepEqual(overview.shown, overview.expected, label + '概览分别显示来源/已建/规划，不能混淆统计范围');
+  if (await coverage.count()) await coverage.locator('summary').click();
   const countErrors = await scope.evaluate(() => [...document.querySelectorAll('#dnav a')].flatMap(link => {
     const section = document.getElementById((link.getAttribute('href') || '').slice(1));
     const expected = section?.querySelectorAll('[data-mid]').length;

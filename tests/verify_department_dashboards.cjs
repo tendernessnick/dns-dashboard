@@ -242,8 +242,18 @@ async function assertView(scope, view, label) {
 
 async function assertBusinessInvariants(scope, view, label) {
   const page = typeof scope.page === 'function' ? scope.page() : scope;
+  const planAction = scope.locator('.planned-card button[data-detail-module]').first();
   const planDetails = scope.locator('.planned-card details').first();
-  if (await planDetails.count()) {
+  if (await planAction.count()) {
+    await planAction.focus();
+    await page.keyboard.press('Enter');
+    await scope.waitForFunction(() => document.getElementById('moduleDetail').open);
+    assert.ok((await scope.locator('#moduleDetail').innerText()).includes('规划中'));
+    assert.ok((await scope.locator('#moduleDetail').innerText()).includes('使用边界'));
+    await page.keyboard.press('Escape');
+    await scope.waitForFunction(() => !document.getElementById('moduleDetail').open);
+    assert.equal(await planAction.evaluate(node => document.activeElement === node), true);
+  } else if (await planDetails.count()) {
     await planDetails.locator('summary').focus();
     await page.keyboard.press('Enter');
     assert.equal(await planDetails.evaluate(node => node.open), true, label + '规划说明支持键盘展开');

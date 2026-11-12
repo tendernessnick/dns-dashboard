@@ -174,6 +174,7 @@
     });
     clearButton.addEventListener('click', function () { clearSearch(true); });
     document.addEventListener('keydown', function (event) {
+      if (document.querySelector('dialog[open]')) return;
       if (event.defaultPrevented || event.isComposing || composing || event.keyCode === 229 ||
           event.ctrlKey || event.metaKey || event.altKey) return;
       if (event.key === '/' && !isEditing(event.target)) {

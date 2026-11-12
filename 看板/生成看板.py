@@ -20,6 +20,7 @@ import json
 import os
 import sys
 import re
+import hashlib
 from html import escape
 from 页面配置 import load_pages
 
@@ -33,6 +34,21 @@ CSS = os.path.join(BASE, '_style.css')
 # ============ 读入 ============
 skeleton = open(SKEL, encoding='utf-8').read()
 css = open(CSS, encoding='utf-8').read() + '\n' + open(os.path.join(BASE, '_workspace.css'), encoding='utf-8').read()
+MEDIA_OMISSIONS = []
+media_root = os.path.join(BASE, '媒体')
+if os.path.isdir(media_root):
+    for folder in sorted(os.scandir(media_root), key=lambda entry: entry.name):
+        if not folder.is_dir():
+            continue
+        duplicate_images = {}
+        for fp in sorted(glob.glob(os.path.join(folder.path, '*'))):
+            if os.path.isfile(fp) and os.path.splitext(fp)[1].lower() in {'.jpg', '.jpeg', '.png', '.webp'}:
+                with open(fp, 'rb') as image_file:
+                    digest = hashlib.sha256(image_file.read()).hexdigest()
+                duplicate_images.setdefault(digest, []).append(os.path.relpath(fp, BASE).replace(os.sep, '/'))
+        for paths in duplicate_images.values():
+            if len(paths) > 1:
+                MEDIA_OMISSIONS.extend(paths)
 DEFAULT_PAGE, PAGES = load_pages(BASE)
 
 CARDS = {}
@@ -308,7 +324,8 @@ def b_cco(c):
     head = (f'<div class="chead"><span class="mono">{c.get("角标字", "")}</span>'
             f'<span><div class="cn">{c["卡名"]}</div><div class="cs">{c.get("代码", "")}</div></span>{dot}</div>')
     cd = f'<div class="cd">{c["说明"]}</div>' if c.get('说明') else ''
-    return f'<div class="cco" data-mid="{atattr(c["ID"])}" data-k="{Pn(c["主数据"])}"{source_attrs(c)}>{head}{cd}{b_btn(c)}</div>'
+    action = '<button type="button" class="detail-open" data-detail-module="' + atattr(c['ID']) + '">查看品牌资料<span aria-hidden="true">↗</span></button>'
+    return f'<div class="cco" data-card-kind="cco" data-mid="{atattr(c["ID"])}" data-k="{Pn(c["主数据"])}"{source_attrs(c)}>{head}{cd}{b_btn(c)}{action}</div>'
 
 
 def b_planned(c):
@@ -323,7 +340,9 @@ def b_planned(c):
             '<p><b>候选公开来源</b> ' + escape(' / '.join(plan['候选来源'])) + '</p>'
             '<p><b>使用边界</b> ' + escape(plan['使用边界']) + '</p></details>'
             '<div class="foot plan-foot"><span class="plan-number">' + escape(c['预留编号']) + '</span>'
-            '<span>尚未接入数据 · 当前仅为功能预留</span></div>')
+            '<span>尚未接入数据</span></div>'
+            '<div class="card-action-row"><button type="button" class="detail-open" data-detail-module="'
+            + atattr(c['ID']) + '">查看建设规划<span aria-hidden="true">↗</span></button></div>')
 
 
 def card_html(c, slot=None):
@@ -336,6 +355,7 @@ def card_html(c, slot=None):
     dk = ' '.join(Pn(p) for p in [c['主数据']] + (c.get('关联数据') or []) if p)
     css = ';'.join(p for p in [(c.get('卡片样式') or '').rstrip(';'), slot or ''] if p)
     attrs = (st(css)
+             + ' data-card-kind="' + atattr(t) + '"'
              + (f' data-mid="{atattr(c["ID"])}"' if c.get('ID') else '')
              + source_attrs(c)
              + (f' data-k="{dk}"' if dk else '')
@@ -369,6 +389,12 @@ def card_html(c, slot=None):
         raise SystemExit(f'{c["ID"]}：无法渲染的卡型 {t}')
     if c.get('使用提示') and t != 'planned':
         inner += '<p class="research-note">' + escape(c['使用提示']) + '</p>'
+    if t != 'planned':
+        label = ('查看产品与拆解' if t == 'review' else '查看榜单样本' if c.get('榜单')
+                 else '查看趋势与数据' if (c.get('图表组') or c.get('多品类') or t in {'share', 'ring', 'strip'})
+                 else '查看资讯与来源' if c.get('资讯键') else '查看说明与来源')
+        inner += ('<div class="card-action-row"><button type="button" class="detail-open" data-detail-module="'
+                  + atattr(c['ID']) + '">' + label + '<span aria-hidden="true">↗</span></button></div>')
     return f'<div class="{" ".join(cls)}"{attrs}>{inner}</div>'
 
 # ============ 板块拼装 ============
@@ -568,6 +594,7 @@ def read_layout(page):
     seen_cards, seen_sections = set(), set()
     fixed_ids = {'dns-dash', 'appendix', 'dnav', 'provbtn', 'asof', 'toTop',
                  'workspaceOverview', 'moduleSearch', 'moduleSearchResults', 'clearModuleSearch',
+                 'readingSize', 'moduleDetail', 'detailTitle',
                  'pfCat', 'pfStatus', 'pfQ', 'provRows', 'provToggle', 'provSum', 'pfCount'}
     for row in layout:
         if None in row or any(value is None for value in row.values()):
@@ -622,6 +649,33 @@ def build_page(page):
                       for label, value, note in [('来源词条', len(sources), '本页溯源范围'),
                                                  ('已建模块', active_count, '含原有受限项'),
                                                  ('规划预留', planned_count, '尚未接入数据')])
+    focus_map = {
+        'strategy': [('26_LME铜伦铜3月', 'series', 'P26', '原材料', '伦铜价格', '伦铜3个月合约，单位见图'),
+                     ('21_汇率横条', 'series', 'P21', '汇率', '美元兑人民币', '人民币中间价'),
+                     ('71_品类增速3C通讯零售', 'series', 'P71', '消费背景', '通讯器材零售', '同比变化，广义零售口径')],
+        'marketing': [('42_手机厂家新品发布近7天', 'review', 'P42', '新品', '终端新品', '已收录的公开发布与产品信息'),
+                      ('66_品牌销量排名Amazon线材榜', 'top', 'P66', '渠道', '线材榜单', 'Amazon美国站商品样本'),
+                      ('90_充电头网拆解报告', 'review', 'P90', '产品', '充电产品拆解', '已有拆解图片与摘要')],
+        'design': [('90_充电头网拆解报告', 'review', 'P90', '结构与工艺', '产品拆解', '从公开拆解了解设计取舍'),
+                   ('91_我爱音频网评测', 'review', 'P91', '公开体验', '音频产品评测', '第三方评测，不代表全部用户'),
+                   ('42_手机厂家新品发布近7天', 'review', 'P42', '形态与交互', '终端新品', '查看已收录的外观与产品信息')],
+        'product': [('42_手机厂家新品发布近7天', 'review', 'P42', '新品', '终端产品动态', '已收录的公开产品信息'),
+                    ('68_亚马逊销量榜充电类', 'top', 'P68', '渠道价格', '手机配件榜单', '商品排名与价格，不等同销量'),
+                    ('44_全球手机出货量', 'series', 'P44', '需求背景', '全球手机出货', '终端出货不等同配件需求')],
+        'hr': [('83_招聘职位量监测', 'module', '', '公开招聘', '同行招聘入口', '职位明细尚未接入'),
+               ('81_产能扩产募投公告', 'module', '', '公司公告', '公开项目动态', '公告不直接代表招聘计划'),
+               ('84_专利公告投关监控', 'module', '', '公司问答', '同行业务观察', '用公开信息了解业务背景')],
+    }
+    focus = []
+    for cid, kind, pid, category, title, note in focus_map.get(page['ID'], []):
+        if cid not in used:
+            continue
+        focus.append('<article class="focus-item" data-focus-kind="' + kind + '" data-focus-module="'
+                     + atattr(cid) + '" data-focus-pid="' + pid + '"><span class="focus-category">'
+                     + escape(category) + '</span><h2>' + escape(title) + '</h2><div class="focus-content"></div>'
+                     + '<p class="focus-note">' + escape(note) + '</p><button type="button" class="focus-open" data-detail-module="'
+                     + atattr(cid) + '">查看详情<span aria-hidden="true">↗</span></button></article>')
+    featured = '<section class="focus-section" aria-label="本页精选"><div class="focus-heading"><h2>先看这几项</h2><span>精选现有资料，点击查看完整内容</span></div><div class="focus-grid">' + ''.join(focus) + '</div></section>'
     replacements = {
         '<!--__PAGE_TABS__-->': tabs,
         '<!--__SECTION_NAV__-->': nav,
@@ -631,6 +685,8 @@ def build_page(page):
         '<!--__PAGE_TAG__-->': escape(page['定位']),
         '<!--__PAGE_DESCRIPTION__-->': escape(page['说明']),
         '<!--__PAGE_METRICS__-->': metrics,
+        '<!--__FEATURED__-->': featured,
+        '<!--__MEDIA_POLICY__-->': '<script>var MEDIA_OMISSIONS=' + json.dumps(MEDIA_OMISSIONS, ensure_ascii=False).replace('</', '<\\/') + ';</script>',
         '<!--__SECTIONS__-->': body,
         '<!--__DATA_JS__-->': '<script src="data.js"></script>',
         '<!--__ENGINE__-->': '<script>\n' + ENGINE + '</script>',
