@@ -54,9 +54,9 @@ def validate_planned(config):
     """预留模块只描述未来能力；不得绑定尚不存在的数据或伪装成已接入。"""
     cid = config.get('ID', '')
     number = config.get('预留编号', '')
-    if (not isinstance(number, str) or not re.fullmatch(r'M[1-9]\d*', number)
+    if (not isinstance(number, str) or not re.fullmatch(r'P[1-9]\d*', number)
             or not isinstance(cid, str) or cid.split('_', 1)[0] != number[1:]):
-        raise ValueError(f'{cid}预留编号须为M+模块数字编号')
+        raise ValueError(f'{cid}预留编号须沿用P+模块数字编号')
     if config.get('主数据') or config.get('关联数据'):
         raise ValueError(f'{cid}规划模块不能绑定数据P号')
     bindings = {'资讯键', '榜单', '榜单统计', '图表组', '多品类', '份额图', '环形',
@@ -513,6 +513,11 @@ def normalize_pid(value):
 REG_PATH = os.path.join(os.path.dirname(BASE), '看板数据固化', '词条注册表.csv')
 with open(REG_PATH, encoding='utf-8-sig', newline='') as f:
     REGISTRY = list(csv.DictReader(f))
+registered_pids = {normalize_pid(record['P号']) for record in REGISTRY}
+registered_pids.update('P' + str(source['id']) for source in PROV)
+conflicting_plans = planned_numbers & registered_pids
+if conflicting_plans:
+    raise ValueError('规划预留编号已被正式词条占用：' + '、'.join(sorted(conflicting_plans)))
 STATIC_PIDS = {record['P号'] for record in REGISTRY if record.get('状态') == '静态维护'}
 for source in PROV:
     if 'P' + str(source['id']) in STATIC_PIDS:

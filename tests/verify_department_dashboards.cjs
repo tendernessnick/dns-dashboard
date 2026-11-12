@@ -62,10 +62,10 @@ const activeModules = new Map([...modules].filter(([, card]) => card['类型'] !
 assert.equal(activeModules.size, 98, '原有98个真实模块完整保留');
 assert.equal(plannedModules.size, 11, '新增11个规划卡，不伪装成真实数据模块');
 assert.deepEqual([...plannedModules.values()].map(card => card['预留编号']).sort(),
-  Array.from({ length: 11 }, (_, i) => 'M' + (301 + i)).sort(), '规划编号独立于P号');
+  Array.from({ length: 11 }, (_, i) => 'P' + (301 + i)).sort(), '沿用P号编号，仍保持规划状态');
 for (const [id, card] of plannedModules) {
   assert.equal(card['预留编号'].slice(1), id.split('_')[0], '规划编号与模块ID一致');
-  assert.ok(!card['主数据'] && !(card['关联数据'] || []).length, id + '不绑定假P号');
+  assert.ok(!card['主数据'] && !(card['关联数据'] || []).length, id + '预留P号不能充当真实数据绑定');
 }
 const fixedDir = path.join(root, '看板数据固化');
 const originalCsvs = manifest(path.join(fixedDir, 'CSV数据'), '.csv');
@@ -77,6 +77,11 @@ const normalizePid = value => {
   return match ? 'P' + Number(match[1]) + match[2].toLowerCase() : null;
 };
 const sourceIds = new Set(sources.map(row => normalizePid(row['P号'])));
+const registeredIds = new Set(registry.map(row => normalizePid(row['P号'])));
+for (const [id, card] of plannedModules) {
+  assert.ok(!sourceIds.has(card['预留编号']) && !registeredIds.has(card['预留编号']),
+    id + '预留P号不能冒充已登记数据源或溯源词条');
+}
 const splitKeys = value => String(value || '').split(/[;；]/).map(x => x.trim()).filter(Boolean);
 
 function dependencies(refs) {
@@ -118,9 +123,9 @@ for (const view of views) {
   assert.ok(fs.existsSync(path.join(dashboardDir, view['文件'])), '先由生产构建器生成：' + view['文件']);
 }
 assert.deepEqual([...defaultView.activeRefs].sort(), [...activeModules.keys()].sort(), '主看板完整保留原有98个真实模块');
-assert.deepEqual(defaultView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['M301', 'M302', 'M303']);
+assert.deepEqual(defaultView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['P301', 'P302', 'P303']);
 assert.equal(marketView.activeRefs.length, 51, '市场页保留原有51个真实模块');
-assert.deepEqual(marketView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['M304', 'M308']);
+assert.deepEqual(marketView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['P304', 'P308']);
 assert.deepEqual([...new Set(views.flatMap(view => view.plannedRefs))].sort(), [...plannedModules.keys()].sort(),
   '11个规划卡都应出现在已登记页面中');
 for (const ref of plannedModules.keys()) assert.deepEqual(dependencies([ref]), [], ref + '不得生成假溯源依赖');
@@ -204,10 +209,10 @@ async function assertPlannedCards(scope, view, label) {
       REVIEWS: typeof REVIEWS === 'undefined' ? {} : REVIEWS };
     return ids.flatMap(pid => [
       ...Object.entries(stores).filter(([, store]) => Object.hasOwn(store, pid)).map(([name]) => name + ':' + pid),
-      ...(PROV.some(item => 'P' + item.id === pid) ? ['PROV:' + pid] : []),
+      ...(PROV.some(item => String(item.id).replace(/^P/i, '') === pid.slice(1)) ? ['PROV:' + pid] : []),
     ]);
-  }, [...plannedModules.values()].map(card => 'P' + card['预留编号'].slice(1)));
-  assert.deepEqual(falseSources, [], label + 'M编号不得伪造成业务P号或来源');
+  }, [...plannedModules.values()].map(card => card['预留编号']));
+  assert.deepEqual(falseSources, [], label + '预留P号仅作规划标识，不能产生数据、绑定或PROV行');
 }
 
 async function assertView(scope, view, label) {
