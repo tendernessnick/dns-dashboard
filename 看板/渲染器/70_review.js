@@ -38,11 +38,18 @@
       var name=String(it.name||'未命名图文'),src=imageURL(it.img);
       card.setAttribute('data-article-pid',pid);card.setAttribute('data-article-index',String(index));
       if(url){card.href=url;card.target='_blank';card.rel='noopener noreferrer';card.setAttribute('aria-label','打开原文：'+name)}
-      function placeholder(){media.replaceChildren(node('span','rthumb rnoimg',it.img?'图片待核对':d.noimg||'暂无配图'))}
+      function placeholder(reason){
+        media.setAttribute('data-media-state',reason);
+        var text=reason==='pending-review'?'图片待核对':reason==='load-error'
+          ?'图片暂未加载'+(url?' · 点击查看原文':''):(d.noimg||'暂无配图');
+        media.replaceChildren(node('span','rthumb rnoimg',text));
+      }
       if(src){
         var img=node('img','rthumb');img.src=src;img.alt=name;img.loading='lazy';img.decoding='async';
-        img.addEventListener('error',placeholder,{once:true});media.appendChild(img);
-      }else placeholder();
+        media.setAttribute('data-media-state','loading');
+        img.addEventListener('load',function(){media.setAttribute('data-media-state','loaded')},{once:true});
+        img.addEventListener('error',function(){placeholder('load-error')},{once:true});media.appendChild(img);
+      }else placeholder(it.img?(typeof MEDIA_OMISSIONS!=='undefined'&&MEDIA_OMISSIONS.indexOf(String(it.img))>=0?'pending-review':'load-error'):'missing');
       var title=node('h4','rname',name);title.title=name;
       // 完整标题保留在DOM与title中，卡片中按可用空间排版。
       title.style.whiteSpace='normal';title.style.display='-webkit-box';
