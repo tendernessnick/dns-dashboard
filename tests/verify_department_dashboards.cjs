@@ -62,7 +62,7 @@ const activeModules = new Map([...modules].filter(([, card]) => card['类型'] !
 assert.equal(activeModules.size, 98, '原有98个真实模块完整保留');
 assert.equal(plannedModules.size, 11, '新增11个规划卡，不伪装成真实数据模块');
 assert.deepEqual([...plannedModules.values()].map(card => card['预留编号']).sort(),
-  Array.from({ length: 11 }, (_, i) => 'P' + (301 + i)).sort(), '沿用P号编号，仍保持规划状态');
+  Array.from({ length: 11 }, (_, i) => 'P' + (255 + i)).sort(), '顺接历史模块最大编号254，仍保持规划状态');
 for (const [id, card] of plannedModules) {
   assert.equal(card['预留编号'].slice(1), id.split('_')[0], '规划编号与模块ID一致');
   assert.ok(!card['主数据'] && !(card['关联数据'] || []).length, id + '预留P号不能充当真实数据绑定');
@@ -123,9 +123,9 @@ for (const view of views) {
   assert.ok(fs.existsSync(path.join(dashboardDir, view['文件'])), '先由生产构建器生成：' + view['文件']);
 }
 assert.deepEqual([...defaultView.activeRefs].sort(), [...activeModules.keys()].sort(), '主看板完整保留原有98个真实模块');
-assert.deepEqual(defaultView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['P301', 'P302', 'P303']);
+assert.deepEqual(defaultView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['P255', 'P256', 'P257']);
 assert.equal(marketView.activeRefs.length, 51, '市场页保留原有51个真实模块');
-assert.deepEqual(marketView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['P304', 'P308']);
+assert.deepEqual(marketView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['P258', 'P262']);
 assert.deepEqual([...new Set(views.flatMap(view => view.plannedRefs))].sort(), [...plannedModules.keys()].sort(),
   '11个规划卡都应出现在已登记页面中');
 for (const ref of plannedModules.keys()) assert.deepEqual(dependencies([ref]), [], ref + '不得生成假溯源依赖');

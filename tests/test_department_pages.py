@@ -21,7 +21,7 @@ spec.loader.exec_module(builder)
 
 
 PAGE_IDS = {'strategy', 'marketing', 'design', 'product', 'hr'}
-EXPECTED_PLANNED = {f'P{i}' for i in range(301, 312)}
+EXPECTED_PLANNED = {f'P{i}' for i in range(255, 266)}
 
 
 class FragmentAudit(HTMLParser):
@@ -95,7 +95,7 @@ class PageConfigurationTests(unittest.TestCase):
         planned = {builder.CARDS[cid]['预留编号'] for cid in refs if cid not in active}
         self.assertEqual(len(active), 98)
         self.assertTrue(active.issubset(refs))
-        self.assertEqual(planned, {'P301', 'P302', 'P303'})
+        self.assertEqual(planned, {'P255', 'P256', 'P257'})
         _, info = builder.build_page(page)
         self.assertEqual((info['activeModuleCount'], info['plannedCount'], info['moduleCount']), (98, 3, 101))
 
@@ -152,8 +152,8 @@ class PageConfigurationTests(unittest.TestCase):
         cases = [('主数据', 'P1'), ('关联数据', ['P1']), ('资讯键', 'P14'),
                  ('图表组', [{'P': 'P1'}]), ('多品类', 'P58'), ('环形', 'P56'),
                  ('榜单', 'P66'), ('数值占位', '123'), ('状态点', 'g'),
-                 ('预留编号', 'M301'), ('预留编号', 'P999'),
-                 ('预留编号', 301), ('预留编号', None)]
+                 ('预留编号', 'M255'), ('预留编号', 'P999'),
+                 ('预留编号', 255), ('预留编号', None)]
         for key, value in cases:
             with self.subTest(field=key, value=value):
                 card = copy.deepcopy(original)
