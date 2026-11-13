@@ -13,19 +13,22 @@
     var items = NEWS[el.getAttribute('data-news')], fragment = document.createDocumentFragment();
     if (Array.isArray(items)) items.forEach(function (it) {
       if (!it || typeof it !== 'object') return;
-      var title = String(it.title_zh || it.title || '未记录标题'), url = webURL(it.url);
+      var title = String(it.title_display || it.title_zh || it.title || '未记录标题'), url = webURL(it.url);
       var item = node('li', 'news-item'), link = node(url ? 'a' : 'div', 'fi story-link');
       if (url) { link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.setAttribute('aria-label', '打开原文：' + title); }
       var meta = node('span', 'story-meta');
       meta.appendChild(node('i', 'dchip', it.iso || it.date || '日期未提供'));
       if (it.source) meta.appendChild(node('span', 'story-source', it.source));
+      if (it.translation_status === 'needs_review') {
+        var note = node('span', 'translation-note', '待校译'); note.title = '当前展示英文原题，中文译题待校译'; meta.appendChild(note);
+      }
       meta.appendChild(node('span', 'story-open', url ? '原文 ↗' : '原文链接未提供'));
       link.appendChild(meta);
       var heading = node('span', 'story-title', title); heading.title = it.title || title; link.appendChild(heading);
       if (it.desc || it.summary) link.appendChild(node('span', 'story-summary', it.desc || it.summary));
       item.appendChild(link); fragment.appendChild(item);
     });
-    if (!fragment.childNodes.length) fragment.appendChild(node('li', 'feed-empty', '当前无可展示资讯 · 更新与异常状态见数据溯源'));
+    if (!fragment.childNodes.length) fragment.appendChild(node('li', 'feed-empty', '暂无新消息'));
     ul.replaceChildren(fragment);
     var title = el.querySelector('.card-top .t');
     window.DNSPager.mount(ul, { kind: 'news', label: title ? title.textContent : '资讯' });

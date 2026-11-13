@@ -1267,8 +1267,11 @@ body{background:#F5F6F3}
 }
 
 /* 资讯、榜单和图文统一手动分页。内容没有内部纵向滚动，滚轮自然传递给页面。 */
-#dns-dash .content-pager{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;grid-template-rows:auto auto;column-gap:8px;row-gap:10px;align-items:center;min-width:0;width:100%;margin:4px 0 12px;flex:1 0 auto}
-#dns-dash .content-pager>.pager-items{grid-column:2;grid-row:1;min-width:0;width:100%;margin:0;padding:0;max-height:none!important;height:auto!important;overflow:visible!important;overscroll-behavior:auto;touch-action:auto;mask-image:none!important;-webkit-mask-image:none!important;scrollbar-width:none;align-self:start}
+#dns-dash .content-pager{--pager-slot-height:148px;--pager-item-gap:11px;--pager-review-height:454px;--pager-viewport-height:calc(var(--pager-slot-height)*var(--pager-page-size,3) + var(--pager-item-gap)*(var(--pager-page-size,3) - 1));display:grid;grid-template-columns:44px minmax(0,1fr) 44px;grid-template-rows:var(--pager-viewport-height) 44px;column-gap:8px;row-gap:10px;align-items:center;min-width:0;width:100%;margin:4px 0 12px;flex:0 0 auto}
+#dns-dash .content-pager[data-pager-kind="review"]{--pager-viewport-height:var(--pager-review-height)}
+#dns-dash .content-pager[data-pager-kind="toplist"]{--pager-slot-height:128px}
+#dns-dash .content-pager[data-pager-variant="calendar"]{--pager-slot-height:124px}
+#dns-dash .content-pager>.pager-items{grid-column:2;grid-row:1;min-width:0;width:100%;margin:0;padding:0;max-height:none!important;height:100%!important;min-height:0;overflow:visible!important;overscroll-behavior:auto;touch-action:auto;mask-image:none!important;-webkit-mask-image:none!important;scrollbar-width:none;align-self:stretch}
 #dns-dash .content-pager .pager-item[hidden]{display:none!important}
 #dns-dash .content-pager .pager-arrow{display:flex;align-items:center;justify-content:center;min-width:44px;width:44px;min-height:44px;height:44px;padding:10px;border:1px solid #D9E3DD;border-radius:50%;background:#FFF;color:#345D65;cursor:pointer;box-shadow:0 1px 4px rgba(32,55,50,.04);transition:background .15s,border-color .15s,color .15s}
 #dns-dash .pager-arrow svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -1278,74 +1281,95 @@ body{background:#F5F6F3}
 #dns-dash .pager-previous{grid-column:1;grid-row:1}
 #dns-dash .pager-next{grid-column:3;grid-row:1}
 #dns-dash .pager-status{grid-column:1/-1;grid-row:2;text-align:center;font:400 12px/22px var(--fn);font-variant-numeric:tabular-nums;color:#6B7D79;min-width:0}
-#dns-dash .pager-single .pager-arrow{visibility:hidden}
+#dns-dash .pager-single .pager-arrow{visibility:visible}
 #dns-dash .content-pager.pager-compact{row-gap:12px}
 #dns-dash .content-pager.pager-compact>.pager-items{grid-column:1/-1;grid-row:1}
 #dns-dash .pager-compact>.pager-previous,#dns-dash .pager-compact>.pager-next{grid-row:2}
 #dns-dash .pager-compact>.pager-status{grid-column:2;grid-row:2}
-#dns-dash .pager-compact.pager-single .pager-arrow{display:none}
-#dns-dash .pager-compact.pager-single .pager-status{grid-column:1/-1}
-#dns-dash .feed.pager-items{display:flex;flex-direction:column;gap:11px;list-style:none;flex:none}
+#dns-dash .pager-compact.pager-single .pager-arrow{display:flex}
+#dns-dash .pager-compact.pager-single .pager-status{grid-column:2}
+#dns-dash .feed.pager-items{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(var(--pager-page-size,3),var(--pager-slot-height));gap:var(--pager-item-gap);list-style:none;flex:none;align-content:start}
 #dns-dash .feed.pager-items>li{border:0;margin:0;padding:0;min-width:0}
+#dns-dash .feed.pager-items>li:not([data-pager-empty]){height:var(--pager-slot-height);min-height:0}
 #dns-dash .feed.pager-items .fi{display:flex;align-items:stretch;gap:10px;padding:14px 15px;border:1px solid #E1E8E0;border-radius:7px;background:#FAFCF9;text-decoration:none;line-height:25px;min-width:0;color:#324D54;transition:background .15s,border-color .15s}
 #dns-dash .feed.pager-items a.fi:hover{background:#F1F6F1;border-color:#A9C7BA;color:#1F4A50}
 #dns-dash .feed.pager-items .fi::after{display:none}
-#dns-dash .feed.pager-items .story-link{flex-direction:column;gap:7px}
+#dns-dash .feed.pager-items .story-link{display:grid;grid-template-rows:22px minmax(0,1fr) 23px;gap:7px;height:100%;box-sizing:border-box}
 #dns-dash .feed.pager-items .story-link span{display:block;flex:none;overflow:visible;-webkit-line-clamp:unset;-webkit-box-orient:unset}
-#dns-dash .feed.pager-items .story-link .story-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;line-height:20px;color:#637C76}
+#dns-dash .feed.pager-items .story-link .story-meta{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;font-size:12px;line-height:20px;color:#637C76;grid-row:1;min-width:0}
+#dns-dash .feed.pager-items .story-meta .story-source{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #dns-dash .feed.pager-items .story-meta .dchip{padding:2px 6px;font:400 12px/19px var(--fnnum);background:#EFF3EE;border:0;border-radius:3px;color:#60756F}
 #dns-dash .feed.pager-items .story-meta .story-open{margin-left:auto}
-#dns-dash .feed.pager-items .story-link .story-title{font-size:15px;line-height:26px;font-weight:550;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
-#dns-dash .feed.pager-items .story-link .story-summary{font-size:13px;line-height:23px;color:#6A7F79;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#dns-dash .feed.pager-items .story-link .story-title{font-size:15px;line-height:26px;font-weight:550;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;grid-row:2;align-self:start}
+#dns-dash .feed.pager-items .story-link .story-summary{font-size:13px;line-height:23px;color:#6A7F79;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;grid-row:3}
 #dns-dash .story-open{font-size:12px;line-height:21px;color:#587D77;font-weight:400}
 #dns-dash .feed-empty,#dns-dash .top-empty{padding:24px 16px!important;background:#F7F9F5;border:1px dashed #D8E3D8!important;border-radius:7px;font-size:14px;line-height:26px;color:#708077}
+#dns-dash .content-pager .pager-items>.pager-empty-state{grid-column:1/-1;grid-row:1/-1;display:flex;align-items:center;justify-content:center;height:100%!important;min-height:0;width:100%;padding:24px 16px!important;margin:0;background:#F7F9F5;border:1px dashed #D8E3D8!important;border-radius:7px;font-size:14px;line-height:26px;color:#708077;text-align:center;box-sizing:border-box}
 /* 议息模块与通用资讯使用同一套卡片。 */
 #dns-dash .calendar-card>.tl-list,#dns-dash .calendar-card>.desc{flex:none}
 #dns-dash .calendar-card>.foot{margin-top:auto}
 #dns-dash .calendar-news{margin-top:18px;min-width:0}
 #dns-dash .calendar-news-title{font-size:14px;line-height:24px;font-weight:550;margin:0 0 9px;color:#365B5D}
-#dns-dash .calendar-news-status{font-size:12px;line-height:22px;color:#718077;margin:5px 0}
-#dns-dash .calendar-news-feed.pager-items .fi.story-link{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:11px}
+#dns-dash .calendar-news-status{font-size:12px;line-height:22px;height:22px;min-height:22px;color:#718077;margin:5px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dns-dash .calendar-news-feed.pager-items .fi.story-link{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:minmax(0,1fr);align-items:start;gap:11px}
 #dns-dash .calendar-news-feed.pager-items .fi>.dchip{font:400 11px/20px var(--fnnum);padding:2px 5px;background:#EFF3EE;border:0;border-radius:3px;margin-top:1px;min-width:0}
-#dns-dash .calendar-news-feed.pager-items .story-body{min-width:0}
-#dns-dash .calendar-news-feed.pager-items .story-source{display:block;margin-top:5px;color:#6B817A;font:400 12px/21px var(--fn)}
+#dns-dash .calendar-news-feed.pager-items .story-body{display:grid!important;grid-template-rows:52px 21px;gap:5px;min-width:0}
+#dns-dash .calendar-news-feed.pager-items .story-body .story-title{grid-row:1}
+#dns-dash .calendar-news-feed.pager-items .story-source{display:block;grid-row:2;margin:0;color:#6B817A;font:400 12px/21px var(--fn);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* 图文两张并排或单张，空间留给标题、图片和摘要，整卡就是原文入口。 */
-#dns-dash .revcards.pager-items,#dns-dash [data-review="41"].revcards.pager-items,#dns-dash [data-review="42"].revcards.pager-items{display:grid;grid-template-columns:repeat(var(--pager-columns,1),minmax(0,1fr));gap:15px;align-items:stretch;flex:none}
-#dns-dash .revcards.pager-items .revcard,#dns-dash [data-review="41"].pager-items .revcard,#dns-dash [data-review="42"].pager-items .revcard{display:flex;flex-direction:column;align-items:stretch;min-width:0;min-height:0;height:auto!important;padding:16px;gap:14px;border:1px solid #DFE8DF;border-radius:8px;background:#FAFCF8;text-decoration:none;color:inherit;overflow:visible;transition:background .15s,border-color .15s,box-shadow .15s}
+#dns-dash .revcards.pager-items,#dns-dash [data-review="41"].revcards.pager-items,#dns-dash [data-review="42"].revcards.pager-items{display:grid;grid-template-columns:repeat(var(--pager-columns,1),minmax(0,1fr));grid-template-rows:var(--pager-review-height);gap:15px;align-items:stretch;flex:none}
+#dns-dash .revcards.pager-items .revcard,#dns-dash [data-review="41"].pager-items .revcard,#dns-dash [data-review="42"].pager-items .revcard{display:grid;grid-template-rows:190px minmax(0,1fr);align-items:stretch;min-width:0;min-height:0;height:100%!important;padding:16px;gap:14px;border:1px solid #DFE8DF;border-radius:8px;background:#FAFCF8;text-decoration:none;color:inherit;overflow:visible;box-sizing:border-box;transition:background .15s,border-color .15s,box-shadow .15s}
 #dns-dash .revcards.pager-items a.revcard:hover{background:#F3F8F1;border-color:#9CBEAD;box-shadow:0 3px 12px rgba(42,73,55,.06)}
 #dns-dash .revcards.pager-items .rmedia{flex:none;width:100%;min-width:0;margin:0}
 #dns-dash .revcards.pager-items .rthumb,#dns-dash [data-review="41"].pager-items .rthumb,#dns-dash [data-review="42"].pager-items .rthumb{display:block;width:100%;height:190px;object-fit:contain;background:#F0F4EC;border-radius:5px}
 #dns-dash .revcards.pager-items .rnoimg{display:flex;align-items:center;justify-content:center;font:400 13px/24px var(--fn);color:#84958A;letter-spacing:0}
-#dns-dash .revcards.pager-items .rinfo{display:flex;flex:1;min-width:0;flex-direction:column}
-#dns-dash .revcards.pager-items .rname{margin:0;font-size:16px;line-height:27px;font-weight:600;-webkit-line-clamp:3!important;color:#233E44;overflow-wrap:anywhere}
-#dns-dash .revcards.pager-items .rmeta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+#dns-dash .revcards.pager-items .rinfo{display:grid;grid-template-rows:54px 30px 32px 59px minmax(34px,1fr);min-width:0;min-height:0}
+#dns-dash .revcards.pager-items .rname{grid-row:1;margin:0;font-size:16px;line-height:27px;font-weight:600;-webkit-line-clamp:2!important;color:#233E44;overflow-wrap:anywhere;min-height:0}
+#dns-dash .revcards.pager-items .rmeta{grid-row:2;display:flex;flex-wrap:nowrap;gap:8px;align-items:center;margin-top:8px;min-width:0;overflow:hidden}
 #dns-dash .revcards.pager-items .rdate{margin:0;color:#6D8179;font-size:12px;line-height:22px}
-#dns-dash .revcards.pager-items .rdesc{font-size:14px;line-height:25px;margin:9px 0 0;-webkit-line-clamp:3;color:#617970}
-#dns-dash .revcards.pager-items .rchips{margin-top:8px;max-height:54px;gap:5px}
-#dns-dash .revcards.pager-items .review-open{display:block;margin-top:auto;padding-top:13px}
-#dns-dash .feed.pager-items .top-product-info{min-width:0}
+#dns-dash .revcards.pager-items .rdesc{grid-row:4;font-size:14px;line-height:25px;margin:9px 0 0;-webkit-line-clamp:2;color:#617970;align-self:start}
+#dns-dash .revcards.pager-items .rchips{grid-row:3;margin-top:8px;max-height:24px;gap:5px;flex-wrap:nowrap;white-space:nowrap}
+#dns-dash .revcards.pager-items .review-open{grid-row:5;display:block;margin:0;padding-top:13px;align-self:end}
+#dns-dash .feed.pager-items .top-product .fi{height:100%;box-sizing:border-box;align-items:center}
+#dns-dash .feed.pager-items .top-product-info{display:flex;flex-direction:column;min-width:0}
 #dns-dash .feed.pager-items .top-product-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:24px}
-#dns-dash .feed.pager-items .top-product-meta{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:7px}
+#dns-dash .feed.pager-items .top-product-meta{display:flex;gap:7px;flex-wrap:nowrap;align-items:center;margin-top:7px;white-space:nowrap}
+#dns-dash.large-reading .content-pager{--pager-slot-height:174px;--pager-review-height:486px}
+#dns-dash.large-reading .content-pager[data-pager-kind="toplist"]{--pager-slot-height:156px}
+#dns-dash.large-reading .content-pager[data-pager-variant="calendar"]{--pager-slot-height:148px}
 #dns-dash.large-reading .feed.pager-items .story-link .story-title{font-size:18px;line-height:31px}
+#dns-dash.large-reading .feed.pager-items .story-link{grid-template-rows:22px minmax(0,1fr) 27px}
+#dns-dash.large-reading .feed.pager-items .story-link .story-summary{font-size:15px;line-height:27px}
+#dns-dash.large-reading .calendar-news-feed.pager-items .fi.story-link{grid-template-rows:minmax(0,1fr)}
+#dns-dash.large-reading .calendar-news-feed.pager-items .story-body{grid-template-rows:62px 24px}
 #dns-dash.large-reading .revcards.pager-items .rname{font-size:19px;line-height:31px}
 #dns-dash.large-reading .revcards.pager-items .rdesc{font-size:16px;line-height:29px}
+#dns-dash.large-reading .revcards.pager-items .rinfo{grid-template-rows:62px 30px 32px 67px minmax(34px,1fr)}
 @media(max-width:768px){
+ #dns-dash .content-pager{--pager-review-height:430px}
+ #dns-dash.large-reading .content-pager{--pager-review-height:462px}
  #dns-dash .content-pager{grid-template-columns:44px minmax(0,1fr) 44px;gap:10px}
  #dns-dash .content-pager>.pager-items{grid-column:1/-1;grid-row:1}
  #dns-dash .content-pager>.pager-previous,#dns-dash .content-pager>.pager-next{grid-row:2}
  #dns-dash .content-pager>.pager-status{grid-column:2;grid-row:2}
  #dns-dash .feed.pager-items .fi{padding:13px}
  #dns-dash .feed.pager-items .story-title{font-size:15px;line-height:26px}
- #dns-dash .revcards.pager-items .revcard{padding:14px}
+ #dns-dash .revcards.pager-items .revcard{padding:14px;grid-template-rows:170px minmax(0,1fr)}
  #dns-dash .revcards.pager-items .rthumb{height:170px}
- #dns-dash .calendar-news-feed.pager-items .fi.story-link{display:flex;gap:7px}
+ #dns-dash .calendar-news-feed.pager-items .fi.story-link{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:22px minmax(0,1fr);gap:7px}
+ #dns-dash .calendar-news-feed.pager-items .story-body{grid-row:2}
+ #dns-dash .content-pager[data-pager-variant="calendar"]{--pager-slot-height:140px}
+ #dns-dash.large-reading .content-pager[data-pager-variant="calendar"]{--pager-slot-height:166px}
+ #dns-dash.large-reading .calendar-news-feed.pager-items .fi.story-link{grid-template-rows:22px minmax(0,1fr)}
 }
 @media print{
  #dns-dash .content-pager{display:block;break-inside:auto}
  #dns-dash .content-pager .pager-arrow,#dns-dash .content-pager .pager-status{display:none!important}
+ #dns-dash .content-pager>.pager-items{height:auto!important;display:block!important}
  #dns-dash .content-pager .pager-item[hidden]{display:block!important}
- #dns-dash .revcards.pager-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
- #dns-dash .revcards.pager-items .revcard{break-inside:avoid;margin-bottom:12px}
+ #dns-dash .content-pager .pager-item{height:auto!important;break-inside:avoid;margin-bottom:12px!important}
+ #dns-dash .content-pager .pager-item .fi,#dns-dash .revcards.pager-items .revcard{height:auto!important}
+ #dns-dash .revcards.pager-items .rinfo{display:block}
 }
 
 /* 可收缩研究目录。构建时在_workspace.css后内联，保持无脚本时的原生导航。 */
@@ -1678,10 +1702,10 @@ function canCompare(el){return !el.closest('[data-change="none"]');}
     if (!container || !container.parentNode) return null;
     var existing = instances.get(container);
     if (existing) { existing.configure(options || {}); return existing; }
-    var settings = Object.assign({ kind: 'news', label: '资讯' }, options || {});
+    var settings = Object.assign({ kind: 'news', label: '资讯', emptyText: '暂无新消息' }, options || {});
     var shell = node('div', 'content-pager'), previous = node('button', 'pager-arrow pager-previous');
     var next = node('button', 'pager-arrow pager-next'), status = node('div', 'pager-status');
-    var page = 0, size = 1, lastWidth = -1, items = [], pending = false;
+    var page = 0, size = 1, lastWidth = -1, items = [], emptyState = null, pending = false;
     shell.setAttribute('role', 'region');
     if (!container.id) container.id = 'paged-content-' + (++sequence);
     container.classList.add('pager-items');
@@ -1697,7 +1721,7 @@ function canCompare(el){return !el.closest('[data-change="none"]');}
     function safeFocus(el) { if (el && typeof el.focus === 'function') el.focus({ preventScroll: true }); }
     function focusVisibleItem() {
       var item = items.find(function (entry) { return !entry.hidden; });
-      if (!item) return;
+      if (!item) { if (emptyState) { emptyState.setAttribute('tabindex', '-1'); safeFocus(emptyState); } return; }
       var link = item.matches('a[href],button,[tabindex]') ? item : item.querySelector('a[href],button,[tabindex]');
       if (link) safeFocus(link);
       else { item.setAttribute('tabindex', '-1'); safeFocus(item); }
@@ -1712,11 +1736,14 @@ function canCompare(el){return !el.closest('[data-change="none"]');}
       previous.setAttribute('aria-label', settings.label + '：上一页'); next.setAttribute('aria-label', settings.label + '：下一页');
       previous.title = '上一页'; next.title = '下一页';
       shell.setAttribute('aria-label', settings.label + '分页浏览'); shell.setAttribute('data-pager-kind', settings.kind);
+      shell.setAttribute('data-pager-variant', settings.variant || 'default');
       shell.setAttribute('data-page-index', String(page)); shell.setAttribute('data-page-count', String(total));
+      shell.setAttribute('data-item-count', String(items.length));
       shell.classList.toggle('pager-single', total === 1);
+      shell.classList.toggle('pager-empty', items.length === 0);
       shell.style.setProperty('--pager-columns', String(settings.kind === 'review' ? size : 1));
-      var savedCount = items.filter(function (item) { return !item.matches('.feed-empty,.top-empty,.rev-empty'); }).length;
-      status.textContent = !savedCount ? '暂无内容' : total > 1 ? '第 ' + (page + 1) + ' / ' + total + ' 页 · 共 ' + savedCount + ' 条' : '共 ' + savedCount + ' 条';
+      shell.style.setProperty('--pager-page-size', String(size));
+      status.textContent = !items.length ? '0 条' : total > 1 ? '第 ' + (page + 1) + ' / ' + total + ' 页 · 共 ' + items.length + ' 条' : '共 ' + items.length + ' 条';
       // 显示/收起、换页或窗口改变时，不把键盘焦点留在隐藏条目或刚禁用的按钮上。
       if (active && container.contains(active) && items.some(function (item) { return item.hidden && item.contains(active); })) focusVisibleItem();
       else if ((active === next || active === previous) && previous.disabled && next.disabled) focusVisibleItem();
@@ -1731,7 +1758,24 @@ function canCompare(el){return !el.closest('[data-change="none"]');}
     }
     function refresh() {
       var before = page * size, active = document.activeElement;
-      items = Array.from(container.children);
+      var children = Array.from(container.children);
+      var emptyNodes = children.filter(function (item) { return item.matches('.feed-empty,.top-empty,.rev-empty,[data-pager-empty]'); });
+      items = children.filter(function (item) { return emptyNodes.indexOf(item) < 0; });
+      emptyState = null;
+      if (!items.length) {
+        emptyState = emptyNodes.shift() || node(container.tagName === 'UL' || container.tagName === 'OL' ? 'li' : 'div');
+        emptyState.className = 'pager-empty-state'; emptyState.setAttribute('data-pager-empty', 'true');
+        emptyState.textContent = settings.emptyText; emptyState.hidden = false;
+        if (emptyState.parentNode !== container) container.appendChild(emptyState);
+      }
+      emptyNodes.forEach(function (item) { item.remove(); });
+      // 固定阅读槽位会截行；保留完整文本供悬停和辅助技术读取，原文链接不变。
+      container.querySelectorAll('.story-title,.rname,.top-product-title,.story-summary,.rdesc,.rchips,.story-source').forEach(function (text) {
+        var full = text.textContent.trim(), original = text.getAttribute('title') || '';
+        if (!full || text.getAttribute('data-pager-tooltip') === full) return;
+        text.title = original && original !== full && original.indexOf(full + '\n') !== 0 ? full + '\n' + original : full;
+        text.setAttribute('data-pager-tooltip', full);
+      });
       var focused = items.findIndex(function (item) { return item === active || item.contains(active); });
       var width = shell.getBoundingClientRect().width;
       if (width > 0) {
@@ -1760,6 +1804,11 @@ function canCompare(el){return !el.closest('[data-change="none"]');}
         if (entries.some(function (entry) { return entry.contentRect.width > 0 && Math.abs(entry.contentRect.width - lastWidth) > .5; })) schedule();
       }).observe(shell);
     } else window.addEventListener('resize', schedule, { passive: true });
+    // 字号偏好或字体迟到只能按阅读档位重排，不按当前页或图片固有高度量取槽位。
+    if (typeof MutationObserver !== 'undefined') {
+      new MutationObserver(schedule).observe(container.closest('#dns-dash') || document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    }
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
     // 公司切换会先显示面板，再由下一帧重新计算页数；不修改公司选择本身。
     var panel = container.closest('[data-copanel]');
     if (panel && typeof MutationObserver !== 'undefined') new MutationObserver(schedule).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
@@ -1782,19 +1831,22 @@ function canCompare(el){return !el.closest('[data-change="none"]');}
     var items = NEWS[el.getAttribute('data-news')], fragment = document.createDocumentFragment();
     if (Array.isArray(items)) items.forEach(function (it) {
       if (!it || typeof it !== 'object') return;
-      var title = String(it.title_zh || it.title || '未记录标题'), url = webURL(it.url);
+      var title = String(it.title_display || it.title_zh || it.title || '未记录标题'), url = webURL(it.url);
       var item = node('li', 'news-item'), link = node(url ? 'a' : 'div', 'fi story-link');
       if (url) { link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.setAttribute('aria-label', '打开原文：' + title); }
       var meta = node('span', 'story-meta');
       meta.appendChild(node('i', 'dchip', it.iso || it.date || '日期未提供'));
       if (it.source) meta.appendChild(node('span', 'story-source', it.source));
+      if (it.translation_status === 'needs_review') {
+        var note = node('span', 'translation-note', '待校译'); note.title = '当前展示英文原题，中文译题待校译'; meta.appendChild(note);
+      }
       meta.appendChild(node('span', 'story-open', url ? '原文 ↗' : '原文链接未提供'));
       link.appendChild(meta);
       var heading = node('span', 'story-title', title); heading.title = it.title || title; link.appendChild(heading);
       if (it.desc || it.summary) link.appendChild(node('span', 'story-summary', it.desc || it.summary));
       item.appendChild(link); fragment.appendChild(item);
     });
-    if (!fragment.childNodes.length) fragment.appendChild(node('li', 'feed-empty', '当前无可展示资讯 · 更新与异常状态见数据溯源'));
+    if (!fragment.childNodes.length) fragment.appendChild(node('li', 'feed-empty', '暂无新消息'));
     ul.replaceChildren(fragment);
     var title = el.querySelector('.card-top .t');
     window.DNSPager.mount(ul, { kind: 'news', label: title ? title.textContent : '资讯' });
@@ -2394,7 +2446,9 @@ root.addEventListener('click',function(ev){
     pid=pid.replace(/^p/,'P');
     var d=REVIEWS[pid];
     if(!d||!Array.isArray(d.items)||!d.items.length){
-      el.replaceChildren(node('div','rev-empty','暂无图文数据 · 低频主题近期可能无新稿'));
+      el.replaceChildren(node('div','rev-empty','暂无新消息'));
+      var emptyCard=el.closest('.card'),emptyHeading=emptyCard&&emptyCard.querySelector('.card-top .t');
+      window.DNSPager.mount(el,{kind:'review',label:emptyHeading?emptyHeading.textContent:'图文资讯'});
       return;
     }
     var fragment=document.createDocumentFragment();
@@ -2504,17 +2558,16 @@ root.addEventListener('click',function(ev){
         var zh=it.title_zh&&it.title_zh!==it.title;
         return '<li><a class="fi story-link" href="'+escH(safeUrl(it.url))+'" target="_blank" rel="noopener noreferrer">'
           +'<i class="dchip">'+escH(it.date||(it.iso||'').slice(5))+'</i><span class="story-body">'
-          +'<span class="story-title"'+(zh?' title="'+escH(it.title)+'"':'')+'>'+escH(zh?it.title_zh:it.title)+'</span>'
-          +'<small class="story-source">'+escH(it.source||'已有资讯')+' · 阅读原文 ↗</small></span></a></li>';
+          +'<span class="story-title" title="'+escH(zh?it.title_zh+'\n'+it.title:it.title)+'">'+escH(it.title_display||(zh?it.title_zh:it.title))+'</span>'
+          +'<small class="story-source">'+escH(it.source||'已有资讯')+(it.translation_status==='needs_review'?' · 英文原题待校译':'')+' · 阅读原文 ↗</small></span></a></li>';
       }).join('');
-      if(window.DNSPager)window.DNSPager.mount(ul,{label:(pid==='P16'?'美联储':'欧洲央行')+'相关新闻',kind:'news'});
     }else{
-      ul.innerHTML='<li class="feed-empty"><span class="fi"><span>近30天暂无可展示的相关资讯</span></span></li>';
+      ul.innerHTML='<li class="feed-empty">暂无新消息</li>';
     }
-    if(info.状态==='失败'){
-      var notice=document.createElement('p');notice.className='calendar-news-status';
-      notice.textContent=items.length?'官方资讯暂未更新，当前显示已保存条目。':'官方资讯暂未更新；会议日程与决议说明仍保留。';section.appendChild(notice);
-    }
+    if(window.DNSPager)window.DNSPager.mount(ul,{label:(pid==='P16'?'美联储':'欧洲央行')+'相关新闻',kind:'news',variant:'calendar',pageSize:2});
+    var notice=document.createElement('p');notice.className='calendar-news-status';
+    if(info.状态==='失败')notice.textContent=items.length?'官方资讯暂未更新，当前显示已保存条目。':'官方资讯暂未更新；会议日程与决议说明仍保留。';
+    notice.title=notice.textContent;notice.setAttribute('aria-hidden',String(!notice.textContent));section.appendChild(notice);
   });
 })();
 // 75_workspace.js —— 本页模块检索与定位；不筛掉卡片，不改数据、布局或溯源。
@@ -3110,7 +3163,8 @@ root.addEventListener('click',function(ev){
         var items = state.news[key]; if (!Array.isArray(items) || !items.length) return;
         var group = section('已保存资讯 · ' + key);
         items.forEach(function (item) { var article = node('article', 'detail-news-item');
-          article.appendChild(node('h4', '', item.title_zh || item.title || '未记录标题'));
+          article.appendChild(node('h4', '', item.title_display || item.title_zh || item.title || '未记录标题'));
+          if (item.translation_status === 'needs_review') paragraph(article, '当前展示英文原题，译题待校译。', 'detail-meta');
           if (item.title_zh && item.title && item.title_zh !== item.title) paragraph(article, item.title);
           paragraph(article, item.iso || item.date, 'detail-meta'); if (item.desc || item.summary) paragraph(article, item.desc || item.summary);
           link(article, '打开原文 ↗', item.url); group.appendChild(article);

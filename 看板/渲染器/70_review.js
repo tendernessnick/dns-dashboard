@@ -27,7 +27,9 @@
     pid=pid.replace(/^p/,'P');
     var d=REVIEWS[pid];
     if(!d||!Array.isArray(d.items)||!d.items.length){
-      el.replaceChildren(node('div','rev-empty','暂无图文数据 · 低频主题近期可能无新稿'));
+      el.replaceChildren(node('div','rev-empty','暂无新消息'));
+      var emptyCard=el.closest('.card'),emptyHeading=emptyCard&&emptyCard.querySelector('.card-top .t');
+      window.DNSPager.mount(el,{kind:'review',label:emptyHeading?emptyHeading.textContent:'图文资讯'});
       return;
     }
     var fragment=document.createDocumentFragment();

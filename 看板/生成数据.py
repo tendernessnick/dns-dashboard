@@ -10,12 +10,46 @@ import html as _htmlmod
 import json
 import os
 import re
+import sys
+
+try:
+    from PIL import Image as _Image
+except ImportError as exc:
+    raise SystemExit('图片处理依赖 Pillow 不可用：请使用已安装 Pillow 的 Python 环境。构建已停止，未修改 data.js 或媒体目录。') from exc
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 FIX = os.path.join(os.path.dirname(BASE), '看板数据固化')
 CSV_DIR = os.path.join(FIX, 'CSV数据')
 NEWS_DIR = os.path.join(FIX, '资讯数据')
 OUT = os.path.join(BASE, 'data.js')
+
+# 译题在导出时也经过同一离线质量层，不将采集器或网络依赖引入生成器。
+sys.path.insert(0, os.path.join(FIX, '采集脚本'))
+from _news_translation import resolve_cached_title, normalize_title
+
+TITLE_CACHE = {}
+for _cache_file in ('翻译缓存.json', '标题翻译校验缓存.json'):
+    try:
+        with open(os.path.join(NEWS_DIR, _cache_file), encoding='utf-8') as _cache_source:
+            _cache_value = json.load(_cache_source)
+        if _cache_file == '标题翻译校验缓存.json':
+            TITLE_CACHE.setdefault('entries', {}).update(_cache_value.get('entries') or {})
+        elif isinstance(_cache_value, dict):
+            TITLE_CACHE.update(_cache_value)
+    except (OSError, ValueError):
+        pass
+
+
+def display_news_item(item):
+    """原题、链接和采集字段只读保留；译题质量信息是独立的展示元数据。"""
+    result = dict(item)
+    original = item.get('title') or ''
+    checked = resolve_cached_title(original, candidate=item.get('title_zh') or '', cache=TITLE_CACHE)
+    result['title_zh'] = checked['title_zh']
+    result['title_display'] = checked['title_zh'] or normalize_title(original)
+    result['translation_status'] = checked['status']
+    result['title_translation'] = checked
+    return result
 
 SKIP_COLS = {'数据日期', '数据来源', '备注'}
 
@@ -236,9 +270,7 @@ for _r in REG_ROWS:
                 continue
             _row_newest = max([_row_newest] + [_feed_iso(i, _ftoday) for i in items])
             # 展示裁前8条：滚动库(v20)存全量7天窗口，看板卡维持原8条视觉不变
-            NEWS[_k] = [{'date': it.get('date', ''), 'title': it.get('title', ''),
-                         'title_zh': it.get('title_zh', ''), 'url': it.get('url', '#')}
-                        for it in items[:8]]
+            NEWS[_k] = [display_news_item(it) for it in items[:8]]
             _news_stat.append('%s:%d条' % (_k, len(NEWS[_k])))
         if _row_newest:
             try:
@@ -319,10 +351,9 @@ def _img_media(path, pid, width=240, quality=60, max_bytes=18000):
     超 max_bytes 逐级降质兜底。"""
     try:
         import io
-        from PIL import Image
-        im = Image.open(path).convert('RGB')
+        im = _Image.open(path).convert('RGB')
         if im.width > width:
-            im = im.resize((width, round(im.height * width / im.width)), Image.LANCZOS)
+            im = im.resize((width, round(im.height * width / im.width)), _Image.LANCZOS)
         out_dir = os.path.join(BASE, '媒体', pid)
         os.makedirs(out_dir, exist_ok=True)
         base = os.path.splitext(os.path.basename(path))[0]
@@ -401,7 +432,8 @@ for _r in REG_ROWS:
         _c = json.load(open(_fp, encoding='utf-8'))
         _v = _c.get(_r['P号'])
         if isinstance(_v, dict) and _v.get('时间线'):
-            CAL[_r['P号']] = _v
+            CAL[_r['P号']] = dict(_v)
+            CAL[_r['P号']]['相关新闻'] = [display_news_item(it) for it in _v.get('相关新闻') or []]
     except Exception:
         pass
 

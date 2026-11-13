@@ -177,7 +177,8 @@
         var items = state.news[key]; if (!Array.isArray(items) || !items.length) return;
         var group = section('已保存资讯 · ' + key);
         items.forEach(function (item) { var article = node('article', 'detail-news-item');
-          article.appendChild(node('h4', '', item.title_zh || item.title || '未记录标题'));
+          article.appendChild(node('h4', '', item.title_display || item.title_zh || item.title || '未记录标题'));
+          if (item.translation_status === 'needs_review') paragraph(article, '当前展示英文原题，译题待校译。', 'detail-meta');
           if (item.title_zh && item.title && item.title_zh !== item.title) paragraph(article, item.title);
           paragraph(article, item.iso || item.date, 'detail-meta'); if (item.desc || item.summary) paragraph(article, item.desc || item.summary);
           link(article, '打开原文 ↗', item.url); group.appendChild(article);

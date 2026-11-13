@@ -62,16 +62,15 @@
         var zh=it.title_zh&&it.title_zh!==it.title;
         return '<li><a class="fi story-link" href="'+escH(safeUrl(it.url))+'" target="_blank" rel="noopener noreferrer">'
           +'<i class="dchip">'+escH(it.date||(it.iso||'').slice(5))+'</i><span class="story-body">'
-          +'<span class="story-title"'+(zh?' title="'+escH(it.title)+'"':'')+'>'+escH(zh?it.title_zh:it.title)+'</span>'
-          +'<small class="story-source">'+escH(it.source||'已有资讯')+' · 阅读原文 ↗</small></span></a></li>';
+          +'<span class="story-title" title="'+escH(zh?it.title_zh+'\n'+it.title:it.title)+'">'+escH(it.title_display||(zh?it.title_zh:it.title))+'</span>'
+          +'<small class="story-source">'+escH(it.source||'已有资讯')+(it.translation_status==='needs_review'?' · 英文原题待校译':'')+' · 阅读原文 ↗</small></span></a></li>';
       }).join('');
-      if(window.DNSPager)window.DNSPager.mount(ul,{label:(pid==='P16'?'美联储':'欧洲央行')+'相关新闻',kind:'news'});
     }else{
-      ul.innerHTML='<li class="feed-empty"><span class="fi"><span>近30天暂无可展示的相关资讯</span></span></li>';
+      ul.innerHTML='<li class="feed-empty">暂无新消息</li>';
     }
-    if(info.状态==='失败'){
-      var notice=document.createElement('p');notice.className='calendar-news-status';
-      notice.textContent=items.length?'官方资讯暂未更新，当前显示已保存条目。':'官方资讯暂未更新；会议日程与决议说明仍保留。';section.appendChild(notice);
-    }
+    if(window.DNSPager)window.DNSPager.mount(ul,{label:(pid==='P16'?'美联储':'欧洲央行')+'相关新闻',kind:'news',variant:'calendar',pageSize:2});
+    var notice=document.createElement('p');notice.className='calendar-news-status';
+    if(info.状态==='失败')notice.textContent=items.length?'官方资讯暂未更新，当前显示已保存条目。':'官方资讯暂未更新；会议日程与决议说明仍保留。';
+    notice.title=notice.textContent;notice.setAttribute('aria-hidden',String(!notice.textContent));section.appendChild(notice);
   });
 })();

@@ -10,6 +10,7 @@ import datetime
 from email.utils import parsedate_to_datetime
 
 import common
+import _news_translation as _translation
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NEWS_DIR = os.path.join(BASE, '资讯数据')
@@ -69,8 +70,7 @@ def parse_items(xml, keywords=None, exclude=None, _drop=None):
 
 def save_news(filename, source, items):
     """items: [(dt|None,title,url)] → 过滤7天 → 翻译英文标题 → 写JSON。返回保留条数。
-    翻译：Google gtx免费接口（sl=auto→zh-CN），结果缓存到 资讯数据/翻译缓存.json；
-    失败或已是中文时 title_zh 留空，看板回退显示英文原题。"""
+    翻译：术语与数量保护+响应/质量检查；只缓存通过项，失败明确保留英文原题。"""
     now = datetime.datetime.now(datetime.timezone.utc)
     kept = []
     for dt, title, url in items:
@@ -85,8 +85,7 @@ def save_news(filename, source, items):
     cache = _load_tcache()
     os.makedirs(NEWS_DIR, exist_ok=True)
     data = {'updated': now.isoformat(timespec='seconds'), 'source': source,
-            'items': [{'date': d.strftime('%m-%d'), 'title': t, 'title_zh': translate_title(t, cache),
-                       'url': u}
+            'items': [{'date': d.strftime('%m-%d'), **_translated_item(t, cache), 'url': u}
                       for d, t, u in kept]}
     with open(os.path.join(NEWS_DIR, filename), 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
@@ -136,12 +135,12 @@ def merge_rolling(filename, source, picked, keep_days=DAYS, max_items=60):
         cur = by_url.get(url)
         if cur is None:
             new_urls.add(url)
-            by_url[url] = {'iso': iso, 'title': title, 'title_zh': translate_title(title, cache)}
+            by_url[url] = {'iso': iso, 'title': title, 'title_zh': ''}
         elif iso > cur['iso']:
             cur['iso'] = iso               # 站方改期以新见为准
     cutoff = (now.astimezone(cst) - datetime.timedelta(days=keep_days)).strftime('%Y-%m-%d')
-    items = sorted(({'date': e['iso'][5:], 'iso': e['iso'], 'title': e['title'],
-                     'title_zh': e['title_zh'], 'url': u}
+    items = sorted(({'date': e['iso'][5:], 'iso': e['iso'],
+                     **_translated_item(e['title'], cache), 'url': u}
                     for u, e in by_url.items() if e['iso'] >= cutoff),
                    key=lambda x: x['iso'], reverse=True)[:max_items]
     # 新见=新入库且留在窗口内的条数（窗外旧文每跑都会重见，不计避免假阳性刷屏）
@@ -263,15 +262,18 @@ _TCACHE_FILE = os.path.join(NEWS_DIR, '翻译缓存.json')
 def _load_tcache():
     try:
         with open(_TCACHE_FILE, encoding='utf-8') as f:
-            return json.load(f)
+            cache = json.load(f)
+            return cache if isinstance(cache, dict) else {}
     except Exception:
         return {}
 
 
 def _save_tcache(cache):
     try:
-        with open(_TCACHE_FILE, 'w', encoding='utf-8') as f:
+        tmp = _TCACHE_FILE + '.tmp'
+        with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(cache, f, ensure_ascii=False)
+        os.replace(tmp, _TCACHE_FILE)
     except Exception:
         pass
 
@@ -280,41 +282,82 @@ def _is_cjk(s):
     return len(re.findall(r'[\u4e00-\u9fff]', s or '')) * 2 > len(s or '')
 
 
+def _provider_response(provider, text):
+    """有限额的公开翻译端点；HTTP/结构/业务状态均须通过，不把错误页当译题。"""
+    if provider == 'mymemory':
+        if len(text) > 450:
+            raise ValueError('request_too_long_for_mymemory')
+        response = common._SESSION.get('https://api.mymemory.translated.net/get',
+                                       params={'q': text, 'langpair': 'en|zh-CN'},
+                                       headers={'User-Agent': UA}, timeout=(6, 15))
+    else:
+        response = common._SESSION.get('https://translate.googleapis.com/translate_a/single',
+                                       params={'client': 'gtx', 'sl': 'en', 'tl': 'zh-CN', 'dt': 't', 'q': text},
+                                       headers={'User-Agent': UA}, timeout=(6, 15))
+    if response.status_code != 200:
+        raise ValueError(f'http_{response.status_code}')
+    content_type = (response.headers.get('Content-Type') or '').lower()
+    if content_type and 'json' not in content_type:
+        raise ValueError('non_json_response')
+    data = response.json()
+    if provider == 'mymemory':
+        if not isinstance(data, dict) or str(data.get('responseStatus')) != '200':
+            raise ValueError('mymemory_business_error')
+        body = data.get('responseData')
+        if not isinstance(body, dict) or not isinstance(body.get('translatedText'), str):
+            raise ValueError('invalid_response_shape')
+        return body['translatedText']
+    if not isinstance(data, list) or not data or not isinstance(data[0], list):
+        raise ValueError('invalid_response_shape')
+    segments = data[0]
+    if not segments or any(not isinstance(x, list) or not x or not isinstance(x[0], str) for x in segments):
+        raise ValueError('invalid_response_segments')
+    return ''.join(x[0] for x in segments)
+
+
+def translate_title_result(title, cache=None, *, allow_network=False, existing_title_zh=''):
+    """结构化接口：默认离线；网络只由采集器或显式候选工具开启，不用于生成器。"""
+    if cache is None:
+        cache = {}
+    current = _translation.resolve_cached_title(title, existing_title_zh, cache)
+    if current['status'] == 'original' or current['cache_state'] == 'current' or not allow_network:
+        return current
+    protected = _translation.protect_title(title)
+    attempts = []
+    if len(protected.request_text) > 2000:
+        return {**_translation.review_translation(title, ''), 'issues': ['source_too_long'], 'attempts': []}
+    for provider in ('mymemory', 'google_gtx'):
+        try:
+            raw = _provider_response(provider, protected.request_text)
+            restored, errors = _translation.restore_tokens(raw, protected)
+            result = _translation.review_translation(title, restored, provider=provider)
+            if errors:
+                result = {**result, 'title_zh': '', 'status': 'needs_review', 'quality_passed': False,
+                          'fallback': 'original', 'issues': errors}
+            attempts.append({'provider': provider, 'issues': result['issues']})
+            if result['status'] == 'translated':
+                result.update({'cache_state': 'current', 'needs_refresh': False, 'attempts': attempts})
+                _translation.store_cache_result(cache, title, result)
+                return result
+        except Exception as exc:  # 网络、业务错误不缓存，下一轮可重试。
+            attempts.append({'provider': provider, 'issues': [str(exc)[:160]]})
+    if current['status'] == 'translated' and current.get('quality_passed'):
+        retained = {**current, 'provider': 'existing_reviewed', 'cache_state': 'reviewed_existing',
+                    'needs_refresh': False, 'attempts': attempts, 'retained_existing': True}
+        _translation.store_cache_result(cache, title, retained)
+        return retained
+    return {**_translation.review_translation(title, ''), 'issues': ['translation_unavailable_or_rejected'],
+            'attempts': attempts, 'cache_state': 'missing', 'needs_refresh': True}
+
+
 def translate_title(title, cache):
-    """英文标题→中文；中文原文/翻译失败返回''（看板回退英文）。缓存避免重复请求。
-    v19通道修复（2026-11-10实抓核验）：Google gtx在当前网络不可达（P14/P15一直显示英文的根因），
-    主通道换 MyMemory 免费API（免key、每日匿名额度足够标题量），gtx降为备用。"""
-    if not title or _is_cjk(title):
-        return ''
-    if title in cache:
-        return cache[title]
-    zh = ''
-    try:
-        r = common._SESSION.get('https://api.mymemory.translated.net/get',
-                                params={'q': title[:450], 'langpair': 'en|zh-CN'},
-                                headers={'User-Agent': UA}, timeout=(6, 15))
-        d = r.json()
-        zh = str((d.get('responseData') or {}).get('translatedText') or '').strip()
-        if not _is_cjk(zh):
-            zh = ''
-    except Exception:
-        zh = ''
-    if not zh:
-        try:   # 备用：Google gtx（网络可达时优先质量更好）
-            r = common._SESSION.get('https://translate.googleapis.com/translate_a/single',
-                                    params={'client': 'gtx', 'sl': 'auto', 'tl': 'zh-CN', 'dt': 't',
-                                            'q': title[:450]},
-                                    headers={'User-Agent': UA}, timeout=(6, 15))
-            arr = r.json()
-            zh = ''.join(seg[0] for seg in (arr[0] or []) if seg and seg[0]).strip()
-            if not _is_cjk(zh):
-                zh = ''
-        except Exception:
-            zh = ''
-    if zh:
-        # v18.8：只缓存成功翻译——空值入缓存会让该标题永远不再重译
-        cache[title] = zh
-    return zh
+    """兼容既有调用：英文译题或空串；仅质量通过的新版本结果可命中正缓存。"""
+    return translate_title_result(title, cache, allow_network=True)['title_zh']
+
+
+def _translated_item(title, cache):
+    result = translate_title_result(title, cache, allow_network=True)
+    return {'title': title, 'title_zh': result['title_zh'], 'title_translation': result}
 
 
 # ---------------- 充电头网（自定义CMS，curl_cffi过JS验证） ----------------

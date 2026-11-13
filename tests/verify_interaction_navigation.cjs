@@ -118,7 +118,7 @@ async function assertCalendar(scope, label) {
     assert.ok(calendar.timeline.trim(), label + '资讯不替代真实会议日程');
     if (calendar.links.length) for (const link of calendar.links) {
       assert.ok(link.safe && link.exists && link.target === '_blank', label + '相关新闻只能引用已保存的http(s)来源：' + calendar.pid);
-    } else assert.match(calendar.text, /暂无可展示|暂无.*相关资讯/, label + '无资讯时明确为空，不能制造新闻');
+    } else assert.match(calendar.text, /暂无新消息|暂无可展示|暂无.*相关资讯/, label + '无资讯时明确为空，不能制造新闻');
   }
   return calendars.length;
 }
@@ -303,7 +303,7 @@ async function fixtures(browser) {
     await page.addScriptTag({ content: script('72_calendar.js') });
     assert.equal(await page.locator('[data-calendar-news="P16"] a').getAttribute('href'), 'https://example.com/fixture-policy', '议息资讯只展示注入的隔离来源');
     assert.equal(await page.locator('[data-calendar-news="P20"] a').count(), 0, '空资讯不能制造外链');
-    assert.match(await page.locator('[data-calendar-news="P20"]').innerText(), /暂无可展示/);
+    assert.match(await page.locator('[data-calendar-news="P20"]').innerText(), /暂无新消息/);
     assert.match(await page.locator('[data-calendar-news="P20"]').innerText(), /暂未更新/);
     assert.match(await page.locator('[data-cal="P20"]').innerText(), /保留欧洲央行会议日程/);
     await page.setContent('<div id="dns-dash"><article data-news="sample"><ul class="feed"></ul></article><article data-news="empty"><ul class="feed"></ul></article><article class="card"><div data-review="90" class="revcards"></div></article></div>');
