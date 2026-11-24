@@ -59,7 +59,7 @@ const modules = new Map(originalModules.map(({ name }) => {
 assert.equal(modules.size, originalModules.length, '模块配置ID唯一');
 const plannedModules = new Map([...modules].filter(([, card]) => card['类型'] === 'planned'));
 const activeModules = new Map([...modules].filter(([, card]) => card['类型'] !== 'planned'));
-assert.equal(activeModules.size, 98, '原有98个真实模块完整保留');
+assert.equal(activeModules.size, 102, '原有98个真实模块经合并卡拆分为102个（-4合并卡+8独立卡）');
 assert.equal(plannedModules.size, 11, '新增11个规划卡，不伪装成真实数据模块');
 assert.deepEqual([...plannedModules.values()].map(card => card['预留编号']).sort(),
   Array.from({ length: 11 }, (_, i) => 'P' + (255 + i)).sort(), '顺接历史模块最大编号254，仍保持规划状态');
@@ -122,7 +122,7 @@ for (const view of views) {
     ? [...sourceIds].sort() : dependencies(view.refs);
   assert.ok(fs.existsSync(path.join(dashboardDir, view['文件'])), '先由生产构建器生成：' + view['文件']);
 }
-assert.deepEqual([...defaultView.activeRefs].sort(), [...activeModules.keys()].sort(), '主看板完整保留原有98个真实模块');
+assert.deepEqual([...defaultView.activeRefs].sort(), [...activeModules.keys()].sort(), '主看板包含全部102个真实模块');
 assert.deepEqual(defaultView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['P255', 'P256', 'P257']);
 assert.equal(marketView.activeRefs.length, 51, '市场页保留原有51个真实模块');
 assert.deepEqual(marketView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['P258', 'P262']);
@@ -278,7 +278,7 @@ async function assertBusinessInvariants(scope, view, label) {
     assert.equal(await card.getAttribute('data-change'), 'none');
     assert.equal(await card.locator('.chart,.sparkrow,.dpill').count(), 0, label + '预测不连线或相减');
   }
-  for (const prefix of ['76_', '77_', '83_']) {
+  for (const prefix of ['76_', '77_', '83_', '266_', '267_', '268_', '269_', '251_', '252_', '253_', '254_']) {
     const ref = view.refs.find(item => item.startsWith(prefix));
     if (!ref) continue;
     const card = scope.locator(`[data-mid="${ref}"]`);
@@ -309,9 +309,53 @@ async function assertBusinessInvariants(scope, view, label) {
         label + '榜单副标题与手机配件大类口径一致');
     }
   }
-  const customer = view.activeRefs.find(item => item.startsWith('80_'));
-  if (customer) assert.ok(!(await scope.locator(`[data-mid="${customer}"]`).innerText()).includes('议价健康'),
-    label + '大客户集中度不能冒充议价健康结论');
+  for (const customer of view.activeRefs.filter(item => /_大客户集中度$/.test(item))) {
+    assert.ok(!(await scope.locator(`[data-mid="${customer}"]`).innerText()).includes('议价健康'),
+      label + '大客户集中度不能冒充议价健康结论：' + customer);
+  }
+  // v28：合并卡拆分后，招聘职位量五卡同构且来源未绑定（无外链/数值，溯源行来源与网址留空）
+  const recruitRefs = view.refs.filter(ref => /^(83|26[6-9])_/.test(ref));
+  for (const ref of recruitRefs) {
+    const card = scope.locator(`[data-mid="${ref}"]`);
+    assert.equal(await card.locator('a[href],.btn-ext,.val .vnum').count(), 0,
+      label + '招聘卡来源未绑定，不得保留外链或数值：' + ref);
+    assert.ok((await card.innerText()).includes('来源暂未绑定'), label + '招聘卡须说明来源未绑定：' + ref);
+  }
+  if (view.ID === 'hr') {
+    assert.equal(recruitRefs.length, 5, label + '人力部五家公司各一张招聘职位量卡');
+    assert.equal(view.refs.filter(ref => /_大客户集中度$/.test(ref)).length, 0, label + '人力部不放大客户集中度卡');
+  }
+  const unbound = await scope.evaluate(() => {
+    renderProv();
+    return PROV.filter(item => [83, 266, 267, 268, 269].includes(Number(item.id))).map(item => {
+      const cells = [...document.querySelectorAll('#prov-P' + item.id + ' td')].map(cell => cell.textContent);
+      return [String(item.id), item.source, item.url, cells[3], cells[4],
+        document.querySelectorAll('#prov-P' + item.id + ' a').length];
+    });
+  });
+  assert.equal(unbound.length, recruitRefs.length, label + '招聘词条溯源行数与卡片数一致');
+  for (const [id, source, url, sourceCell, urlCell, links] of unbound) {
+    assert.deepEqual([source, url, sourceCell, urlCell, links], ['', '', '', '—', 0],
+      label + '招聘词条溯源行须来源与网址留空且无空链接：P' + id);
+  }
+  // 底部来源行完整性：文本不得出现NaN；来源行有网址必须有"打开来源页"链接，无网址则不得有空链接
+  const footerDefects = await scope.evaluate(() => [...document.querySelectorAll('.srcline')].flatMap(line => {
+    const name = line.querySelector('.src-name');
+    if (!name) return [];
+    const source = PROV.find(item => 'P' + item.id === name.getAttribute('data-ref'));
+    const id = ((line.closest('[data-mid]') || {}).dataset || {}).mid || '';
+    if ([...line.childNodes].some(node => node.nodeType === 3 && node.textContent.trim()))
+      return [id + ':来源行含游离文本:' + JSON.stringify(line.textContent)];
+    if (!source) return [id + ':溯源序号无对应词条'];
+    return [source.url && !line.querySelector('.src-link') ? id + ':有网址但缺少来源链接' : '',
+      !source.url && line.querySelector('.src-link') ? id + ':无网址却生成空链接' : ''].filter(Boolean);
+  }));
+  assert.deepEqual(footerDefects, [], label + '底部来源行完整（无NaN，链接与来源网址一致）');
+  if (view.refs.includes('83_招聘职位量监测')) {   // 市场部页也有公司页签但不引用该卡，按引用判断
+    const ankerRecruit = scope.locator('[data-mid="83_招聘职位量监测"]');
+    assert.equal(await ankerRecruit.locator('.foot .src-link').count(), 0, label + '来源未绑定的卡片不生成空链接');
+    assert.equal(await ankerRecruit.locator('.foot .src-ref').count(), 1, label + '来源未绑定的卡片保留溯源序号');
+  }
   assert.equal(await scope.getByText('暂无新稿', { exact: false }).count(), 0,
     label + '空feed不能擅自推断源站没有新稿');
 
@@ -326,6 +370,16 @@ async function assertBusinessInvariants(scope, view, label) {
     assert.equal(await visible.count(), 1, label + '公司切换只能显示一个面板');
     assert.equal(await visible.getAttribute('data-copanel'), company);
     assert.equal(await scope.locator('[data-cotab].on').count(), 1);
+    // v28：主看板每家公司页签各有一张独立的大客户集中度卡与招聘职位量卡，合并监测卡不得复现
+    //（市场部页的公司页签只引用部分卡片，不适用）
+    if (view.ID === defaultView.ID) {
+      assert.equal(await visible.locator('[data-mid$="_大客户集中度"]').count(), 1,
+        label + '每家公司一张大客户集中度卡：' + company);
+      assert.equal(await visible.locator('[data-mid$="_招聘职位量监测"]').count(), 1,
+        label + '每家公司一张招聘职位量卡：' + company);
+      assert.equal(await visible.locator('[data-mid*="大客户招聘监测"]').count(), 0,
+        label + '合并监测卡不得残留：' + company);
+    }
     const cumulativeRef = view.activeRefs.find(ref => {
       const card = modules.get(ref);
       return card['面板'] === company && /^P20[1-5]$/.test(card['主数据'] || '');

@@ -79,7 +79,7 @@ class PageConfigurationTests(unittest.TestCase):
         self.assertEqual(info['activeModuleCount'], 51)
         self.assertEqual(info['plannedCount'], 2)
         self.assertEqual(info['moduleCount'], 53)
-        self.assertEqual(sum(c['类型'] != 'planned' for c in builder.CARDS.values()), 98)
+        self.assertEqual(sum(c['类型'] != 'planned' for c in builder.CARDS.values()), 102)
         self.assertEqual(sum(c['类型'] == 'planned' for c in builder.CARDS.values()), 11)
         self.assertEqual(builder.CARDS, before)
         self.assertIn('data-mid="205_营收趋势季度"', html)
@@ -93,11 +93,57 @@ class PageConfigurationTests(unittest.TestCase):
         refs = {row['引用'] for row in layout if row['类型'] == 'C'}
         active = {cid for cid, card in builder.CARDS.items() if card['类型'] != 'planned'}
         planned = {builder.CARDS[cid]['预留编号'] for cid in refs if cid not in active}
-        self.assertEqual(len(active), 98)
+        self.assertEqual(len(active), 102)
         self.assertTrue(active.issubset(refs))
         self.assertEqual(planned, {'P255', 'P256', 'P257'})
         _, info = builder.build_page(page)
-        self.assertEqual((info['activeModuleCount'], info['plannedCount'], info['moduleCount']), (98, 3, 101))
+        self.assertEqual((info['activeModuleCount'], info['plannedCount'], info['moduleCount']), (102, 3, 105))
+
+    def test_merged_cards_are_split_into_customer_and_recruitment_modules(self):
+        """v28：四家公司合并卡拆为独立的大客户集中度与招聘职位量卡，每家公司页签各一张。"""
+        companies = {'奥海科技': ('251', '266'), '佳禾智能': ('252', '267'),
+                     '海能实业': ('253', '268'), '绿联科技': ('254', '269')}
+        self.assertFalse([cid for cid in builder.CARDS if cid.endswith('_大客户招聘监测')])
+        for company, (customer, recruit) in companies.items():
+            for number, title in ((customer, '大客户集中度'), (recruit, '招聘职位量监测')):
+                card = builder.CARDS[f'{number}_{title}']
+                self.assertEqual((card['面板'], card['主数据'], card['类型']), (company, 'P' + number, 'desc'))
+                self.assertEqual(card['状态点'], 'y')
+                self.assertNotIn('数值占位', card)
+        page = next(p for p in builder.PAGES if p['ID'] == 'strategy')
+        panels, current = {}, None
+        for row in builder.read_layout(page):
+            if row['类型'] == 'P':
+                current = panels.setdefault(row['引用'], [])
+            elif row['类型'] == 'C' and current is not None:
+                current.append(row['引用'])
+        expected = dict(companies, 安克创新=('80', '83'))
+        self.assertEqual(set(panels), set(expected))
+        for company, (customer, recruit) in expected.items():
+            self.assertEqual([r for r in panels[company] if r.endswith('_大客户集中度')],
+                             [f'{customer}_大客户集中度'])
+            self.assertEqual([r for r in panels[company] if r.endswith('_招聘职位量监测')],
+                             [f'{recruit}_招聘职位量监测'])
+
+    def test_recruitment_modules_are_registered_without_source_bindings(self):
+        """v28：招聘职位量五卡不接入官方招聘站点——模块无外链，注册表无采集器，溯源表来源与网址留空。"""
+        registry = {row['P号']: row for row in builder.REGISTRY}
+        sources = {'P' + str(item['id']): item for item in builder.PROV}
+        for pid in ('P83', 'P266', 'P267', 'P268', 'P269'):
+            with self.subTest(pid=pid):
+                self.assertEqual(registry[pid]['采集器'], '')
+                self.assertEqual(registry[pid]['状态'], '入口/受限')
+                self.assertEqual((sources[pid]['source'], sources[pid]['url']), ('', ''))
+                card = next(c for c in builder.CARDS.values() if c['主数据'] == pid)
+                self.assertNotIn('按钮', card)
+                self.assertEqual(card['脚注'][0]['文本'], '')
+                self.assertNotIn('<a ', builder.card_html(card))
+        hr = next(p for p in builder.PAGES if p['ID'] == 'hr')
+        refs = [row['引用'] for row in builder.read_layout(hr) if row['类型'] == 'C']
+        self.assertEqual([r for r in refs if r.endswith('_招聘职位量监测')],
+                         ['83_招聘职位量监测', '266_招聘职位量监测', '267_招聘职位量监测',
+                          '268_招聘职位量监测', '269_招聘职位量监测'])
+        self.assertEqual([r for r in refs if r.endswith('_大客户集中度')], [])
 
     def test_every_page_has_unique_existing_references_and_all_plans_are_used(self):
         used_plans = set()

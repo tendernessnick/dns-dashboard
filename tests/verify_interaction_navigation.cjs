@@ -13,7 +13,7 @@ const directory = path.resolve(__dirname, '../看板');
 const config = JSON.parse(fs.readFileSync(path.join(directory, '页面.json'), 'utf8').replace(/^\uFEFF/, ''));
 const views = config['页面'];
 const widths = [1440, 1100, 768, 390, 320];
-const expectedCounts = { strategy: 101, marketing: 53, design: 16, product: 31, hr: 12 };
+const expectedCounts = { strategy: 105, marketing: 53, design: 16, product: 31, hr: 12 };   // v28：合并卡拆分后主看板 101→105
 const shareName = '数据看板-单文件版.html';
 const output = path.resolve(process.env.DNS_INTERACTION_OUTPUT || path.join(os.tmpdir(), 'dns-dashboard-interaction'));
 const errors = [], checks = [], screenshots = [];

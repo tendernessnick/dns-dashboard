@@ -526,6 +526,12 @@
 [data-mid^="83_"] .desc{margin:0;font-size:14px;line-height:25px;color:var(--n700);display:flex;align-items:center}
 [data-mid^="83_"] .btn-ext{font-size:13.5px;padding:10px 22px}
 
+/* ==== v28 招聘职位量五卡同构（83_ 与 266~269_）+ 四家大客户集中度卡（251~254_）：沿用 P83 说明放大样式 ==== */
+[data-mid^="266_"],[data-mid^="267_"],[data-mid^="268_"],[data-mid^="269_"],
+[data-mid^="251_"],[data-mid^="252_"],[data-mid^="253_"],[data-mid^="254_"]{justify-content:center}
+[data-mid^="266_"] .desc,[data-mid^="267_"] .desc,[data-mid^="268_"] .desc,[data-mid^="269_"] .desc,
+[data-mid^="251_"] .desc,[data-mid^="252_"] .desc,[data-mid^="253_"] .desc,[data-mid^="254_"] .desc{margin:0;font-size:14px;line-height:25px;color:var(--n700);display:flex;align-items:center}
+
 /* v24 · 工作台布局与统一视觉层。基础卡型在_style.css，数据语义由原渲染器保持。 */
 html{scroll-padding-top:0;scroll-behavior:smooth}
 body{margin:0;background:#F5F7FB}
@@ -3256,7 +3262,8 @@ root.querySelectorAll('.card[data-k],.cco[data-k]').forEach(function(el){
   else if(first&&first.tagName==='SPAN'&&!first.querySelector('a')){
     first.classList.add('srcline');
     first.innerHTML='<span class="src-name" data-ref="'+pid+'">'+first.textContent+'</span>'+sup.outerHTML+
-      '<a class="src-link" href="'+p.url+'" target="_blank" rel="noopener" title="打开来源页">⧉</a>';
+      // v28：来源未绑定的词条（来源与网址留空）只保留可点的溯源序号，不生成指向自身的空链接
+      (p.url?'<a class="src-link" href="'+p.url+'" target="_blank" rel="noopener" title="打开来源页">⧉</a>':'');
   }
   if(ids.length>1&&foot.querySelector('.srcline')){
     var sup2=document.createElement('sup');sup2.className='src-ref';sup2.setAttribute('data-ref',pid);
@@ -3273,7 +3280,7 @@ function tipHTML(p){
   var st=STATMAP[p.status]||['',''];
   var h='<div class="pt-t">'+esc(p.title)+' · P'+p.id+'</div>';
   h+='<div class="pt-row"><span class="pt-k">来源</span><span class="pt-v">'+esc(p.source)+'</span></div>';
-  h+='<div class="pt-row"><span class="pt-k">链接</span><span class="pt-v"><a href="'+esc(p.url)+'" target="_blank" rel="noopener">'+esc(p.url.length>58?p.url.slice(0,58)+'…':p.url)+'</a></span></div>';
+  if(p.url)h+='<div class="pt-row"><span class="pt-k">链接</span><span class="pt-v"><a href="'+esc(p.url)+'" target="_blank" rel="noopener">'+esc(p.url.length>58?p.url.slice(0,58)+'…':p.url)+'</a></span></div>';   // v28：网址留空不显示空链接
   h+='<div class="pt-row"><span class="pt-k">采集</span><span class="pt-v">'+esc(p.method||'—')+'</span></div>';
   h+='<div class="pt-row"><span class="pt-k">频率</span><span class="pt-v">'+esc(p.freq||'—')+' · 有效观测期见溯源表</span></div>';
   h+='<div class="pt-row"><span class="pt-k">状态</span><span class="pt-v"><span class="pchip '+st[0]+'">'+st[1]+'</span></span></div>';
@@ -3375,7 +3382,7 @@ function renderProv(){
     return '<tr id="prov-P'+p.id+'"><td class="pnum">P'+p.id+'</td><td>'+esc(p.cat)+'</td>'+
       '<td class="ptitle" data-goto="P'+p.id+'" tabindex="0" role="button" title="回跳本页看板卡片">'+((typeof DDATA!=='undefined'&&DDATA._meta&&DDATA._meta['P'+p.id]&&DDATA._meta['P'+p.id].r)?('<span class="rlbadge '+(DDATA._meta['P'+p.id].r==='A'?'a':DDATA._meta['P'+p.id].r==='C'?'c':'b')+'" title="可靠度'+DDATA._meta['P'+p.id].r+'级'+(DDATA._meta['P'+p.id].k?'：'+DDATA._meta['P'+p.id].k:'')+'">'+DDATA._meta['P'+p.id].r+'</span> '):'')+esc(p.title)+'</td>'+
       '<td>'+esc(p.source)+'</td>'+
-      '<td><a href="'+u+'" target="_blank" rel="noopener">'+esc(us.length>44?us.slice(0,44)+'…':us)+'</a></td>'+
+      '<td>'+(u?'<a href="'+u+'" target="_blank" rel="noopener">'+esc(us.length>44?us.slice(0,44)+'…':us)+'</a>':'—')+'</td>'+
       '<td>'+esc(p.method||'—')+'</td><td>'+esc(p.freq||'—')+'</td><td class="pfresh">'+freshHTML('P'+p.id)+'</td>'+
       '<td><span class="pchip '+stc[0]+'">'+stc[1]+'</span></td></tr>';
   }).join('')||'<tr><td colspan="9" style="color:var(--n500);padding:18px">无匹配条目</td></tr>';
@@ -3401,7 +3408,7 @@ document.getElementById('provRows').addEventListener('keydown',function(e){
   var cats={};PROV.forEach(function(p){cats[p.cat]=1});
   var sel=document.getElementById('pfCat');
   Object.keys(cats).forEach(function(c){var o=document.createElement('option');o.textContent=c;sel.appendChild(o)});
-  var srcs={};PROV.forEach(function(p){srcs[p.source]=1});
+  var srcs={};PROV.forEach(function(p){if(p.source)srcs[p.source]=1});   // v28：来源留空的词条不计入来源数
   var lim=PROV.filter(function(p){return p.status!=='成功'&&p.status!=='静态维护'}).length;
   var manual=PROV.filter(function(p){return p.status==='静态维护'}).length;
   document.getElementById('provSum').textContent='本页 '+PROV.length+' 条 · '+Object.keys(srcs).length+' 个来源 · '+lim+' 项受限/接入中'+(manual?' · '+manual+' 项静态维护':'');
