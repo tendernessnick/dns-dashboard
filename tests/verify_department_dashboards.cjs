@@ -59,10 +59,11 @@ const modules = new Map(originalModules.map(({ name }) => {
 assert.equal(modules.size, originalModules.length, '模块配置ID唯一');
 const plannedModules = new Map([...modules].filter(([, card]) => card['类型'] === 'planned'));
 const activeModules = new Map([...modules].filter(([, card]) => card['类型'] !== 'planned'));
-assert.equal(activeModules.size, 102, '原有98个真实模块经合并卡拆分为102个（-4合并卡+8独立卡）');
-assert.equal(plannedModules.size, 11, '新增11个规划卡，不伪装成真实数据模块');
+assert.equal(activeModules.size, 104, '原有98个真实模块经合并卡拆分为102个（-4合并卡+8独立卡），v29再加2个电商大盘翻页卡');
+assert.equal(plannedModules.size, 16, 'P255—P265与P270—P274共16个规划卡，不伪装成真实数据模块');
 assert.deepEqual([...plannedModules.values()].map(card => card['预留编号']).sort(),
-  Array.from({ length: 11 }, (_, i) => 'P' + (255 + i)).sort(), '顺接历史模块最大编号254，仍保持规划状态');
+  [...Array.from({ length: 11 }, (_, i) => 'P' + (255 + i)), ...Array.from({ length: 5 }, (_, i) => 'P' + (270 + i))].sort(),
+  '顺接历史模块最大编号254，仍保持规划状态');
 for (const [id, card] of plannedModules) {
   assert.equal(card['预留编号'].slice(1), id.split('_')[0], '规划编号与模块ID一致');
   assert.ok(!card['主数据'] && !(card['关联数据'] || []).length, id + '预留P号不能充当真实数据绑定');
@@ -122,12 +123,13 @@ for (const view of views) {
     ? [...sourceIds].sort() : dependencies(view.refs);
   assert.ok(fs.existsSync(path.join(dashboardDir, view['文件'])), '先由生产构建器生成：' + view['文件']);
 }
-assert.deepEqual([...defaultView.activeRefs].sort(), [...activeModules.keys()].sort(), '主看板包含全部102个真实模块');
-assert.deepEqual(defaultView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['P255', 'P256', 'P257']);
+assert.deepEqual([...defaultView.activeRefs].sort(), [...activeModules.keys()].sort(), '主看板包含全部104个真实模块');
+assert.deepEqual(defaultView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(),
+  ['P255', 'P256', 'P257', 'P270', 'P271', 'P272', 'P273', 'P274']);
 assert.equal(marketView.activeRefs.length, 51, '市场页保留原有51个真实模块');
 assert.deepEqual(marketView.plannedRefs.map(ref => modules.get(ref)['预留编号']).sort(), ['P258', 'P262']);
 assert.deepEqual([...new Set(views.flatMap(view => view.plannedRefs))].sort(), [...plannedModules.keys()].sort(),
-  '11个规划卡都应出现在已登记页面中');
+  '16个规划卡都应出现在已登记页面中');
 for (const ref of plannedModules.keys()) assert.deepEqual(dependencies([ref]), [], ref + '不得生成假溯源依赖');
 assert.equal(new Set(views.map(view => view.ID)).size, views.length, '页面ID唯一');
 assert.equal(new Set(views.map(view => view['文件'])).size, views.length, '输出文件唯一');
@@ -359,6 +361,65 @@ async function assertBusinessInvariants(scope, view, label) {
   assert.equal(await scope.getByText('暂无新稿', { exact: false }).count(), 0,
     label + '空feed不能擅自推断源站没有新稿');
 
+  // v29：电商大盘翻页卡——一页一个词条、每页按站点分列；箭头与页签同步，翻页不改变卡片高度，
+  // 详情按钮只指向当前页词条；没有数据的词条不生成数值，仅已接入的词条亮起页签圆点。
+  const marketRefs = view.refs.filter(ref => modules.get(ref)['类型'] === 'market');
+  if (view.ID === defaultView.ID) assert.equal(marketRefs.length, 2, label + '主看板含两张电商大盘翻页卡');
+  for (const ref of marketRefs) {
+    const card = modules.get(ref), pids = [card['主数据'], ...(card['关联数据'] || [])];
+    const target = scope.locator(`[data-mid="${ref}"]`);
+    const snapshot = () => target.evaluate(node => {
+      const shell = node.querySelector('.content-pager');
+      const pages = [...node.querySelectorAll('.market-page')], visible = pages.find(page => !page.hidden);
+      return { index: Number(shell.dataset.pageIndex), count: Number(shell.dataset.pageCount), pid: visible?.dataset.marketPid,
+        tabOn: [...node.querySelectorAll('.mtab')].findIndex(tab => tab.classList.contains('on')),
+        pressed: [...node.querySelectorAll('.mtab')].map(tab => tab.getAttribute('aria-pressed')),
+        action: node.querySelector('.detail-open').dataset.detailPid, status: shell.querySelector('.pager-status').textContent,
+        height: Math.round(node.getBoundingClientRect().height), values: visible?.querySelectorAll('.mk-val').length,
+        placeholders: visible?.querySelectorAll('.mk-empty').length, wired: node.querySelectorAll('.mtab.has-data').length,
+        columns: pages.map(page => page.querySelectorAll('.mk-col').length) };
+    });
+    const connected = await scope.evaluate(list => list.filter(pid => DDATA[pid]?.rows?.length), pids);
+    assert.equal(await target.getAttribute('data-card-kind'), 'market', label + '电商大盘卡型：' + ref);
+    assert.equal(await target.getAttribute('data-k'), pids.map(pid => pid.slice(1)).join(' '), label + '一卡多词条按页面顺序绑定');
+    assert.equal(await target.locator('.market-page').count(), pids.length, label + '每页一个词条');
+    for (let step = (await snapshot()).index; step > 0; step--) await target.locator('.pager-previous').click();
+    const first = await snapshot();
+    assert.ok(first.columns.every(n => n === card['市场'].length), label + '每页按站点分列');
+    assert.equal(first.count, pids.length, label + '页数等于词条数');
+    assert.match(first.status, new RegExp('^第 1 / ' + pids.length + ' 页 · \\S'), label + '页码行播报页名');
+    assert.equal(first.wired, connected.length, label + '仅已接入数据的词条亮起页签圆点');
+    for (let page = 0; page < pids.length; page++) {
+      if (page) await target.locator('.mtab').nth(page).click();
+      const after = await snapshot();
+      assert.deepEqual([after.index, after.pid, after.tabOn, after.action], [page, pids[page], page, pids[page]],
+        label + '页签直达对应页，详情按钮跟随当前页');
+      assert.equal(after.height, first.height, label + '翻页不改变卡片高度');
+      assert.deepEqual(after.pressed, pids.map((_, i) => i === page ? 'true' : 'false'), label + '页签选中态唯一');
+      assert.equal(after.values > 0, connected.includes(pids[page]), label + '没有数据的词条不得生成数值：' + pids[page]);
+    }
+    assert.ok(await target.locator('.pager-next').isDisabled(), label + '末页禁用下一页');
+    for (let page = pids.length - 1; page > 0; page--) await target.locator('.pager-previous').click();
+    assert.ok(await target.locator('.pager-previous').isDisabled(), label + '首页禁用上一页');
+    // 附录词条回跳：点词条行应翻到该词条所在页
+    if (await scope.locator('#appendix').getAttribute('data-open') !== 'true') await scope.locator('#provbtn').click();
+    await scope.evaluate(() => renderProv());
+    const last = pids[pids.length - 1];
+    await scope.locator(`#provRows [data-goto="${last}"]`).click();
+    await scope.waitForFunction(({ ref, last }) => document.querySelector(`[data-mid="${ref}"] .detail-open`).dataset.detailPid === last,
+      { ref, last });
+    assert.equal((await snapshot()).index, pids.length - 1, label + '附录点词条回跳到对应页：' + last);
+    for (let page = pids.length - 1; page > 0; page--) await target.locator('.pager-previous').click();
+    // 模块检索按词条号定位时同样翻到对应页
+    await scope.locator('#moduleSearch').fill(pids[1]);
+    await scope.locator(`#moduleSearchResults button[data-module-id="${ref}"]`).click();
+    await scope.waitForFunction(({ ref, pid }) => document.querySelector(`[data-mid="${ref}"] .detail-open`).dataset.detailPid === pid,
+      { ref, pid: pids[1] });
+    assert.equal((await snapshot()).index, 1, label + '检索词条号回跳到对应页：' + pids[1]);
+    await scope.locator('#clearModuleSearch').click();
+    await target.locator('.pager-previous').click();
+  }
+
   const buttons = scope.locator('[data-cotab]');
   const companies = view.companies;
   assert.equal(await buttons.count(), companies.length);
@@ -379,6 +440,11 @@ async function assertBusinessInvariants(scope, view, label) {
         label + '每家公司一张招聘职位量卡：' + company);
       assert.equal(await visible.locator('[data-mid*="大客户招聘监测"]').count(), 0,
         label + '合并监测卡不得残留：' + company);
+      // v29：每家公司页签各留一张新品发布监测规划卡（页签内最后一张），不绑定数据
+      assert.equal(await visible.locator('[data-mid$="_新品发布监测"]').count(), 1,
+        label + '每家公司一张新品发布规划卡：' + company);
+      assert.ok((await visible.locator('.card').last().getAttribute('data-mid')).endsWith('_新品发布监测'),
+        label + '新品发布规划卡位于公司页签末尾：' + company);
     }
     const cumulativeRef = view.activeRefs.find(ref => {
       const card = modules.get(ref);
@@ -413,6 +479,98 @@ async function assertBusinessInvariants(scope, view, label) {
   assert.equal(await scope.locator('[data-copanel]:not([hidden])').getAttribute('data-copanel'), targetCompany,
     label + '附录回跳先激活隐藏公司');
   await assertUniqueIds(scope, label + '附录展开后');
+}
+
+async function marketDataFixture(browser, dashboardDir, origin, errors) {
+  // v29：电商大盘翻页卡“已接入数据”时的渲染，用只在测试浏览器内注入的合成样本来验证——不写任何文件、不改data.js。
+  // 样本覆盖四种情形：整站点指标齐备（末行含空值）、单指标且缺上一个自然月、整站点缺列、只有两个月（有环比无同比）。
+  const dataPath = path.join(dashboardDir, 'data.js');
+  const digest = () => crypto.createHash('sha256').update(fs.readFileSync(dataPath)).digest('hex');
+  const before = digest();
+  const months = Array.from({ length: 14 }, (_, i) => new Date(Date.UTC(2025, 8 + i, 1)).toISOString().slice(0, 10));   // 2025-09 … 2026-10
+  const volume = [990, 1000, 1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080, 1090, 1100, 1200, 1320];
+  // 列序：美国 月销量/月销额/均价/Top3份额/自营份额/退货率/品牌数，欧洲 月销量（缺2026-09）
+  const rows = months.map((date, i) => [date, volume[i], volume[i] * 10, 10.5, 35, 8, i === 13 ? null : 3.2, 87, i === 12 ? null : 100 + 25 * i]);
+  const sample = { src: '隔离测试样本', file: '' };
+  // 版面用样本：品牌页三个站点指标齐全且读数偏长，用于检查各宽度下站点列是否溢出
+  const wide = { '月销量': 12345678, '月销额USD': 98765432, '均价USD': 1234.56, '品类份额%': 100, '类目排名': 1, '在售商品数': 99999, '评论均值': 4.9 };
+  const dense = { ...sample, cols: [], rows: months.map(date => [date]) };
+  for (const site of ['美国', '欧洲', '日本']) for (const [metric, value] of Object.entries(wide)) {
+    dense.cols.push(site + '_' + metric); dense.rows.forEach(row => row.push(value));
+  }
+  const fixture = '\n;DDATA.P275=' + JSON.stringify({ ...sample, rows, cols: ['美国_月销量', '美国_月销额USD', '美国_均价USD',
+    '美国_Top3产品份额%', '美国_自营销量份额%', '美国_退货率%', '美国_品牌数', '欧洲_月销量'] })
+    + ';DDATA.P276=' + JSON.stringify({ ...sample, cols: ['美国_月销量'], rows: [['2026-09-01', 10], ['2026-10-01', 12]] })
+    + ';DDATA.P280=' + JSON.stringify(dense) + ';\n';
+  const context = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 1000 } });
+  try {
+    await context.route(/^https?:\/\//, route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort('blockedbyclient'));
+    await context.route(/\/data\.js$/, route => route.fulfill({ status: 200, contentType: 'text/javascript; charset=utf-8',
+      body: fs.readFileSync(dataPath, 'utf8') + fixture }));
+    const page = await context.newPage(); page.setDefaultTimeout(15000);
+    page.on('pageerror', error => errors.push('market-fixture: ' + error.message));
+    await page.goto(origin + '/index.html', { waitUntil: 'load' }); await ready(page);
+    const label = 'market-fixture:';
+    const card = page.locator('[data-mid="275_电商大盘_各类产品"]');
+    const column = market => card.locator('.market-page:not([hidden]) .mk-col[data-market="' + market + '"]');
+    const childTexts = (locator, selector) => locator.locator(selector).evaluateAll((nodes, selector) => nodes.map(node =>
+      [...node.querySelectorAll(selector + ' > *')].map(item => item.textContent.trim()).join('|')), selector);
+    const fitted = () => card.locator('.market-page:not([hidden]) .chart').evaluateAll(nodes => nodes.length > 0 && nodes.every(node =>
+      Math.abs(Number(node.querySelector('svg')?.getAttribute('width')) - node.clientWidth) <= 1));
+    assert.equal(await card.evaluate(node => node.classList.contains('market-empty')), false, label + '有数据的翻页卡不按空态收缩');
+    assert.deepEqual(await card.locator('.mtab.has-data').evaluateAll(nodes => nodes.map(node => node.dataset.marketPid)), ['P275', 'P276'],
+      label + '仅已接入数据的词条亮起页签圆点');
+    assert.equal(await column('美国').locator('.vnum').innerText(), '1,320', label + '主指标显示末值');
+    assert.equal(await column('美国').locator('.unit').innerText(), '件', label + '主指标带单位');
+    assert.equal(await column('美国').locator('.mk-period').innerText(), '2026-10', label + '读数标注所属月份');
+    assert.deepEqual(await childTexts(column('美国'), '.mk-chg'), ['环比|▲ +10.0%', '同比|▲ +32.0%'], label + '环比只对上一个自然月、同比只对去年同月');
+    assert.deepEqual(await childTexts(column('美国'), '.mk-stat'), ['月销售额|1.3 万美元', '均价|$10.50', 'Top3产品份额|35.0%', 'Amazon自营份额|8.0%', '退货率|—', '品牌数|87'],
+      label + '结构指标与主指标同期，该期空值显示为—而不拿上期值顶替');
+    assert.deepEqual(await childTexts(column('欧洲'), '.mk-chg'), ['环比|—', '同比|▲ +240.0%'], label + '缺上一个自然月时不做环比，不跨期比较');
+    assert.equal(await column('欧洲').locator('.vnum').innerText(), '425', label + '缺月站点的末值');
+    assert.ok((await column('欧洲').locator('.mk-stat dd').allInnerTexts()).every(value => value.trim() === '—'), label + '缺列的结构指标显示为—');
+    assert.match(await column('日本').innerText(), /待接入 · 暂无该站点数据/, label + '缺数据的站点显示待接入占位');
+    assert.equal(await fitted(), true, label + '走势图按容器实际宽度绘制');
+    await card.locator('.mtab').nth(1).click();
+    assert.deepEqual(await childTexts(column('美国'), '.mk-chg'), ['环比|▲ +20.0%', '同比|—'], label + '只有两个月时有环比、无同比');
+    assert.equal(await column('美国').locator('.vnum').innerText(), '12', label + '第二页显示自己的末值');
+    assert.equal(await card.locator('.market-page:not([hidden]) .mk-empty').count(), 2, label + '该页缺数据的两个站点各一个占位');
+    await card.locator('.detail-open').click();
+    await page.waitForFunction(() => document.getElementById('moduleDetail').open);
+    assert.deepEqual(await page.locator('#moduleDetail table[data-detail-table]').evaluateAll(nodes => nodes.map(node => node.dataset.detailTable)),
+      ['P276'], label + '详情只展开当前页词条，不并入同卡其他页');
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.getElementById('moduleDetail').open);
+    await page.setViewportSize({ width: 1100, height: 1000 });
+    await page.waitForFunction(mid => [...document.querySelectorAll(`[data-mid="${mid}"] .market-page:not([hidden]) .chart`)].every(node =>
+      Math.abs(Number(node.querySelector('svg')?.getAttribute('width')) - node.clientWidth) <= 1), '275_电商大盘_各类产品', { timeout: 5000 });
+    assert.equal(await fitted(), true, label + '窗口变化后走势图重绘');
+    // 版面：三个站点指标齐全且读数偏长时，各宽度×阅读档位下站点列不溢出并留有余量，箭头不被内容遮挡
+    const brand = page.locator('[data-mid="280_电商大盘_各品牌"]');
+    const sweep = () => brand.locator('.pager-next').evaluate(button => {
+      button.scrollIntoView({ behavior: 'instant', block: 'center' });
+      const shell = button.closest('.content-pager');
+      const shown = el => { const box = el.getBoundingClientRect(); const top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+        return top === el || el.contains(top); };
+      const columns = [...shell.querySelectorAll('.market-page:not([hidden]) .mk-col')];
+      return { overflow: Math.max(...columns.map(c => Math.max(c.scrollHeight - c.clientHeight, c.scrollWidth - c.clientWidth))),
+        slack: Math.min(...columns.map(c => Math.round(c.querySelector('.mk-stats').getBoundingClientRect().top - c.querySelector('.chart').getBoundingClientRect().bottom))),
+        arrows: [shell.querySelector('.pager-previous'), button].every(shown) };
+    });
+    for (const large of [false, true]) {
+      if (large) await page.locator('#readingSize').click();
+      for (const width of [1440, 1024, 768, 390, 320]) {
+        const where = (large ? '放大阅读 ' : '') + width + 'px';
+        await page.setViewportSize({ width, height: 1000 });
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        const state = await sweep();
+        assert.ok(state.overflow <= 1 && state.slack >= 8, label + '站点列不溢出并留有余量：' + where + ' ' + JSON.stringify(state));
+        assert.ok(state.arrows, label + '箭头不被内容遮挡：' + where);
+      }
+      if (large) await page.locator('#readingSize').click();
+    }
+    assert.equal(digest(), before, label + '隔离样本不写入data.js');
+  } finally { await context.close(); }
 }
 
 async function responsive(page, scope, label, results) {
@@ -574,6 +732,7 @@ async function sharedFrame(page, view) {
       await sharedPage.goto(shareUrl + '#page=' + encodeURIComponent(invalid), { waitUntil: 'load' });
       await assertView(await sharedFrame(sharedPage, defaultView), defaultView, 'offline-share:未知部门回退');
     }
+    await marketDataFixture(browser, dashboardDir, origin, errors);
 
     assert.deepEqual(manifest(moduleDir, '.json'), originalModules, '所有模块文件清单与哈希保持不变');
     assert.deepEqual(manifest(path.join(fixedDir, 'CSV数据'), '.csv'), originalCsvs, '切页面不新增或改写CSV');

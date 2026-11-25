@@ -124,6 +124,8 @@ function focusSourceCard(pid){
     var button=Array.from(group.querySelectorAll('[data-cotab]')).find(function(b){return b.getAttribute('data-cotab')===panel.getAttribute('data-copanel')});
     if(button)button.click();
   }
+  // v29：一卡多词条的翻页卡（电商大盘）收到P号后自行翻到对应页
+  root.dispatchEvent(new CustomEvent('dns:focus-pid',{detail:{pid:pid}}));
   card.scrollIntoView({behavior:'smooth',block:'center'});
   card.style.transition='box-shadow .3s';card.style.boxShadow='0 0 0 3px rgba(0,101,176,.25)';
   setTimeout(function(){card.style.boxShadow=''},1200);

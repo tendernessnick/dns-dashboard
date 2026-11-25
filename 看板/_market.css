@@ -1,0 +1,75 @@
+/* ===== v29 电商大盘翻页卡（market）：整宽卡；页签或左右箭头切换品类/品牌页，每页按站点三列 ===== */
+#dns-dash .market-tabs{display:flex;flex-wrap:wrap;gap:5px;padding:4px;background:#EBF0F8;border:1px solid var(--n200);border-radius:6px;margin:0 0 12px}
+#dns-dash .mtab{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1 1 0;min-width:112px;min-height:34px;padding:5px 12px;font:500 14px/22px var(--fn);color:var(--n500);background:transparent;border:1px solid transparent;border-radius:4px;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s,border-color .12s}
+#dns-dash .mtab small{font:500 12px/17px var(--fnnum);color:var(--n500)}
+#dns-dash .mtab:hover{color:var(--brand)}
+#dns-dash .mtab.on{color:var(--brand);background:#FFF;border-color:#D5E1F3;box-shadow:var(--sh0)}
+#dns-dash .mtab:focus-visible{outline:3px solid #2F7D83;outline-offset:2px}
+#dns-dash .mdot{flex:none;width:7px;height:7px;border-radius:50%;background:#C9D4DD}
+#dns-dash .mtab.has-data .mdot{background:#6F9990}
+/* 页码行仅保留给读屏（页签即页码），不占纵向空间 */
+#dns-dash .content-pager[data-pager-kind="market"]{--pager-slot-height:500px;margin:2px 0 0;grid-template-rows:var(--pager-viewport-height) 0;row-gap:0;position:relative}
+#dns-dash .content-pager[data-pager-kind="market"]>.pager-status{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#dns-dash .market-pages.pager-items{display:block}
+/* 全部页面都还没有数据时，空态不按满高占位 */
+#dns-dash .market-card.market-empty .content-pager[data-pager-kind="market"]{--pager-slot-height:250px}
+#dns-dash .market-page{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;height:100%;min-width:0}
+#dns-dash .mk-col{display:flex;flex-direction:column;min-width:0;min-height:0;padding:18px 18px 12px;background:#FAFBF8;border:1px solid #DFE8DF;border-radius:8px;container-type:inline-size}
+#dns-dash .mk-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px;min-width:0}
+#dns-dash .mk-name{font:600 15px/24px var(--fn);color:var(--n900);white-space:nowrap}
+#dns-dash .mk-site{font:400 12px/20px var(--fn);color:var(--n500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dns-dash .mk-k{font:400 12.5px/20px var(--fn);color:var(--n500)}
+#dns-dash .mk-val{font:550 34px/42px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums;letter-spacing:-.03em;white-space:nowrap}
+#dns-dash .mk-val .unit{font:400 14px/1 var(--fn);color:var(--n500);margin-left:5px;letter-spacing:0}
+#dns-dash .mk-delta{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-top:5px;font-size:12.5px;line-height:22px;color:var(--n500);min-width:0}
+#dns-dash .mk-chg{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+#dns-dash .mk-cl{color:var(--n500)}
+#dns-dash .mk-na{color:var(--n300);font-family:var(--fnnum)}
+#dns-dash .mk-period{margin-left:auto;font:400 12px/20px var(--fnnum);color:var(--n500);font-variant-numeric:tabular-nums}
+#dns-dash .market-page .chart{height:176px;margin-top:8px}
+#dns-dash .mk-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:18px;margin-top:auto;padding-top:8px;border-top:1px solid #E3EADF}
+#dns-dash .mk-stat{display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0;padding:5px 0;border-bottom:1px dashed #E6EBE5;font-size:13px;line-height:22px;color:var(--n500)}
+#dns-dash .mk-stat:nth-last-child(-n+2){border-bottom:0}
+/* 指标名允许折行、读数不折行：窄列下宁可名称多占一行，也不让数值被挤出站点框 */
+#dns-dash .mk-stat dt{min-width:0}
+#dns-dash .mk-stat dd{flex:none;font:550 15px/22px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* 列宽不足（桌面三列时约 1236px 以下视口）：指标单列、走势图降高并收紧行距，保证单页仍在同一高度内 */
+@container (max-width:292px){
+ #dns-dash .market-page .chart{height:128px}
+ #dns-dash .mk-val{font-size:30px;line-height:38px}
+ #dns-dash .mk-stats{grid-template-columns:minmax(0,1fr)}
+ #dns-dash .mk-stat{padding:3px 0}
+}
+#dns-dash .mk-col.is-empty .mk-empty{flex:1;display:flex;align-items:center;justify-content:center;border:1px dashed #D8E3D8;border-radius:7px;background:#F7F9F5;font-size:14px;line-height:26px;color:#708077;text-align:center;padding:24px 16px}
+#dns-dash.large-reading .mtab{font-size:16px;min-height:44px}
+#dns-dash.large-reading .content-pager[data-pager-kind="market"]{--pager-slot-height:576px}
+#dns-dash.large-reading .mk-name{font-size:17px}
+#dns-dash.large-reading .mk-val{font-size:38px;line-height:46px}
+#dns-dash.large-reading .mk-site,#dns-dash.large-reading .mk-k,#dns-dash.large-reading .mk-delta{font-size:14px}
+#dns-dash.large-reading .mk-stats{grid-template-columns:minmax(0,1fr)}
+#dns-dash.large-reading .mk-stat{font-size:15px;line-height:25px;padding:3px 0}
+#dns-dash.large-reading .market-page .chart{height:182px}
+/* 三列上下堆叠（1023px 以下视口）：槽位按“三个站点都有数据、指标齐全”给足高度 */
+@media (max-width:1023px){
+ #dns-dash .market-page{grid-template-columns:minmax(0,1fr);gap:12px}
+ #dns-dash .content-pager[data-pager-kind="market"]{--pager-slot-height:1500px}
+ #dns-dash.large-reading .content-pager[data-pager-kind="market"]{--pager-slot-height:1720px}
+ /* 窄屏三列上下堆叠，空态按三个占位框（各需约140px）给高 */
+ #dns-dash .market-card.market-empty .content-pager[data-pager-kind="market"]{--pager-slot-height:460px}
+}
+@media (max-width:768px){
+ #dns-dash .market-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dns-dash .mtab{min-height:44px}
+ /* 箭头在第二行的两种情形（视口≤768px、分页器宽<440px）都要给箭头留出行高 */
+ #dns-dash .content-pager[data-pager-kind="market"]{grid-template-rows:var(--pager-viewport-height) 44px}
+}
+/* 分页器宽<440px 时箭头同样移到第二行（class 由 04_pager.js 按宽度切换） */
+#dns-dash .content-pager.pager-compact[data-pager-kind="market"]{grid-template-rows:var(--pager-viewport-height) 44px}
+/* 375px 以下两列页签放不下中英文并列，只保留中文名（英文为辅助标注） */
+@media (max-width:374px){
+ #dns-dash .mtab small{display:none}
+}
+@media print{
+ /* 打印时全部页面展开（见 _pagination.css），页签与箭头不再需要 */
+ #dns-dash .market-tabs{display:none}
+}

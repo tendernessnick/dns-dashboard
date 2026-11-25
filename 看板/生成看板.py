@@ -34,7 +34,7 @@ CSS = os.path.join(BASE, '_style.css')
 # ============ 读入 ============
 skeleton = open(SKEL, encoding='utf-8').read()
 css = '\n'.join(open(os.path.join(BASE, name), encoding='utf-8').read()
-                for name in ('_style.css', '_workspace.css', '_pagination.css', '_navigation.css'))
+                for name in ('_style.css', '_workspace.css', '_pagination.css', '_navigation.css', '_market.css'))
 MEDIA_OMISSIONS = []
 media_root = os.path.join(BASE, '媒体')
 if os.path.isdir(media_root):
@@ -64,7 +64,7 @@ for fp in sorted(glob.glob(os.path.join(MOD_DIR, '*.json'))):
         raise SystemExit(f'卡片ID重复：{cid}（{fp}）')
     CARDS[cid] = cfg
 
-TYPES = {'kpi', 'desc', 'list', 'strip', 'share', 'ring', 'hlines', 'multi', 'cco', 'review', 'planned'}
+TYPES = {'kpi', 'desc', 'list', 'strip', 'share', 'ring', 'hlines', 'multi', 'cco', 'review', 'planned', 'market'}
 
 
 def validate_planned(config):
@@ -94,6 +94,26 @@ def validate_planned(config):
         raise ValueError(f'{cid}缺少卡名')
 
 
+def validate_market(config):
+    """电商大盘翻页卡（v29）：一卡多词条——每页一个P号，页内按站点×指标分列；配置须自洽，P号不得重复。"""
+    cid = config.get('ID', '')
+    pages, markets, metrics = config.get('页面'), config.get('市场'), config.get('指标')
+    for name, items in (('页面', pages), ('市场', markets), ('指标', metrics)):
+        if not isinstance(items, list) or not items or any(not isinstance(item, dict) for item in items):
+            raise ValueError(f'{cid}电商大盘卡{name}须为非空对象列表')
+    if not isinstance(config.get('页名'), str) or not config['页名'].strip():
+        raise ValueError(f'{cid}电商大盘卡缺少页名')
+    pids = [p['P'] if isinstance(p.get('P'), str) and re.fullmatch(r'P[1-9]\d*', p['P']) else None for p in pages]
+    if None in pids or len(set(pids)) != len(pids) or any(not str(p.get('名称') or '').strip() for p in pages):
+        raise ValueError(f'{cid}电商大盘卡页面P号无效、重复或缺名称')
+    for name, items in (('市场', markets), ('指标', metrics)):
+        if (len({str(m.get('键') or '') for m in items}) != len(items)
+                or any(not str(m.get('键') or '').strip() or not str(m.get('名称') or '').strip() for m in items)):
+            raise ValueError(f'{cid}电商大盘卡{name}的键须唯一，且键与名称非空')
+    if config.get('主数据') != pids[0] or [pids[0]] + list(config.get('关联数据') or []) != pids:
+        raise ValueError(f'{cid}电商大盘卡主数据/关联数据须与页面P号逐一对应')
+
+
 planned_numbers = set()
 for cid, cfg in CARDS.items():
     if cfg['类型'] not in TYPES:
@@ -103,6 +123,8 @@ for cid, cfg in CARDS.items():
         if cfg['预留编号'] in planned_numbers:
             raise ValueError(f'预留编号重复：{cfg["预留编号"]}')
         planned_numbers.add(cfg['预留编号'])
+    elif cfg['类型'] == 'market':
+        validate_market(cfg)
 
 
 def Pn(p):
@@ -346,6 +368,25 @@ def b_planned(c):
             + atattr(c['ID']) + '">查看建设规划<span aria-hidden="true">↗</span></button></div>')
 
 
+def b_market(c):
+    # v29：电商大盘翻页卡——页签 + 页容器；页内站点列（末值/环比同比/走势/结构指标）由渲染器79_market.js按DDATA填充
+    conf = atattr(json.dumps({k: c[k] for k in ('市场', '指标', '页名')}, ensure_ascii=False))
+    tabs = ''.join(
+        f'<button type="button" class="mtab{" on" if i == 0 else ""}" data-market-tab="{i}" data-market-pid="{atattr(p["P"])}" '
+        f'aria-pressed="{"true" if i == 0 else "false"}"><i class="mdot" aria-hidden="true"></i>{atattr(p["名称"])}'
+        f'<small>{atattr(p.get("英文", ""))}</small></button>'
+        for i, p in enumerate(c['页面']))
+    pages = ''.join(
+        f'<section class="market-page" data-market-pid="{atattr(p["P"])}" data-market-name="{atattr(p["名称"])}" '
+        f'aria-label="{atattr(p["名称"] + " · 电商大盘")}"></section>'
+        for p in c['页面'])
+    return (b_top(c)
+            + f'<div class="market" data-market data-market-config="{conf}">'
+              f'<div class="market-tabs" role="group" aria-label="选择{atattr(c["页名"])}">{tabs}</div>'
+              f'<div class="market-pages">{pages}</div></div>'
+            + b_foot(c))
+
+
 def card_html(c, slot=None):
     t = c['类型']
     if t == 'cco':
@@ -353,6 +394,8 @@ def card_html(c, slot=None):
     cls = ['card'] + (c.get('类修饰') or []) + ([f'c{c["跨列"]}'] if c.get('跨列') else [])
     if t == 'planned':
         cls.append('planned-card')
+    elif t == 'market':
+        cls.append('market-card')
     dk = ' '.join(Pn(p) for p in [c['主数据']] + (c.get('关联数据') or []) if p)
     css = ';'.join(p for p in [(c.get('卡片样式') or '').rstrip(';'), slot or ''] if p)
     attrs = (st(css)
@@ -367,6 +410,8 @@ def card_html(c, slot=None):
              + (f' data-news="{atattr(c["资讯键"])}"' if c.get('资讯键') else ''))
     if t == 'planned':
         inner = b_planned(c)
+    elif t == 'market':
+        inner = b_market(c)
     elif t == 'strip':
         inner = b_strip(c)
     elif t == 'hlines':
@@ -395,8 +440,10 @@ def card_html(c, slot=None):
         label = ('查看产品与拆解' if t == 'review' else '查看榜单样本' if c.get('榜单')
                  else '查看趋势与数据' if (c.get('图表组') or c.get('多品类') or t in {'share', 'ring', 'strip'})
                  else '查看资讯与来源' if c.get('资讯键') else '查看说明与来源')
+        # v29：翻页卡一卡多词条，详情只展开当前页词条；按钮文案与P号由79_market.js随翻页更新
+        detail_pid = (' data-detail-pid="' + atattr(c['主数据']) + '"') if t == 'market' else ''
         inner += ('<div class="card-action-row"><button type="button" class="detail-open" data-detail-module="'
-                  + atattr(c['ID']) + '">' + label + '<span aria-hidden="true">↗</span></button></div>')
+                  + atattr(c['ID']) + '"' + detail_pid + '>' + label + '<span aria-hidden="true">↗</span></button></div>')
     return f'<div class="{" ".join(cls)}"{attrs}>{inner}</div>'
 
 # ============ 板块拼装 ============

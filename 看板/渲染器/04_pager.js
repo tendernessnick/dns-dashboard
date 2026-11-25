@@ -50,7 +50,9 @@
       shell.classList.toggle('pager-empty', items.length === 0);
       shell.style.setProperty('--pager-columns', String(settings.kind === 'review' ? size : 1));
       shell.style.setProperty('--pager-page-size', String(size));
-      status.textContent = !items.length ? '0 条' : total > 1 ? '第 ' + (page + 1) + ' / ' + total + ' 页 · 共 ' + items.length + ' 条' : '共 ' + items.length + ' 条';
+      // 可选 pageName(index)：按页命名的翻页内容（如电商大盘品类页）播报页名，代替条数。
+      var named = typeof settings.pageName === 'function' ? settings.pageName(page) : '';
+      status.textContent = !items.length ? '0 条' : total > 1 ? '第 ' + (page + 1) + ' / ' + total + ' 页 · ' + (named || '共 ' + items.length + ' 条') : named || '共 ' + items.length + ' 条';
       // 显示/收起、换页或窗口改变时，不把键盘焦点留在隐藏条目或刚禁用的按钮上。
       if (active && container.contains(active) && items.some(function (item) { return item.hidden && item.contains(active); })) focusVisibleItem();
       else if ((active === next || active === previous) && previous.disabled && next.disabled) focusVisibleItem();

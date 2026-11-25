@@ -13,7 +13,7 @@ const output = path.resolve(process.env.DNS_STABLE_OUTPUT || path.join(os.tmpdir
 const fixturesOnly = process.argv.includes('--fixtures-only');
 const config = JSON.parse(fs.readFileSync(path.join(directory, '页面.json'), 'utf8').replace(/^\uFEFF/, ''));
 const source = name => fs.readFileSync(path.join(directory, '渲染器', name), 'utf8');
-const css = ['_style.css', '_workspace.css', '_pagination.css', '_navigation.css'].map(name => fs.readFileSync(path.join(directory, name), 'utf8')).join('\n');
+const css = ['_style.css', '_workspace.css', '_pagination.css', '_navigation.css', '_market.css'].map(name => fs.readFileSync(path.join(directory, name), 'utf8')).join('\n');
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=', 'base64');
 const dataImage = 'data:image/png;base64,' + png.toString('base64');
 const tolerance = 1;

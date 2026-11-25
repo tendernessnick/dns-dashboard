@@ -21,7 +21,10 @@ spec.loader.exec_module(builder)
 
 
 PAGE_IDS = {'strategy', 'marketing', 'design', 'product', 'hr'}
-EXPECTED_PLANNED = {f'P{i}' for i in range(255, 266)}
+EXPECTED_PLANNED = {f'P{i}' for i in range(255, 266)} | {f'P{i}' for i in range(270, 275)}
+STRATEGY_PLANNED = {'P255', 'P256', 'P257'} | {f'P{i}' for i in range(270, 275)}
+MARKET_CARDS = {'275_电商大盘_各类产品': ['P275', 'P276', 'P277', 'P278', 'P279'],
+                '280_电商大盘_各品牌': ['P280', 'P281', 'P282', 'P283', 'P284', 'P285']}
 
 
 class FragmentAudit(HTMLParser):
@@ -79,25 +82,106 @@ class PageConfigurationTests(unittest.TestCase):
         self.assertEqual(info['activeModuleCount'], 51)
         self.assertEqual(info['plannedCount'], 2)
         self.assertEqual(info['moduleCount'], 53)
-        self.assertEqual(sum(c['类型'] != 'planned' for c in builder.CARDS.values()), 102)
-        self.assertEqual(sum(c['类型'] == 'planned' for c in builder.CARDS.values()), 11)
+        self.assertEqual(sum(c['类型'] != 'planned' for c in builder.CARDS.values()), 104)
+        self.assertEqual(sum(c['类型'] == 'planned' for c in builder.CARDS.values()), 16)
         self.assertEqual(builder.CARDS, before)
         self.assertIn('data-mid="205_营收趋势季度"', html)
         self.assertIn('data-source-pids="P96"', html)
         self.assertNotIn('<!--__', html)
         self.assertNotIn('id="m1"', html)
 
-    def test_strategy_keeps_all_existing_modules_and_only_its_three_plans(self):
+    def test_strategy_keeps_all_existing_modules_and_its_eight_plans(self):
         page = next(p for p in builder.PAGES if p['ID'] == 'strategy')
         layout = builder.read_layout(page)
         refs = {row['引用'] for row in layout if row['类型'] == 'C'}
         active = {cid for cid, card in builder.CARDS.items() if card['类型'] != 'planned'}
         planned = {builder.CARDS[cid]['预留编号'] for cid in refs if cid not in active}
-        self.assertEqual(len(active), 102)
+        self.assertEqual(len(active), 104)
         self.assertTrue(active.issubset(refs))
-        self.assertEqual(planned, {'P255', 'P256', 'P257'})
+        self.assertEqual(planned, STRATEGY_PLANNED)
         _, info = builder.build_page(page)
-        self.assertEqual((info['activeModuleCount'], info['plannedCount'], info['moduleCount']), (102, 3, 105))
+        self.assertEqual((info['activeModuleCount'], info['plannedCount'], info['moduleCount']), (104, 8, 112))
+
+    def test_new_product_plans_close_every_company_panel_without_data(self):
+        """v29：五家上市公司页签各留一张新品发布监测规划卡（页签内最后一张），只描述未来能力，不登记词条。"""
+        plans = {'安克创新': 'P270', '奥海科技': 'P271', '佳禾智能': 'P272', '海能实业': 'P273', '绿联科技': 'P274'}
+        strategy = next(p for p in builder.PAGES if p['ID'] == 'strategy')
+        panels, current = {}, None
+        for row in builder.read_layout(strategy):
+            if row['类型'] == 'P':
+                current = panels.setdefault(row['引用'], [])
+            elif row['类型'] == 'G':
+                current = None
+            elif row['类型'] == 'C' and current is not None:
+                current.append(row['引用'])
+        self.assertEqual(set(panels), set(plans))
+        for company, number in plans.items():
+            with self.subTest(company=company):
+                cid = number[1:] + '_新品发布监测'
+                self.assertEqual(panels[company][-1], cid)
+                self.assertEqual(panels[company].count(cid), 1)
+                card = builder.CARDS[cid]
+                builder.validate_planned(card)
+                self.assertEqual((card['类型'], card['预留编号'], card['面板'], card['跨列']), ('planned', number, company, 12))
+                self.assertIn(company, card['规划对象']['用途'])
+                self.assertNotIn(number, {row['P号'] for row in builder.REGISTRY})
+                self.assertNotIn(number, {'P' + str(item['id']) for item in builder.PROV})
+        for other in builder.PAGES:
+            if other['ID'] != 'strategy':
+                refs = [row['引用'] for row in builder.read_layout(other) if row['类型'] == 'C']
+                self.assertFalse([ref for ref in refs if ref.endswith('_新品发布监测')], other['ID'])
+
+    def test_market_cards_bind_one_registered_term_per_page_without_data(self):
+        """v29：电商大盘两张翻页卡一卡多词条（每页一个P号、按站点分列）；词条已登记来源但尚未采集，不绑定采集器。"""
+        registry = {row['P号']: row for row in builder.REGISTRY}
+        sources = {'P' + str(item['id']): item for item in builder.PROV}
+        strategy = next(p for p in builder.PAGES if p['ID'] == 'strategy')
+        refs = [row['引用'] for row in builder.read_layout(strategy) if row['类型'] == 'C']
+        self.assertEqual([ref for ref in refs if builder.CARDS[ref]['类型'] == 'market'], list(MARKET_CARDS))
+        self.assertLess(refs.index('280_电商大盘_各品牌'), refs.index('59_充电头网早报'))
+        for cid, pids in MARKET_CARDS.items():
+            with self.subTest(module=cid):
+                card = builder.CARDS[cid]
+                builder.validate_market(card)
+                self.assertEqual((card['跨列'], card['主数据'], card['关联数据']), (12, pids[0], pids[1:]))
+                self.assertEqual([page['P'] for page in card['页面']], pids)
+                self.assertEqual(builder.CARD_PIDS[cid], set(pids))
+                self.assertEqual({market['键'] for market in card['市场']}, {'美国', '欧洲', '日本'})
+                self.assertEqual(sum(1 for metric in card['指标'] if metric.get('主')), 1)
+                html = builder.card_html(card)
+                audit = FragmentAudit()
+                audit.feed(html)
+                self.assertIn('market-card', audit.nodes[0][1]['class'].split())
+                self.assertEqual(audit.nodes[0][1]['data-card-kind'], 'market')
+                self.assertEqual(audit.nodes[0][1]['data-k'], ' '.join(pid[1:] for pid in pids))
+                pages = [attrs for tag, attrs in audit.nodes if 'market-page' in attrs.get('class', '').split()]
+                self.assertEqual([page['data-market-pid'] for page in pages], pids)
+                tabs = [attrs for tag, attrs in audit.nodes if 'mtab' in attrs.get('class', '').split()]
+                self.assertEqual(len(tabs), len(pids))
+                self.assertEqual([tab['data-market-tab'] for tab in tabs], [str(i) for i in range(len(pids))])
+                self.assertEqual([tab['aria-pressed'] for tab in tabs], ['true'] + ['false'] * (len(pids) - 1))
+                self.assertEqual([tab['data-market-pid'] for tab in tabs], pids)
+                actions = [attrs for tag, attrs in audit.nodes if 'detail-open' in attrs.get('class', '').split()]
+                self.assertEqual(len(actions), 1)
+                self.assertEqual(actions[0]['data-detail-pid'], pids[0])
+                for pid in pids:
+                    self.assertEqual(registry[pid]['状态'], '入口/受限')
+                    self.assertEqual((registry[pid]['采集器'], registry[pid]['可靠度']), ('', '—(无数值数据)'))
+                    self.assertEqual((sources[pid]['source'], sources[pid]['url'], sources[pid]['status']),
+                                     ('Sorftime 类目报告（美/欧/日）', '', '部分成功'))
+
+    def test_market_config_rejects_mismatched_or_duplicated_pages(self):
+        original = builder.CARDS['275_电商大盘_各类产品']
+        cases = [('关联数据', ['P276', 'P277', 'P278']), ('主数据', 'P276'), ('页面', []), ('市场', []), ('页名', ' '),
+                 ('页面', [{'P': 'P275', '名称': '线材'}, {'P': 'P275', '名称': '线材'}]),
+                 ('页面', [{'P': 'P275', '名称': '线材'}, {'P': '276', '名称': '充电器'}]),
+                 ('市场', [{'键': '美国', '名称': '美国'}, {'键': '美国', '名称': '美国'}])]
+        for key, value in cases:
+            with self.subTest(field=key, value=value):
+                card = copy.deepcopy(original)
+                card[key] = value
+                with self.assertRaises(ValueError):
+                    builder.validate_market(card)
 
     def test_merged_cards_are_split_into_customer_and_recruitment_modules(self):
         """v28：四家公司合并卡拆为独立的大客户集中度与招聘职位量卡，每家公司页签各一张。"""
@@ -163,7 +247,7 @@ class PageConfigurationTests(unittest.TestCase):
 
     def test_planned_cards_have_no_values_binding_or_provenance(self):
         planned = [card for card in builder.CARDS.values() if card['类型'] == 'planned']
-        self.assertEqual(len(planned), 11)
+        self.assertEqual(len(planned), 16)
         self.assertEqual({card['预留编号'] for card in planned}, EXPECTED_PLANNED)
         forbidden_attrs = {'data-k', 'data-source-pids', 'data-news', 'data-review', 'data-toplist',
                            'data-topsub', 'data-ring', 'data-multi', 'data-cal', 'data-cal-desc',

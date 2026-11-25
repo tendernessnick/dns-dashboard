@@ -87,6 +87,11 @@
       addedTabindex = !card.hasAttribute('tabindex');
       if (addedTabindex) card.setAttribute('tabindex', '-1');
       card.classList.add('workspace-highlight');
+      // v29：查询里含本卡的词条号（如 P278）时，一卡多词条的翻页卡翻到该词条所在页
+      var pid = normalized(input.value).split(' ').filter(function (term) {
+        return /^p\d+[a-z]?$/.test(term) && entry.pids.indexOf(normalizedPid(term)) >= 0;
+      })[0];
+      if (pid) workspaceRoot.dispatchEvent(new CustomEvent('dns:focus-pid', { detail: { pid: 'P' + pid.slice(1) } }));
       window.requestAnimationFrame(function () {
         if (selectedCard !== card || !card.isConnected) return;
         var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

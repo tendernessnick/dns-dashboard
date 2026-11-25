@@ -13,7 +13,7 @@ const directory = path.resolve(__dirname, '../看板');
 const config = JSON.parse(fs.readFileSync(path.join(directory, '页面.json'), 'utf8').replace(/^\uFEFF/, ''));
 const views = config['页面'];
 const widths = [1440, 1100, 768, 390, 320];
-const expectedCounts = { strategy: 105, marketing: 53, design: 16, product: 31, hr: 12 };   // v28：合并卡拆分后主看板 101→105
+const expectedCounts = { strategy: 112, marketing: 53, design: 16, product: 31, hr: 12 };   // v29：主看板加两张电商大盘卡与五张新品发布规划卡 105→112
 const shareName = '数据看板-单文件版.html';
 const output = path.resolve(process.env.DNS_INTERACTION_OUTPUT || path.join(os.tmpdir(), 'dns-dashboard-interaction'));
 const errors = [], checks = [], screenshots = [];
@@ -177,8 +177,9 @@ async function assertNavigation(scope, page, width, label) {
 }
 
 async function visiblePager(scope) {
+  // v29：电商大盘翻页卡按词条分页，由 assertMarketPagers 单独检查；这里仍取首个资讯/图文分页器。
   const index = await scope.locator('.content-pager').evaluateAll(elements => elements.findIndex(element =>
-    element.getClientRects().length && Number(element.dataset.pageCount) > 1));
+    element.getClientRects().length && Number(element.dataset.pageCount) > 1 && element.dataset.pagerKind !== 'market'));
   assert.ok(index >= 0, '当前页面应有实际可翻页的资讯或图文');
   return scope.locator('.content-pager').nth(index);
 }
@@ -217,6 +218,49 @@ async function assertPagination(scope, label) {
     live: element.querySelector('.pager-status').getAttribute('aria-live') }));
   assert.ok(controls.id && controls.id === controls.previous && controls.id === controls.next && controls.live === 'polite', label + '分页具备控制关系与页码播报');
   return pager;
+}
+
+async function assertMarketPagers(scope, label) {
+  // v29：电商大盘翻页卡一页一个词条——箭头与页签等效、翻页不改卡片高度、不横向溢出、详情按钮跟随当前页。
+  const pagers = scope.locator('.content-pager[data-pager-kind="market"]');
+  if (!(await pagers.count())) return;
+  for (const pager of await pagers.all()) {
+    const card = pager.locator('xpath=ancestor::*[@data-mid][1]');
+    const snapshot = () => pager.evaluate(element => {
+      const card = element.closest('[data-mid]');
+      const visible = [...element.querySelectorAll('.market-page')].find(item => !item.hidden);
+      return { index: Number(element.dataset.pageIndex), count: Number(element.dataset.pageCount), pid: visible?.dataset.marketPid,
+        tabOn: [...card.querySelectorAll('.mtab')].findIndex(tab => tab.classList.contains('on')),
+        status: element.querySelector('.pager-status').textContent, action: card.querySelector('.detail-open').dataset.detailPid,
+        height: Math.round(card.getBoundingClientRect().height),
+        overflow: card.scrollWidth > card.clientWidth + 1 ||
+          [...card.querySelectorAll('.mtab')].some(tab => tab.scrollWidth > tab.clientWidth + 1) };
+    });
+    const previous = pager.locator('.pager-previous'), next = pager.locator('.pager-next');
+    for (let i = (await snapshot()).index; i > 0; i--) await previous.click();
+    const first = await snapshot();
+    assert.ok(first.count > 1, label + '电商大盘卡一页一个词条，应有多页');
+    assert.match(first.status, new RegExp('^第 1 / ' + first.count + ' 页 · \\S'), label + '页码行播报页名');
+    for (let page = 1; page < first.count; page++) {
+      await card.locator('.mtab').nth(page).click(); await settle(scope);
+      const tab = await card.locator('.mtab').nth(page).getAttribute('data-market-pid');
+      const after = await snapshot();
+      assert.deepEqual([after.index, after.pid, after.tabOn, after.action], [page, tab, page, tab], label + '页签直达对应页，详情按钮跟随当前页');
+      assert.equal(after.height, first.height, label + '翻页不改变卡片高度');
+      assert.equal(after.overflow, false, label + '卡片与页签不横向溢出');
+    }
+    await previous.focus(); await previous.press('Enter'); await settle(scope);
+    assert.equal((await snapshot()).index, first.count - 2, label + 'Enter可翻到上一页');
+    await next.focus(); await next.press('Space'); await settle(scope);
+    assert.equal((await snapshot()).index, first.count - 1, label + 'Space可翻到下一页');
+    assert.ok(await next.isDisabled(), label + '末页禁用下一页');
+    assert.equal(await pager.evaluate(element => !!element.querySelector('[hidden]:focus,[hidden] :focus,button:disabled:focus')), false,
+      label + '焦点不能留在隐藏页或已禁用的翻页按钮');
+    for (let page = first.count - 1; page > 0; page--) await previous.click();
+    const home = await snapshot();
+    assert.deepEqual([home.index, home.pid, home.action], [0, first.pid, first.pid], label + '箭头逐页回到首页');
+    assert.ok(await previous.isDisabled(), label + '首页禁用上一页');
+  }
 }
 
 async function assertGeometry(scope, page, view, width, label) {
@@ -378,6 +422,7 @@ async function serve() {
           const label = mode + ':' + view.ID + ':' + width;
           await assertNavigation(scope, page, width, label);
           await assertPagination(scope, label);
+          if (view.ID === 'strategy') await assertMarketPagers(scope, label);
           await assertGeometry(scope, page, view, width, label);
           if (width === 1440 && ['strategy', 'design'].includes(view.ID)) await assertWheel(scope, page, label);
           if (mode === 'file' && view.ID === 'design' && width === 1440) {

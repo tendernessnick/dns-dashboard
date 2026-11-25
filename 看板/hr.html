@@ -1439,6 +1439,82 @@ body{background:#F5F6F3}
 @media(prefers-reduced-motion:reduce){#dns-dash .rail-toggle{transition:none}}
 @media print{#dns-dash .workspace-rail{display:none!important}}
 
+/* ===== v29 电商大盘翻页卡（market）：整宽卡；页签或左右箭头切换品类/品牌页，每页按站点三列 ===== */
+#dns-dash .market-tabs{display:flex;flex-wrap:wrap;gap:5px;padding:4px;background:#EBF0F8;border:1px solid var(--n200);border-radius:6px;margin:0 0 12px}
+#dns-dash .mtab{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1 1 0;min-width:112px;min-height:34px;padding:5px 12px;font:500 14px/22px var(--fn);color:var(--n500);background:transparent;border:1px solid transparent;border-radius:4px;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s,border-color .12s}
+#dns-dash .mtab small{font:500 12px/17px var(--fnnum);color:var(--n500)}
+#dns-dash .mtab:hover{color:var(--brand)}
+#dns-dash .mtab.on{color:var(--brand);background:#FFF;border-color:#D5E1F3;box-shadow:var(--sh0)}
+#dns-dash .mtab:focus-visible{outline:3px solid #2F7D83;outline-offset:2px}
+#dns-dash .mdot{flex:none;width:7px;height:7px;border-radius:50%;background:#C9D4DD}
+#dns-dash .mtab.has-data .mdot{background:#6F9990}
+/* 页码行仅保留给读屏（页签即页码），不占纵向空间 */
+#dns-dash .content-pager[data-pager-kind="market"]{--pager-slot-height:500px;margin:2px 0 0;grid-template-rows:var(--pager-viewport-height) 0;row-gap:0;position:relative}
+#dns-dash .content-pager[data-pager-kind="market"]>.pager-status{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#dns-dash .market-pages.pager-items{display:block}
+/* 全部页面都还没有数据时，空态不按满高占位 */
+#dns-dash .market-card.market-empty .content-pager[data-pager-kind="market"]{--pager-slot-height:250px}
+#dns-dash .market-page{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;height:100%;min-width:0}
+#dns-dash .mk-col{display:flex;flex-direction:column;min-width:0;min-height:0;padding:18px 18px 12px;background:#FAFBF8;border:1px solid #DFE8DF;border-radius:8px;container-type:inline-size}
+#dns-dash .mk-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px;min-width:0}
+#dns-dash .mk-name{font:600 15px/24px var(--fn);color:var(--n900);white-space:nowrap}
+#dns-dash .mk-site{font:400 12px/20px var(--fn);color:var(--n500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dns-dash .mk-k{font:400 12.5px/20px var(--fn);color:var(--n500)}
+#dns-dash .mk-val{font:550 34px/42px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums;letter-spacing:-.03em;white-space:nowrap}
+#dns-dash .mk-val .unit{font:400 14px/1 var(--fn);color:var(--n500);margin-left:5px;letter-spacing:0}
+#dns-dash .mk-delta{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-top:5px;font-size:12.5px;line-height:22px;color:var(--n500);min-width:0}
+#dns-dash .mk-chg{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+#dns-dash .mk-cl{color:var(--n500)}
+#dns-dash .mk-na{color:var(--n300);font-family:var(--fnnum)}
+#dns-dash .mk-period{margin-left:auto;font:400 12px/20px var(--fnnum);color:var(--n500);font-variant-numeric:tabular-nums}
+#dns-dash .market-page .chart{height:176px;margin-top:8px}
+#dns-dash .mk-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:18px;margin-top:auto;padding-top:8px;border-top:1px solid #E3EADF}
+#dns-dash .mk-stat{display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0;padding:5px 0;border-bottom:1px dashed #E6EBE5;font-size:13px;line-height:22px;color:var(--n500)}
+#dns-dash .mk-stat:nth-last-child(-n+2){border-bottom:0}
+/* 指标名允许折行、读数不折行：窄列下宁可名称多占一行，也不让数值被挤出站点框 */
+#dns-dash .mk-stat dt{min-width:0}
+#dns-dash .mk-stat dd{flex:none;font:550 15px/22px var(--fnnum);color:var(--n900);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* 列宽不足（桌面三列时约 1236px 以下视口）：指标单列、走势图降高并收紧行距，保证单页仍在同一高度内 */
+@container (max-width:292px){
+ #dns-dash .market-page .chart{height:128px}
+ #dns-dash .mk-val{font-size:30px;line-height:38px}
+ #dns-dash .mk-stats{grid-template-columns:minmax(0,1fr)}
+ #dns-dash .mk-stat{padding:3px 0}
+}
+#dns-dash .mk-col.is-empty .mk-empty{flex:1;display:flex;align-items:center;justify-content:center;border:1px dashed #D8E3D8;border-radius:7px;background:#F7F9F5;font-size:14px;line-height:26px;color:#708077;text-align:center;padding:24px 16px}
+#dns-dash.large-reading .mtab{font-size:16px;min-height:44px}
+#dns-dash.large-reading .content-pager[data-pager-kind="market"]{--pager-slot-height:576px}
+#dns-dash.large-reading .mk-name{font-size:17px}
+#dns-dash.large-reading .mk-val{font-size:38px;line-height:46px}
+#dns-dash.large-reading .mk-site,#dns-dash.large-reading .mk-k,#dns-dash.large-reading .mk-delta{font-size:14px}
+#dns-dash.large-reading .mk-stats{grid-template-columns:minmax(0,1fr)}
+#dns-dash.large-reading .mk-stat{font-size:15px;line-height:25px;padding:3px 0}
+#dns-dash.large-reading .market-page .chart{height:182px}
+/* 三列上下堆叠（1023px 以下视口）：槽位按“三个站点都有数据、指标齐全”给足高度 */
+@media (max-width:1023px){
+ #dns-dash .market-page{grid-template-columns:minmax(0,1fr);gap:12px}
+ #dns-dash .content-pager[data-pager-kind="market"]{--pager-slot-height:1500px}
+ #dns-dash.large-reading .content-pager[data-pager-kind="market"]{--pager-slot-height:1720px}
+ /* 窄屏三列上下堆叠，空态按三个占位框（各需约140px）给高 */
+ #dns-dash .market-card.market-empty .content-pager[data-pager-kind="market"]{--pager-slot-height:460px}
+}
+@media (max-width:768px){
+ #dns-dash .market-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ #dns-dash .mtab{min-height:44px}
+ /* 箭头在第二行的两种情形（视口≤768px、分页器宽<440px）都要给箭头留出行高 */
+ #dns-dash .content-pager[data-pager-kind="market"]{grid-template-rows:var(--pager-viewport-height) 44px}
+}
+/* 分页器宽<440px 时箭头同样移到第二行（class 由 04_pager.js 按宽度切换） */
+#dns-dash .content-pager.pager-compact[data-pager-kind="market"]{grid-template-rows:var(--pager-viewport-height) 44px}
+/* 375px 以下两列页签放不下中英文并列，只保留中文名（英文为辅助标注） */
+@media (max-width:374px){
+ #dns-dash .mtab small{display:none}
+}
+@media print{
+ /* 打印时全部页面展开（见 _pagination.css），页签与箭头不再需要 */
+ #dns-dash .market-tabs{display:none}
+}
+
 </style>
 <div id="dns-dash">
 <a class="skip-link" href="#workspaceOverview">跳到本页内容</a>
@@ -1649,7 +1725,9 @@ function canCompare(el){return !el.closest('[data-change="none"]');}
       shell.classList.toggle('pager-empty', items.length === 0);
       shell.style.setProperty('--pager-columns', String(settings.kind === 'review' ? size : 1));
       shell.style.setProperty('--pager-page-size', String(size));
-      status.textContent = !items.length ? '0 条' : total > 1 ? '第 ' + (page + 1) + ' / ' + total + ' 页 · 共 ' + items.length + ' 条' : '共 ' + items.length + ' 条';
+      // 可选 pageName(index)：按页命名的翻页内容（如电商大盘品类页）播报页名，代替条数。
+      var named = typeof settings.pageName === 'function' ? settings.pageName(page) : '';
+      status.textContent = !items.length ? '0 条' : total > 1 ? '第 ' + (page + 1) + ' / ' + total + ' 页 · ' + (named || '共 ' + items.length + ' 条') : named || '共 ' + items.length + ' 条';
       // 显示/收起、换页或窗口改变时，不把键盘焦点留在隐藏条目或刚禁用的按钮上。
       if (active && container.contains(active) && items.some(function (item) { return item.hidden && item.contains(active); })) focusVisibleItem();
       else if ((active === next || active === previous) && previous.disabled && next.disabled) focusVisibleItem();
@@ -2565,6 +2643,11 @@ root.addEventListener('click',function(ev){
       addedTabindex = !card.hasAttribute('tabindex');
       if (addedTabindex) card.setAttribute('tabindex', '-1');
       card.classList.add('workspace-highlight');
+      // v29：查询里含本卡的词条号（如 P278）时，一卡多词条的翻页卡翻到该词条所在页
+      var pid = normalized(input.value).split(' ').filter(function (term) {
+        return /^p\d+[a-z]?$/.test(term) && entry.pids.indexOf(normalizedPid(term)) >= 0;
+      })[0];
+      if (pid) workspaceRoot.dispatchEvent(new CustomEvent('dns:focus-pid', { detail: { pid: 'P' + pid.slice(1) } }));
       window.requestAnimationFrame(function () {
         if (selectedCard !== card || !card.isConnected) return;
         var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2890,6 +2973,160 @@ root.addEventListener('click',function(ev){
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startReading,{once:true});else startReading();
 })();
+// 79_market.js —— 电商大盘翻页卡（market，v29）。
+// 卡壳由组装器生成：.market > .market-tabs（页签，每页一个词条）+ .market-pages（.market-page[data-market-pid]）。
+// 本文件只读 DDATA：每页按站点分列，填充主指标末值、环比/同比、月度走势（复用 drawChart）与结构指标；
+// 站点缺数据显示待接入占位，不补造数值。分页复用 DNSPager（每页一个词条），左右箭头与页签等效。
+(function () {
+  function node(tag, cls, text) {
+    var el = document.createElement(tag); if (cls) el.className = cls;
+    if (text != null) el.textContent = String(text); return el;
+  }
+  function config(el) {
+    try { return JSON.parse(el.getAttribute('data-market-config')) || {}; } catch (e) { return {}; }
+  }
+  function monthIndex(date) { var s = String(date || ''); return /^\d{4}-\d{2}/.test(s) ? Number(s.slice(0, 4)) * 12 + Number(s.slice(5, 7)) : NaN; }
+  function fmt(v, metric) {
+    if (typeof v !== 'number' || !isFinite(v)) return '—';
+    var f = metric['格式'] || 'int';
+    if (f === 'vol') return Math.round(v).toLocaleString('en-US');
+    if (f === 'usd') return v >= 1e8 ? (v / 1e8).toFixed(2) + ' 亿美元' : v >= 1e4 ? (v / 1e4).toFixed(1) + ' 万美元' : '$' + v.toFixed(0);
+    if (f === 'price') return '$' + v.toFixed(2);
+    if (f === 'pct') return v.toFixed(1) + '%';
+    if (f === 'rank') return '#' + Math.round(v);
+    if (f === 'num1') return v.toFixed(1);
+    return Math.round(v).toLocaleString('en-US');
+  }
+  // row[0]为数据日期，数值列从1起；列名 = 站点键 + "_" + 指标键
+  function column(data, market, metric) {
+    var i = data.cols.indexOf(market['键'] + '_' + metric['键']);
+    return i < 0 ? -1 : i + 1;
+  }
+  function valid(rows, ci) {
+    return rows.filter(function (r) { return typeof r[ci] === 'number' && isFinite(r[ci]); });
+  }
+  // 环比只对上一个自然月、同比只对去年同月计算；缺月不跨期比较。
+  function change(points, ci) {
+    if (points.length < 2) return null;
+    var last = points[points.length - 1], li = monthIndex(last[0]), prev = points[points.length - 2];
+    var mom = monthIndex(prev[0]) === li - 1 && prev[ci] ? (last[ci] - prev[ci]) / prev[ci] * 100 : null;
+    var same = points.filter(function (r) { return monthIndex(r[0]) === li - 12; })[0];
+    var yoy = same && same[ci] ? (last[ci] - same[ci]) / same[ci] * 100 : null;
+    return { mom: mom, yoy: yoy, date: String(last[0]).slice(0, 7) };
+  }
+  function pill(label, value) {
+    var wrap = node('span', 'mk-chg');
+    wrap.appendChild(node('span', 'mk-cl', label));
+    if (value === null || !isFinite(value)) { wrap.appendChild(node('span', 'mk-na', '—')); return wrap; }
+    var dir = value > 0 ? 'up' : value < 0 ? 'down' : '';
+    wrap.appendChild(node('span', 'dpill ' + dir, (value > 0 ? '▲ +' : value < 0 ? '▼ ' : '') + value.toFixed(1) + '%'));
+    return wrap;
+  }
+  function buildColumn(page, market, metrics, data) {
+    var col = node('article', 'mk-col'), head = node('div', 'mk-head');
+    col.setAttribute('data-market', market['键']);
+    head.appendChild(node('span', 'mk-name', market['名称']));
+    head.appendChild(node('span', 'mk-site', market['站点']));
+    col.appendChild(head);
+    var main = metrics.filter(function (m) { return m['主']; })[0] || metrics[0];
+    var ci = data ? column(data, market, main) : -1, points = ci > 0 ? valid(data.rows, ci) : [];
+    if (!points.length) {
+      col.classList.add('is-empty');
+      col.appendChild(node('div', 'mk-empty', '待接入 · 暂无该站点数据'));
+      return col;
+    }
+    var chg = change(points, ci), last = points[points.length - 1], value = last[ci];
+    col.appendChild(node('div', 'mk-k', main['名称']));
+    var val = node('div', 'mk-val');
+    val.appendChild(node('span', 'vnum', fmt(value, main)));
+    if (main['单位']) val.appendChild(node('span', 'unit', main['单位']));
+    // 销额等缩写读数悬停给出未缩写原值
+    val.title = main['名称'] + (chg ? ' · ' + chg.date : '') + '：' + ((main['格式'] || 'int') === 'usd' ? '$' + value.toFixed(2) : fmt(value, main) + (main['单位'] || ''));
+    col.appendChild(val);
+    var delta = node('div', 'mk-delta');
+    delta.appendChild(pill('环比', chg ? chg.mom : null));
+    delta.appendChild(pill('同比', chg ? chg.yoy : null));
+    if (chg) delta.appendChild(node('span', 'mk-period', chg.date));
+    col.appendChild(delta);
+    var chart = node('div', 'chart');
+    chart.setAttribute('data-chart', page.getAttribute('data-market-pid'));
+    chart.setAttribute('data-col', String(ci));
+    chart.setAttribute('aria-label', market['名称'] + ' · ' + main['名称'] + '月度走势');
+    col.appendChild(chart);
+    charts.push(chart);   // 纳入全局重绘列表：窗口变化时由 25_resize.js 统一重绘可见图
+    // 结构指标与主指标取同一行（主指标最新有效期）：同一列的读数属于同一观测期，该期缺值显示—，不拿上期值顶替
+    var stats = node('dl', 'mk-stats');
+    metrics.forEach(function (m) {
+      if (m === main) return;
+      var ci2 = column(data, market, m), raw = ci2 > 0 ? last[ci2] : null;
+      var row = node('div', 'mk-stat');
+      row.appendChild(node('dt', '', m['名称']));
+      row.appendChild(node('dd', '', typeof raw === 'number' && isFinite(raw) ? fmt(raw, m) : '—'));
+      stats.appendChild(row);
+    });
+    col.appendChild(stats);
+    return col;
+  }
+  // 隐藏页的图曾按兜底宽度绘制；只在尺寸不符或尚未绘制时重绘，避免每次滚动重画。
+  function fitCharts(page) {
+    page.querySelectorAll('.chart').forEach(function (el) {
+      if (!el.clientWidth) return;
+      var svg = el.querySelector('svg');
+      if (!el.getAttribute('data-market-drawn') || (svg && Math.abs(Number(svg.getAttribute('width')) - el.clientWidth) > 1)) {
+        drawChart(el, true); el.setAttribute('data-market-drawn', 'true');
+      }
+    });
+  }
+  function series(page) {
+    var data = typeof DDATA !== 'undefined' ? DDATA[page.getAttribute('data-market-pid')] : null;
+    return data && Array.isArray(data.rows) && data.rows.length && Array.isArray(data.cols) ? data : null;
+  }
+  root.querySelectorAll('[data-market]').forEach(function (box) {
+    var conf = config(box), markets = conf['市场'] || [], metrics = conf['指标'] || [];
+    var pages = box.querySelector('.market-pages'), tabs = box.querySelectorAll('.mtab'), card = box.closest('.card');
+    var title = card && card.querySelector('.card-top .t'), action = card && card.querySelector('.detail-open');
+    box.querySelectorAll('.market-page').forEach(function (page, i) {
+      var data = series(page);
+      markets.forEach(function (market) { page.appendChild(buildColumn(page, market, metrics, data)); });
+      if (tabs[i] && data) tabs[i].classList.add('has-data');
+    });
+    var api = window.DNSPager.mount(pages, { kind: 'market', label: title ? title.textContent : '电商大盘', pageSize: 1,
+      emptyText: '暂无数据', pageName: function (index) { var page = pages.children[index]; return page ? page.getAttribute('data-market-name') || '' : ''; } });
+    if (!api) return;
+    // 全部页面都没有数据时，空态不按满高占位
+    if (card && !box.querySelector('.market-page .chart')) card.classList.add('market-empty');
+    function pageOf(pid) {
+      var found = -1;
+      box.querySelectorAll('.market-page').forEach(function (page, i) { if (page.getAttribute('data-market-pid') === pid) found = i; });
+      return found;
+    }
+    function show(index) {
+      var page = pages.children[index];
+      if (!page) return;
+      fitCharts(page);
+      tabs.forEach(function (tab, i) { tab.classList.toggle('on', i === index); tab.setAttribute('aria-pressed', i === index ? 'true' : 'false'); });
+      if (action) {
+        action.setAttribute('data-detail-pid', page.getAttribute('data-market-pid'));
+        action.textContent = '查看「' + (page.getAttribute('data-market-name') || '') + '」完整数据';
+        action.appendChild(node('span', '', '↗')).setAttribute('aria-hidden', 'true');
+      }
+    }
+    tabs.forEach(function (tab) { tab.addEventListener('click', function () { api.goTo(Number(tab.getAttribute('data-market-tab'))); }); });
+    var shown = -1;
+    function sync() {
+      var page = Number(pages.parentNode.getAttribute('data-page-index'));
+      if (page === shown) return;
+      shown = page; show(page);
+    }
+    sync();
+    new MutationObserver(sync).observe(pages.parentNode, { attributes: true, attributeFilter: ['data-page-index'] });
+    // 附录词条回跳到合并卡时翻到对应页（事件由溯源脚本在定位卡片后派发）。
+    root.addEventListener('dns:focus-pid', function (event) {
+      var index = pageOf(event.detail && event.detail.pid);
+      if (index >= 0) api.goTo(index);
+    });
+  });
+})();
 // 80_details.js —— 只读模块详情：原生dialog、既有数据与明确来源，不复制业务锚点。
 (function () {
   function initDetails() {
@@ -3206,6 +3443,8 @@ function focusSourceCard(pid){
     var button=Array.from(group.querySelectorAll('[data-cotab]')).find(function(b){return b.getAttribute('data-cotab')===panel.getAttribute('data-copanel')});
     if(button)button.click();
   }
+  // v29：一卡多词条的翻页卡（电商大盘）收到P号后自行翻到对应页
+  root.dispatchEvent(new CustomEvent('dns:focus-pid',{detail:{pid:pid}}));
   card.scrollIntoView({behavior:'smooth',block:'center'});
   card.style.transition='box-shadow .3s';card.style.boxShadow='0 0 0 3px rgba(0,101,176,.25)';
   setTimeout(function(){card.style.boxShadow=''},1200);
